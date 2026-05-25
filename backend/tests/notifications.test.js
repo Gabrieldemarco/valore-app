@@ -3,6 +3,13 @@ const { sendClientConfirmation, notifyStaff } = require('../services/notificatio
 process.env.SMTP_USER = 'test@velore.com';
 process.env.SMTP_PASS = 'secret';
 
+jest.mock('../database', () => ({
+  queryOne: jest.fn().mockResolvedValue(null),
+  query: jest.fn().mockResolvedValue({ rows: [] }),
+  initDB: jest.fn().mockResolvedValue(),
+  pool: { end: jest.fn().mockResolvedValue() },
+}));
+
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
     sendMail: jest.fn().mockResolvedValue({ messageId: 'mock-id-123' }),

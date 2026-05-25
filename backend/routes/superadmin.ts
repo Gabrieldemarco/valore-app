@@ -273,5 +273,40 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
     }
   });
 
+  router.get('/super-admin/config', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const rows = await query('SELECT key, value FROM app_config');
+      const config: Record<string, any> = {};
+      for (const row of rows.rows) {
+        if (row.key === 'twilio') {
+          config.twilio = row.value;
+        } else {
+          config[row.key] = row.value;
+        }
+      }
+      res.json({ config });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar configuración' });
+    }
+  });
+
+  router.put('/super-admin/config', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      if (!key) return res.status(400).json({ error: 'key es requerido' });
+      await query(
+        `INSERT INTO app_config (key, value, updated_at) VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
+         ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at = CURRENT_TIMESTAMP`,
+        [key, JSON.stringify(value)]
+      );
+      logger.info(`Config actualizada: ${key}`);
+      res.json({ message: 'Configuración guardada' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al guardar configuración' });
+    }
+  });
+
   return router;
 };

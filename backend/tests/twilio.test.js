@@ -1,5 +1,12 @@
 const { sendWhatsApp, ensureWhatsAppPrefix } = require('../services/twilio');
 
+jest.mock('../database', () => ({
+  queryOne: jest.fn().mockResolvedValue(null),
+  query: jest.fn().mockResolvedValue({ rows: [] }),
+  initDB: jest.fn().mockResolvedValue(),
+  pool: { end: jest.fn().mockResolvedValue() },
+}));
+
 const mockCreate = jest.fn();
 jest.mock('twilio', () => jest.fn(() => ({
   messages: { create: mockCreate }

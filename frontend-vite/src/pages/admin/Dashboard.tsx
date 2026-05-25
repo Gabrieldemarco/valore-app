@@ -72,6 +72,7 @@ export default function AdminDashboard() {
 
   const [toastMsg, setToastMsg] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [twilioConfig, setTwilioConfig] = useState({ account_sid: '', auth_token: '', from: '' });
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToastMsg(msg);
@@ -87,6 +88,9 @@ export default function AdminDashboard() {
     setApiError('');
     api.get<Stats>('/api/super-admin/stats/billing').then(setStats).catch((e: Error) => setApiError(e.message || 'Error al cargar estadísticas'));
     api.get<{ tenants: Tenant[] }>('/api/super-admin/tenants').then(r => setTenants(r.tenants)).catch((e: Error) => setApiError(e.message || 'Error al cargar peluquerías'));
+    api.get<{ config: Record<string, any> }>('/api/super-admin/config').then(r => {
+      if (r.config?.twilio) setTwilioConfig(r.config.twilio);
+    }).catch(() => {});
   }, []);
 
   useEffect(loadData, [loadData]);
@@ -219,6 +223,13 @@ export default function AdminDashboard() {
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Error', 'error');
     }
+  };
+
+  const handleSaveTwilio = async () => {
+    try {
+      await api.put('/api/super-admin/config', { key: 'twilio', value: twilioConfig });
+      showToast('Configuración de Twilio guardada', 'success');
+    } catch { showToast('Error al guardar Twilio', 'error'); }
   };
 
   const handleSetTrial = async (id: number) => {
@@ -361,6 +372,30 @@ export default function AdminDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="table-wrapper" style={{ marginTop: 24 }}>
+          <div className="table-header">
+            <h2>Configuración Global</h2>
+          </div>
+          <div style={{ padding: 20 }}>
+            <h3 style={{ fontSize: 16, marginBottom: 14, color: '#e2e8f0' }}>💬 Twilio (WhatsApp)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Account SID</label>
+                <input type="text" value={twilioConfig.account_sid} onChange={e => setTwilioConfig(p => ({ ...p, account_sid: e.target.value }))} placeholder="ACxxxxxxxxxx" style={{ background: 'rgba(10,10,16,0.9)', border: '1px solid rgba(99,102,241,0.2)', color: '#e2e8f0', padding: '9px 14px', borderRadius: 8, fontSize: 13, width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Auth Token</label>
+                <input type="password" value={twilioConfig.auth_token} onChange={e => setTwilioConfig(p => ({ ...p, auth_token: e.target.value }))} placeholder="••••••••" style={{ background: 'rgba(10,10,16,0.9)', border: '1px solid rgba(99,102,241,0.2)', color: '#e2e8f0', padding: '9px 14px', borderRadius: 8, fontSize: 13, width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Número WhatsApp (from)</label>
+                <input type="text" value={twilioConfig.from} onChange={e => setTwilioConfig(p => ({ ...p, from: e.target.value }))} placeholder="whatsapp:+14155238886" style={{ background: 'rgba(10,10,16,0.9)', border: '1px solid rgba(99,102,241,0.2)', color: '#e2e8f0', padding: '9px 14px', borderRadius: 8, fontSize: 13, width: '100%' }} />
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={handleSaveTwilio}>Guardar Twilio</button>
+          </div>
         </div>
       </div>
 

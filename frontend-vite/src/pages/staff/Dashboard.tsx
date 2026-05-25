@@ -55,12 +55,8 @@ interface TenantSettings {
   business_address: string;
   notification_email: string;
   notification_whatsapp: string;
-  smtp_host?: string;
-  smtp_port?: number;
-  smtp_user?: string;
-  smtp_pass?: string;
-  smtp_from?: string;
-  smtp_secure?: boolean;
+  smtp_email?: string;
+  smtp_password?: string;
 }
 
 type Tab = 'list' | 'calendar' | 'billing';
@@ -238,34 +234,21 @@ export default function StaffDashboard() {
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
                   <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>🔧 Configuración SMTP (correo transaccional)</summary>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>Usá Gmail con <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-hover)' }}>App Password</a>. La contraseña no se muestra por seguridad.</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="dash-form-group">
-                      <label>Host SMTP</label>
-                      <input type="text" className="glass-input" value={settings.smtp_host || ''} onChange={e => setSettings(p => ({ ...p, smtp_host: e.target.value }))} placeholder="smtp.gmail.com" />
+                      <label>Email SMTP</label>
+                      <input type="email" className="glass-input" value={settings.smtp_email || ''} onChange={e => setSettings(p => ({ ...p, smtp_email: e.target.value }))} placeholder="tu@email.com" />
                     </div>
                     <div className="dash-form-group">
-                      <label>Puerto</label>
-                      <input type="number" className="glass-input" value={settings.smtp_port || ''} onChange={e => setSettings(p => ({ ...p, smtp_port: Number(e.target.value) || undefined }))} placeholder="587" />
-                    </div>
-                    <div className="dash-form-group">
-                      <label>Usuario</label>
-                      <input type="text" className="glass-input" value={settings.smtp_user || ''} onChange={e => setSettings(p => ({ ...p, smtp_user: e.target.value }))} placeholder="tu@email.com" />
-                    </div>
-                    <div className="dash-form-group">
-                      <label>Contraseña</label>
-                      <input type="password" className="glass-input" value={settings.smtp_pass || ''} onChange={e => setSettings(p => ({ ...p, smtp_pass: e.target.value }))} placeholder="••••••••" />
-                    </div>
-                    <div className="dash-form-group">
-                      <label>Email remitente</label>
-                      <input type="email" className="glass-input" value={settings.smtp_from || ''} onChange={e => setSettings(p => ({ ...p, smtp_from: e.target.value }))} placeholder="no-reply@tupeluqueria.com" />
-                    </div>
-                    <div className="dash-form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 22 }}>
-                      <label style={{ margin: 0, whiteSpace: 'nowrap' }}>Usar TLS</label>
-                      <input type="checkbox" checked={settings.smtp_secure ?? true} onChange={e => setSettings(p => ({ ...p, smtp_secure: e.target.checked }))} style={{ width: 18, height: 18 }} />
+                      <label>Contraseña (App Password)</label>
+                      <input type="password" className="glass-input" value={settings.smtp_password || ''} onChange={e => setSettings(p => ({ ...p, smtp_password: e.target.value }))} placeholder="••••••••" />
+                      <small style={{ color: 'var(--text-muted)' }}>No se muestra al cargar (guardada de forma segura)</small>
                     </div>
                   </div>
                 </details>
               </div>
+
               <div className="dash-form-group full-width" style={{ textAlign: 'right', marginTop: 10 }}>
                 <button type="submit" className="dash-btn dash-btn-success">Guardar Cambios</button>
               </div>

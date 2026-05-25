@@ -189,6 +189,12 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS app_config (
+        key TEXT PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date 
       ON appointments(tenant_id, appointment_date);
 
