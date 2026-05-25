@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Peluquería</title>
+  <link rel="stylesheet" href="../css/global-premium.css">
+  <style type="text/css">
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      padding: 40px;
+      width: 100%;
+      max-width: 450px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .link {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .link a {
+      color: var(--primary-hover);
+      text-decoration: none;
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+      font-size: 14px;
+      border: 1px solid #ef4444;
+    }
+
+    .success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+      font-size: 14px;
+      border: 1px solid #10b981;
+    }
+  </style>
+</head>
+
+<body class="fade-in">
+  <div class="card glass-panel">
+    <h2 class="text-gradient">Crear tu Cuenta</h2>
+
+    <div id="errorMsg" class="error"></div>
+    <div id="successMsg" class="success"></div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label>Nombre de la Peluquería</label>
+        <input type="text" id="businessName" class="glass-input" required placeholder="Ej: Estilo Único">
+      </div>
+
+      <div class="form-group">
+        <label>Email de Acceso</label>
+        <input type="email" id="email" class="glass-input" required placeholder="tu@email.com">
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" class="glass-input" required placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <div class="form-group">
+        <label>Teléfono (Opcional)</label>
+        <input type="tel" id="phone" class="glass-input" placeholder="+54 9 11...">
+      </div>
+
+      <div class="form-group">
+        <label>Dirección (Opcional)</label>
+        <input type="text" id="address" class="glass-input" placeholder="Av. Siempre Viva 123">
+      </div>
+
+      <div class="form-group" style="display: flex; align-items: flex-start; gap: 10px; margin-top: 20px; margin-bottom: 20px;">
+        <input type="checkbox" id="acceptTerms" required style="margin-top: 3px; cursor: pointer; accent-color: var(--primary); width: auto; height: auto;">
+        <label for="acceptTerms" style="font-size: 12px; line-height: 1.5; color: var(--text-muted); cursor: pointer; user-select: none; font-weight: 400; margin-bottom: 0;">
+          Acepto los <a href="../terms.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">Términos y Condiciones</a>, la <a href="../terms.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">Política de Privacidad</a> y la <a href="../terms.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">Política de Cancelaciones</a> de Veloré.
+        </label>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary"
+        style="width: 100%; padding: 14px; margin-top: 10px;">Crear Cuenta</button>
+    </form>
+
+    <div class="link">
+      ¿Ya tenés cuenta? <a href="login.html">Iniciá sesión aquí</a>
+    </div>
+  </div>
+
+  <script src="../js/auth/register.js"></script>
+</body>
+
+</html>

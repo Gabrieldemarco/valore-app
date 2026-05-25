@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veloré - Reservá en las mejores peluquerías</title>
+    <link rel="stylesheet" href="css/global-premium.css">
+    <style>
+        /* Estilos específicos de index.html (SaaS Landing) */
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-hover);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 100px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            border-radius: 16px;
+        }
+
+        /* Salons Grid */
+        .salons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .salon-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .salon-card {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        .salon-image-wrapper {
+            position: relative;
+            height: 200px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            overflow: hidden;
+        }
+
+        .salon-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .salon-card:hover .salon-image-wrapper img {
+            transform: scale(1.05);
+        }
+
+        .salon-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .salon-content {
+            padding: 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .salon-name {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .salon-location {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .salon-services {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .service-tag {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+
+        .salon-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .salon-rating {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--warning);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* Utility Overrides for Index */
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 18px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 48px 24px;
+            margin-top: 80px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .footer p {
+            opacity: 0.8;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .footer a {
+            color: var(--primary-hover);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--glass-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .search-box {
+                flex-direction: column;
+                background: transparent;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body class="fade-in">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo text-gradient">✂️ Veloré</a>
+            <nav class="nav-links">
+                <a href="#salons">Peluquerías</a>
+                <a href="staff/register.html">¿Tenés una peluquería?</a>
+                <a href="staff/login.html" class="btn btn-primary">Soy Peluquero</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="text-gradient">Reservá tu turno en las mejores peluquerías</h1>
+            <p>Encontrá profesionales cerca tuyo y reservá online en segundos</p>
+            <div class="search-box glass-panel glass-panel-hover">
+                <input type="text" class="glass-input" placeholder="Buscar por nombre o ubicación..." id="searchInput"
+                    style="border:none; background:transparent;">
+                <button class="btn btn-primary" onclick="filterSalons()">🔍 Buscar</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container" id="salons">
+        <div class="section-header">
+            <h2 class="section-title">Peluquerías Destacadas</h2>
+            <p class="section-subtitle">Explorá las mejores opciones cerca tuyo y reservá tu turno ideal</p>
+        </div>
+
+        <div id="salonsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                Cargando peluquerías...
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Veloré. Todos los derechos reservados.</p>
+        <p style="font-size:14px;opacity:0.7">
+            ¿Querés sumar tu peluquería? <a href="staff/register.html">Registrate gratis</a>
+        </p>
+    </footer>
+
+    <script>
+        const API_BASE = '';
+
+        function fixImageUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http')) return url;
+            if (url.startsWith('/uploads')) return API_BASE + url;
+            return url;
+        }
+        let allSalons = [];
+
+        // Cargar peluquerías al iniciar
+        document.addEventListener('DOMContentLoaded', loadSalons);
+
+        async function loadSalons() {
+            try {
+                // Verificar conexión
+                const healthRes = await fetch(`${API_BASE}/api/health`);
+                if (!healthRes.ok) throw new Error('Backend no disponible');
+
+                // Obtener todas las peluquerías desde la DB
+                const res = await fetch(`${API_BASE}/api/tenants`);
+                if (!res.ok) throw new Error('Error cargando peluquerías');
+
+                const data = await res.json();
+                allSalons = data.tenants || [];
+
+                renderSalons(allSalons);
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('salonsContainer').innerHTML =
+                    `<div class="empty-state glass-panel">
+            <h3 class="text-gradient">⚠️ Sin conexión</h3>
+            <p>No pudimos cargar las peluquerías. Verificá que el backend esté corriendo.</p>
+            <a href="staff/register.html" class="btn btn-accent">Registrar mi peluquería</a>
+          </div>`;
+            }
+        }
+
+        function renderSalons(salons) {
+            const container = document.getElementById('salonsContainer');
+
+            if (!salons || salons.length === 0) {
+                container.innerHTML =
+                    `<div class="empty-state glass-panel">
+            <h3 class="text-gradient">🔍 No hay peluquerías registradas</h3>
+            <p>Sé el primero en registrar tu peluquería y empezar a recibir turnos.</p>
+            <a href="staff/register.html" class="btn btn-accent">+ Registrar mi peluquería</a>
+          </div>`;
+                return;
+            }
+
+            container.innerHTML = `
+        <div class="salons-grid">
+          ${salons.map(salon => {
+                // Obtener primeros 3 servicios si existen
+                const services = salon.services || ['Corte', 'Color', 'Alisado'];
+                const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
+
+                return `
+              <a href="landing?tenant=${salon.slug}" class="salon-link">
+                <div class="salon-card glass-panel glass-panel-hover">
+                  <div class="salon-image-wrapper">
+                    ${imageUrl ? `<img src="${fixImageUrl(imageUrl)}" alt="${salon.business_name}">` : ''}
+                    <span class="salon-badge">✨ Disponible</span>
+                  </div>
+                  <div class="salon-content">
+                    <h3 class="salon-name text-gradient">${salon.business_name}</h3>
+                    <div class="salon-location">
+                      📍 ${salon.business_address || 'Ubicación no especificada'}
+                    </div>
+                    <div class="salon-services">
+                      ${services.slice(0, 3).map(s => `<span class="service-tag">${typeof s === 'object' ? s.name : s}</span>`).join('')}
+                    </div>
+                    <div class="salon-footer">
+                      <div class="salon-rating">
+                        ⭐ 5.0 <small class="text-muted" style="font-weight:400">(Nuevo)</small>
+                      </div>
+                      <span class="btn btn-primary">Ver más →</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            `;
+            }).join('')}
+        </div>
+      `;
+        }
+
+        function filterSalons() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (!query) {
+                renderSalons(allSalons);
+                return;
+            }
+
+            const filtered = allSalons.filter(salon =>
+                salon.business_name?.toLowerCase().includes(query) ||
+                salon.business_address?.toLowerCase().includes(query) ||
+                salon.slug?.toLowerCase().includes(query)
+            );
+
+            renderSalons(filtered);
+        }
+
+        // Permitir buscar con Enter
+        document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') filterSalons();
+        });
+    </script>
+</body>
+
+</html>

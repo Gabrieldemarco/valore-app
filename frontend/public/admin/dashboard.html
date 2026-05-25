@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏢 Super Admin - Veloré</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+
+<body>
+  <div class="header">
+    <h1>🏢 Super Admin <span class="header-badge">Veloré</span></h1>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span id="userName" style="color:#94a3b8; font-size:14px;"></span>
+      <button class="btn btn-danger" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card success">
+        <div class="stat-label">✅ Activas</div>
+        <div class="stat-value" id="statActiveTenants">-</div>
+        <div class="stat-sub">Peluquerías activas</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">⚠️ Trial Vencido</div>
+        <div class="stat-value" id="statExpiredTrials">-</div>
+        <div class="stat-sub">Requieren reactivación</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-label">🚫 Suspendidas</div>
+        <div class="stat-value" id="statSuspended">-</div>
+        <div class="stat-sub">Sin acceso al servicio</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💰 Total Facturado</div>
+        <div class="stat-value" id="statTotalInvoiced">$-</div>
+        <div class="stat-sub">Facturas cobradas</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">🕐 Facturas Pendientes</div>
+        <div class="stat-value" id="statPendingInvoices">-</div>
+        <div class="stat-sub">Sin cobrar</div>
+      </div>
+    </div>
+
+    <!-- Plan Prices Section -->
+    <div class="table-wrapper">
+      <div class="table-header">
+        <h2>💰 Precios de Planes</h2>
+        <span class="table-count">Configuración de membresías</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Precio Actual</th>
+            <th>Moneda</th>
+            <th>Última Actualización</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="planPricesTable">
+          <tr class="loading-row"><td colspan="5">Cargando precios...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filters-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre o slug..." oninput="filterTenants()" style="flex:1; min-width:200px;">
+      <select id="filterStatus" onchange="filterTenants()">
+        <option value="">Todos los estados</option>
+        <option value="active">✅ Activos</option>
+        <option value="suspended">🚫 Suspendidos</option>
+      </select>
+      <select id="filterPlan" onchange="filterTenants()">
+        <option value="">Todos los planes</option>
+        <option value="free">Free Trial</option>
+        <option value="pro">Pro</option>
+      </select>
+      <select id="filterExpired" onchange="filterTenants()">
+        <option value="">Todos</option>
+        <option value="expired">Trial Expirado</option>
+        <option value="active_trial">Trial Activo</option>
+      </select>
+      <button class="btn btn-primary" onclick="loadAll()">↺ Actualizar</button>
+    </div>
+
+    <!-- Tenants Table -->
+    <div class="table-wrapper">
+      <div class="table-header">
+        <h2>📋 Peluquerías Registradas</h2>
+        <span class="table-count" id="tableCount">cargando...</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Negocio</th>
+            <th>Slug</th>
+            <th>Plan</th>
+            <th>Estado</th>
+            <th>Trial / Vencimiento</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tenantsTable">
+          <tr class="loading-row"><td colspan="6">Cargando peluquerías...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- MODAL DE DETALLES -->
+  <div class="modal-overlay" id="tenantModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Detalles</h2>
+        <button class="close-modal" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('info')">ℹ️ Info</button>
+        <button class="modal-tab" onclick="switchModalTab('invoices')">💰 Facturas</button>
+      </div>
+
+      <!-- Tab Info -->
+      <div id="tab-info">
+        <div id="expiredAlert" class="alert-expired" style="display:none;">
+          🚨 El período de prueba de esta cuenta ha <strong>vencido</strong>. El servicio está suspendido para este cliente.
+        </div>
+
+        <div class="detail-grid" id="detailGrid">
+          <div class="detail-item"><label>Nombre</label><value id="detailName">-</value></div>
+          <div class="detail-item"><label>Slug</label><value id="detailSlug">-</value></div>
+          <div class="detail-item"><label>Email</label><value id="detailEmail">-</value></div>
+          <div class="detail-item"><label>Teléfono</label><value id="detailPhone">-</value></div>
+          <div class="detail-item"><label>Plan</label><value id="detailPlan">-</value></div>
+          <div class="detail-item"><label>Estado</label><value id="detailStatus">-</value></div>
+          <div class="detail-item"><label>Fin del Trial</label><value id="detailTrialEnd">-</value></div>
+          <div class="detail-item"><label>Registrado</label><value id="detailCreatedAt">-</value></div>
+        </div>
+
+        <!-- Acciones de estado -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+          <button class="btn btn-warning btn-sm" id="btnSuspend" onclick="suspendTenant()">⏸ Suspender</button>
+          <button class="btn btn-danger btn-sm" id="btnDelete" onclick="deleteTenantModal()">🗑️ Eliminar</button>
+        </div>
+
+        <!-- CAJA DE REACTIVACIÓN (se muestra solo si trial vencido o suspendido) -->
+        <div class="reactivation-box" id="reactivationBox" style="display:none;">
+          <h4>🔄 Reactivar Cuenta</h4>
+          <div class="reactivation-options">
+            <label class="reactivation-option" id="opt-extend">
+              <input type="radio" name="reactivateMode" value="extend_trial" checked onchange="updateReactivationUI()">
+              <div class="reactivation-option-label">
+                <strong>Extender período de prueba</strong>
+                <span>Dar N días adicionales de plan gratuito</span>
+              </div>
+            </label>
+            <label class="reactivation-option" id="opt-pro">
+              <input type="radio" name="reactivateMode" value="upgrade_pro" onchange="updateReactivationUI()">
+              <div class="reactivation-option-label">
+                <strong>Activar plan Pro</strong>
+                <span>Sin límite de tiempo, acceso completo</span>
+              </div>
+            </label>
+          </div>
+          <div class="days-input-row" id="daysRow">
+            <input type="number" id="extensionDays" value="15" min="1" max="365">
+            <label>días adicionales de prueba gratuita</label>
+          </div>
+          <div style="margin-top:16px; text-align:right;">
+            <button class="btn btn-reactivate" onclick="reactivateTenant()">🚀 Reactivar Ahora</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Facturas -->
+      <div id="tab-invoices" style="display: none;">
+        <h3 style="font-size:16px; margin-bottom:14px; color:#e2e8f0;">Historial de Facturas</h3>
+        <table class="small-table">
+          <thead>
+            <tr><th>Nro</th><th>Monto</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="invoicesTableBody"></tbody>
+        </table>
+
+        <h3 style="font-size:16px; margin-top:24px; margin-bottom:14px; color:#e2e8f0;">Nueva Factura</h3>
+        <form id="newInvoiceForm" class="invoice-form">
+          <input type="hidden" id="invoiceTenantId">
+          <div class="full-width">
+            <label>Monto ($)</label>
+            <input type="number" id="invoiceAmount" required step="0.01" placeholder="0.00">
+          </div>
+          <div class="full-width">
+            <label>Descripción</label>
+            <input type="text" id="invoiceDesc" placeholder="Ej: Plan Mensual Pro">
+          </div>
+          <div class="full-width" style="text-align: right;">
+            <button type="submit" class="btn btn-primary">Crear Factura</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin/js/dashboard/shared.js"></script>
+  <script src="/admin/js/dashboard/tenants.js"></script>
+  <script src="/admin/js/dashboard/app.js"></script>
+</body>
+</html>

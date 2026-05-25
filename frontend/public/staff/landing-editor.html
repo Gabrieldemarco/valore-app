@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 Editor Pro - Landing Page</title>
+  <link rel="stylesheet" href="../css/global-premium.css">
+  <style>
+    body {
+      background: var(--bg-deep);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    /* Layout Principal */
+    .app-header {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar / Editor */
+    .editor-pane {
+      width: 45%;
+      min-width: 400px;
+      background: var(--bg-deep);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .tabs-nav {
+      padding: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .editor-content {
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* Preview Pane */
+    .preview-pane {
+      flex: 1;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .preview-toolbar {
+      background: rgba(0, 0, 0, 0.5);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+    }
+
+    .layout-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      cursor: grab;
+      transition: opacity 0.2s;
+    }
+    .layout-item:active { cursor: grabbing; }
+    .drag-handle { cursor: grab; color: var(--text-muted); font-size: 18px; user-select: none; }
+    .layout-label { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+    .btn-icon { padding: 4px 10px; font-size: 0.8rem; }
+    .centered-content { max-width: 800px; margin: 0 auto; text-align: center; }
+    .section-padding { padding: 60px 24px; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .gallery-item { position: relative; aspect-ratio: 1; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
+    .gallery-item .remove-btn { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; line-height: 20px; text-align: center; }
+
+    .flex-row { display: flex; align-items: center; }
+    .flex-row-gap { display: flex; align-items: center; gap: 10px; }
+    .flex-row-gap-lg { display: flex; align-items: center; gap: 15px; }
+    .flex-gap-sm { display: flex; gap: 5px; }
+    .hidden { display: none !important; }
+    .text-muted-sm { color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Componentes UI */
+    .card {
+      margin-bottom: 1.5rem;
+    }
+
+    .card h3 {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.4);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transform: translateY(100px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-bar.visible {
+      transform: translateY(0);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Servicios List */
+    .service-item {
+      display: flex;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--glass-border);
+    }
+
+    .service-item.deleted {
+      opacity: 0.5;
+      text-decoration: line-through;
+      border-color: var(--danger);
+    }
+
+    .service-fields {
+      flex: 1;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .service-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Horarios Grid */
+    .hours-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+      text-align: center;
+    }
+
+    .day-check {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.8rem;
+      gap: 4px;
+      color: var(--text-muted);
+    }
+
+
+    /* Pantallas medianas, tablets, o dispositivos con poca altura (teléfonos horizontales) */
+    @media (max-width: 992px), (max-height: 650px) {
+      .main-container {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .editor-pane {
+        width: 100%;
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        overflow-y: visible;
+      }
+      .preview-pane {
+        display: none !important;
+      }
+      .editor-content {
+        padding: 1.5rem 1rem;
+      }
+      .status-bar {
+        left: 20px;
+        right: 20px;
+        bottom: 10px;
+        justify-content: center;
+        font-size: 0.8rem;
+        padding: 8px 16px;
+      }
+    }
+
+    /* Celulares estrechos (vista vertical) - reordena el header para evitar superposición */
+    @media (max-width: 576px) {
+      .app-header {
+        flex-direction: column;
+        gap: 0.8rem;
+        padding: 1rem;
+        align-items: stretch;
+        text-align: center;
+      }
+      .app-header div {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="flex-row-gap">
+      <span style="font-size:1.5rem;">🎨</span>
+      <h1 style="font-size:1.2rem; font-weight:700;">Editor de Landing</h1>
+    </div>
+    <div class="flex-row-gap-lg">
+      <div id="trialBadge" class="trial-badge hidden" style="transition: all 0.3s ease;"></div>
+      <a href="dashboard.html" class="btn btn-secondary">← Dashboard</a>
+      <button onclick="saveChanges(true)" class="btn btn-primary">💾 Guardar Cambios</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Editor Pane -->
+    <aside class="editor-pane">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="showTab('general', this)">🏢 General</button>
+        <button class="tab-btn" onclick="showTab('branding', this)">🎨 Branding</button>
+        <button class="tab-btn" onclick="showTab('services', this)">🛎️ Servicios</button>
+        <button class="tab-btn" onclick="showTab('hours', this)">🕒 Horarios</button>
+        <button class="tab-btn" onclick="showTab('gallery', this)">📷 Galería</button>
+        <button class="tab-btn" onclick="showTab('team', this)">👥 Equipo</button>
+        <button class="tab-btn" onclick="showTab('social', this)">🔗 Redes</button>
+        <button class="tab-btn" onclick="showTab('css', this)">⚙️ CSS</button>
+        <button class="tab-btn" onclick="showTab('layout', this)">🧩 Layout</button>
+      </nav>
+
+      <div class="editor-content" id="editorForms">
+        <!-- Tab: General -->
+        <div id="tab-general" class="tab-content">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Información Básica</h3>
+            <div class="form-group">
+              <label>Nombre del Negocio</label>
+              <input type="text" data-key="business_name" class="glass-input" oninput="debounceSave()">
+            </div>
+            <div class="form-group">
+              <label>Descripción Corta</label>
+              <textarea data-key="landing_description" class="glass-input" rows="3" oninput="debounceSave()"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Dirección</label>
+              <input type="text" data-key="business_address" class="glass-input" oninput="debounceSave()">
+            </div>
+            <div class="form-group">
+              <label>Teléfono de Contacto</label>
+              <input type="tel" data-key="business_phone" class="glass-input" oninput="debounceSave()">
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" data-key="landing_enabled" onchange="debounceSave()"> Página
+                Habilitada</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Branding -->
+        <div id="tab-branding" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Colores y Logo</h3>
+            <div class="form-group">
+              <label>Color Principal</label>
+              <input type="color" data-key="brand_primary_color" oninput="debounceSave()"
+                style="height:50px; padding:2px;">
+            </div>
+            <div class="form-group">
+              <label>Color Secundario</label>
+              <input type="color" data-key="brand_secondary_color" oninput="debounceSave()"
+                style="height:50px; padding:2px;">
+            </div>
+
+            <!-- Temas Rápidos / Estilos de Diseño Predefinidos -->
+            <div class="form-group" style="margin-top: 20px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 15px;">
+              <label style="font-weight: 600; display: block; margin-bottom: 10px; color: var(--text-main);">🎨 Temas Rápidos (Estilos de Diseño)</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <button type="button" class="btn" style="background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; font-size: 11px; padding: 10px 5px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px;" onclick="applyPresetTheme('#8B5CF6', '#D946EF', 'velvet')">💜 Velvet</button>
+                <button type="button" class="btn" style="background: linear-gradient(135deg, #D97706, #F59E0B); color: white; font-size: 11px; padding: 10px 5px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px;" onclick="applyPresetTheme('#D97706', '#F59E0B', 'barber')">🧡 Barber</button>
+                <button type="button" class="btn" style="background: linear-gradient(135deg, #10B981, #34D399); color: white; font-size: 11px; padding: 10px 5px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px;" onclick="applyPresetTheme('#10B981', '#34D399', 'zen')">💚 Zen</button>
+              </div>
+              <small style="color:var(--text-muted); display:block; margin-top:8px; font-size: 11px;">Al elegir un tema se ajustarán automáticamente los colores, tipografía y estilo visual de tu landing page.</small>
+            </div>
+
+            <div class="form-group">
+              <label>URL Logo</label>
+              <input type="url" data-key="brand_logo_url" id="brand_logo_url" class="glass-input"
+                placeholder="https://..." oninput="debounceSave()">
+              <small style="color:var(--text-muted)">O subí una imagen desde tu PC</small>
+              <input type="file" accept="image/*" class="glass-input"
+                onchange="handleImageUpload(this, 'brand_logo_url')" style="margin-top:5px; padding: 10px;">
+            </div>
+            <div class="form-group">
+              <label>Imagen de Portada (Hero)</label>
+              <input type="url" data-key="landing_hero_image" id="landing_hero_image" class="glass-input"
+                placeholder="https://..." oninput="debounceSave()">
+              <small style="color:var(--text-muted)">Imagen principal de la landing page</small>
+              <input type="file" accept="image/*" class="glass-input"
+                onchange="handleImageUpload(this, 'landing_hero_image')" style="margin-top:5px; padding: 10px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Servicios -->
+        <div id="tab-services" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Gestión de Servicios</h3>
+            <div id="servicesList"></div>
+            <button class="btn btn-primary" onclick="addService()">+ Nuevo Servicio</button>
+          </div>
+        </div>
+
+        <!-- Tab: Horarios -->
+        <div id="tab-hours" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Horarios de Atención</h3>
+            <p class="text-muted-sm" style="margin-bottom:1rem;">Seleccioná los días que abrís y el
+              rango horario.</p>
+
+            <div class="form-group">
+              <label>Días Laborables</label>
+              <div class="hours-grid" id="daysGrid">
+                <!-- Generado por JS -->
+              </div>
+            </div>
+
+            <div style="display:flex; gap:1rem;">
+              <div class="form-group" style="flex:1">
+                <label>Hora Apertura</label>
+                <input type="number" id="openStart" class="glass-input" min="0" max="23" onchange="debounceSave()">
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>Hora Cierre</label>
+                <input type="number" id="openEnd" class="glass-input" min="0" max="23" onchange="debounceSave()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Galería -->
+        <div id="tab-gallery" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Galería de Imágenes</h3>
+            <div class="form-group">
+              <input type="url" id="newGalleryUrl" class="glass-input" placeholder="Pegar URL de imagen...">
+              <div style="display:flex; gap:5px; margin-top:5px;">
+                <input type="file" id="newGalleryFile" accept="image/*" class="glass-input"
+                  style="flex:1; padding: 10px;">
+                <button class="btn btn-secondary" onclick="uploadAndAddGallery()">Subir</button>
+                <button class="btn btn-primary" onclick="addGalleryFromUrl()">Agregar URL</button>
+              </div>
+            </div>
+            <div id="galleryPreview"
+              style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Tab: Equipo, Social, CSS omitidos por brevedad pero siguen misma lógica -->
+        
+        <div id="tab-team" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Equipo (Peluqueros)</h3>
+            <p class="text-muted-sm" style="margin-bottom:1rem;">Agrega o edita los peluqueros. Cada uno tendra su propia agenda y disponibilidad.</p>
+            <div id="staffListContainer"></div>
+            <button class="btn btn-primary" onclick="addStaffUI()">+ Nuevo Peluquero</button>
+          </div>
+        </div>
+        <div id="tab-social" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">Redes Sociales</h3>
+            <p class="text-muted-sm" style="margin-bottom:1rem;">Agrega los links completos (con https://) de tus redes sociales.</p>
+            <div class="form-group">
+              <label>Instagram</label>
+              <input type="url" data-social="instagram" class="glass-input" placeholder="https://instagram.com/tu_cuenta" oninput="updateSocial('instagram', this.value)">
+            </div>
+            <div class="form-group">
+              <label>Facebook</label>
+              <input type="url" data-social="facebook" class="glass-input" placeholder="https://facebook.com/tu_pagina" oninput="updateSocial('facebook', this.value)">
+            </div>
+            <div class="form-group">
+              <label>WhatsApp</label>
+              <input type="url" data-social="whatsapp" class="glass-input" placeholder="https://wa.me/123456789" oninput="updateSocial('whatsapp', this.value)">
+            </div>
+            <div class="form-group">
+              <label>TikTok</label>
+              <input type="url" data-social="tiktok" class="glass-input" placeholder="https://tiktok.com/@tu_cuenta" oninput="updateSocial('tiktok', this.value)">
+            </div>
+            <div class="form-group">
+              <label>Twitter/X</label>
+              <input type="url" data-social="twitter" class="glass-input" placeholder="https://twitter.com/tu_cuenta" oninput="updateSocial('twitter', this.value)">
+            </div>
+          </div>
+        </div>
+        <div id="tab-css" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">CSS Personalizado (Avanzado)</h3>
+            <div class="form-group">
+              <textarea data-key="landing_custom_css" class="glass-input" rows="10" placeholder="/* Tu CSS aquí */"
+                oninput="debounceSave()"></textarea>
+              <small style="color:var(--danger)">⚠️ Cuidado: CSS inválido puede romper tu sitio.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Layout -->
+        <div id="tab-layout" class="tab-content hidden">
+          <div class="card glass-panel">
+            <h3 class="text-gradient">🧩 Diseño de la Página</h3>
+            <p class="text-muted-sm" style="margin-bottom:1rem;">Arrastrá las secciones para reordenarlas. Activá o desactivá las que no querés mostrar.</p>
+            <div id="layoutSorter" style="display:flex; flex-direction:column; gap:8px;">
+            </div>
+            <hr style="border-color:var(--glass-border); margin:16px 0;">
+            <h3 style="font-size:1rem; margin-bottom:8px;">➕ Bloques Personalizados</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Podés insertar HTML propio (iframe de Instagram, Google Maps, etc.)</p>
+            <button class="btn btn-secondary" onclick="addCustomBlock()" style="font-size:0.85rem;">+ Agregar bloque</button>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Preview Pane -->
+    <section class="preview-pane">
+      <div class="preview-toolbar">
+        <span>👁️ Vista Previa en Vivo</span>
+        <span id="previewStatus" style="opacity:0.7">Actualizado</span>
+      </div>
+      <iframe id="livePreview" src=""></iframe>
+    </section>
+  </div>
+
+  <!-- Modal para bloque custom -->
+  <div id="customBlockModal" class="modal-overlay">
+    <div class="glass-panel" style="width:90%; max-width:600px; padding:2rem; border-radius:16px; max-height:90vh; overflow-y:auto;">
+      <h3 class="text-gradient" style="margin-bottom:1.5rem;">➕ Nuevo Bloque Personalizado</h3>
+      <div class="form-group">
+        <label>Nombre del bloque</label>
+        <input type="text" id="modalBlockLabel" class="glass-input" placeholder="Ej: Instagram, Mapa, Video">
+      </div>
+      <div class="form-group">
+        <label>Título (opcional)</label>
+        <input type="text" id="modalBlockTitle" class="glass-input" placeholder="Ej: Encontranos en Instagram">
+      </div>
+      <div class="form-group">
+        <label>Código HTML / iframe</label>
+        <textarea id="modalBlockContent" class="glass-input" rows="6" placeholder="&lt;iframe src=&quot;...&quot;&gt;&lt;/iframe&gt;"></textarea>
+        <small style="color:var(--text-muted);">Pegá el iframe de Google Maps, Instagram, YouTube, etc.</small>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:1rem;">
+        <button class="btn btn-secondary" onclick="closeCustomBlockModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCustomBlockModal()">Agregar bloque</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Toast -->
+  <div id="statusToast" class="status-bar">
+    <div class="spinner" id="toastSpinner" style="display:none"></div>
+    <span id="toastMsg">Guardando...</span>
+  </div>
+
+  <script src="../js/landing-editor/core.js"></script>
+  <script src="../js/landing-editor/ui-renderers.js"></script>
+  <script src="../js/landing-editor/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Página no encontrada | Veloré</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/global-premium.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .error-container {
+      max-width: 480px;
+    }
+    .error-code {
+      font-size: 120px;
+      font-weight: 700;
+      font-family: 'Cormorant Garamond', serif;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .error-title {
+      font-size: 24px;
+      font-family: 'Cormorant Garamond', serif;
+      margin-bottom: 12px;
+      color: var(--text-main);
+    }
+    .error-desc {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Página no encontrada</h1>
+    <p class="error-desc">La ruta que buscás no existe o fue movida. Revisá el enlace o volvé al inicio.</p>
+    <div class="error-actions">
+      <a href="/" class="btn btn-primary">Volver al inicio</a>
+      <a href="/staff/login" class="btn btn-secondary">Acceso peluqueros</a>
+    </div>
+  </div>
+</body>
+</html>

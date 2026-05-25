@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservá tu Turno | Veloré</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/global-premium.css">
+    <link rel="stylesheet" href="/css/landing.css">
+    <style id="custom-css"></style>
+</head>
+
+<body>
+
+  <div id="page-content">
+
+  <section class="hero" id="hero">
+    <div class="hero-image" id="heroImage"></div>
+    <div class="hero-content">
+      <img src="" alt="Logo" class="hero-logo" id="heroLogo" style="display:none">
+      <h1 id="businessName">Reservá tu turno online</h1>
+      <p id="landingDescription">Elegí servicio, horario y listo. Sin llamadas, sin vueltas.</p>
+      <a href="#reservar" class="btn btn-primary" style="font-size: 1.1rem; padding: 16px 40px; border-radius: 50px;">Sacar turno ahora</a>
+      <div class="hero-trust" id="heroTrust">
+        <span>✔ Sin llamadas</span>
+        <span>✔ Confirmación inmediata</span>
+        <span>✔ 100% online</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="servicios">
+    <h2 class="section-title">Nuestros Servicios</h2>
+    <p class="section-subtitle">Elegí el servicio que necesitás y reservá en segundos</p>
+    <div class="services-grid" id="servicesGrid">
+      <div class="loading">
+        <div class="loading-spinner"></div>Preparando la agenda...
+      </div>
+    </div>
+  </section>
+
+  <section id="galeria" style="background: var(--bg-muted)">
+    <h2 class="section-title">Galería</h2>
+    <p class="section-subtitle">Un vistazo a nuestro espacio y nuestros mejores trabajos</p>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </section>
+
+  <section id="equipo">
+    <h2 class="section-title">Nuestro Equipo</h2>
+    <p class="section-subtitle">Profesionales apasionados dedicados a realzar tu belleza</p>
+    <div class="team-grid" id="teamGrid"></div>
+    <div class="social-links" id="socialLinks"></div>
+  </section>
+
+  <section class="booking-section" id="reservar">
+    <h2 class="section-title">Reservar Turno</h2>
+    <p class="section-subtitle">Completá el formulario y asegurate tu lugar</p>
+    <form class="booking-form glass-panel" id="bookingForm" novalidate>
+      <div class="stepper" id="bookingStepper">
+        <div class="step active" data-step="1">
+          <span class="step-label">1. Servicio</span>
+          <span class="step-subtitle">Elegí tu tratamiento</span>
+        </div>
+        <div class="step" data-step="2">
+          <span class="step-label">2. Fecha</span>
+          <span class="step-subtitle">Elegí día y peluquero</span>
+        </div>
+        <div class="step" data-step="3">
+          <span class="step-label">3. Horario</span>
+          <span class="step-subtitle">Seleccioná tu turno</span>
+        </div>
+        <div class="step" data-step="4">
+          <span class="step-label">4. Datos</span>
+          <span class="step-subtitle">Confirmá tu información</span>
+        </div>
+      </div>
+
+      <div class="step-section active" id="step1">
+        <div class="form-group">
+          <label for="service">Servicio <span style="color:var(--danger)">*</span></label>
+          <select id="service" class="glass-input" required>
+            <option value="">Seleccionar servicio...</option>
+          </select>
+        </div>
+        <div class="form-note">Primero elegí el servicio para ver tu disponibilidad.</div>
+      </div>
+
+      <div class="step-section" id="step2">
+        <div class="form-group" id="staffGroup" style="display:none">
+          <label for="staff">Peluquero <span style="color:var(--danger)">*</span></label>
+          <select id="staff" class="glass-input">
+            <option value="">Cualquier peluquero</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha <span style="color:var(--danger)">*</span></label>
+          <input type="hidden" id="date" required>
+          <div class="custom-calendar" id="customCalendar">
+            <div class="cal-header">
+              <button type="button" class="cal-nav" id="calPrev" aria-label="Mes anterior">‹</button>
+              <span class="cal-month-year" id="calMonthYear"></span>
+              <button type="button" class="cal-nav" id="calNext" aria-label="Mes siguiente">›</button>
+            </div>
+            <div class="cal-weekdays">
+              <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span class="cal-weekend">Sáb</span><span class="cal-weekend">Dom</span>
+            </div>
+            <div class="cal-days" id="calDays"></div>
+            <div class="cal-footer">
+              <button type="button" class="cal-today-btn" id="calToday">Hoy</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-note">Elegí el día y, si querés, un peluquero específico.</div>
+      </div>
+
+      <div class="step-section" id="step3">
+        <div class="form-group" id="slotsContainer" style="display:none">
+          <label>Horario disponible <span style="color:var(--danger)">*</span></label>
+          <div class="slots-grid" id="slotsList"></div>
+          <input type="hidden" id="selectedSlot">
+          <div class="form-error" id="slotError">Seleccioná un horario</div>
+        </div>
+        <div class="form-note">Seleccioná el horario que más te convenga.</div>
+      </div>
+
+      <div class="step-section" id="step4">
+        <div class="form-group">
+          <label for="clientName">Nombre completo <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="clientName" class="glass-input" required placeholder="Ej: María López" minlength="2" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label for="clientPhone">Teléfono (WhatsApp) <span style="color:var(--danger)">*</span></label>
+          <input type="tel" id="clientPhone" class="glass-input" required placeholder="Ej: 099 123 456">
+          <div class="form-error" id="phoneError">Ingresá un teléfono válido (7 a 15 dígitos)</div>
+        </div>
+        <div class="form-group">
+          <label for="clientEmail">Email (opcional)</label>
+          <input type="email" id="clientEmail" class="glass-input" placeholder="tu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="notes">Observaciones</label>
+          <textarea id="notes" class="glass-input" rows="3" placeholder="¿Algo que debamos saber?" maxlength="500"></textarea>
+        </div>
+      </div>
+
+      <div class="booking-actions">
+        <button type="button" class="btn btn-secondary" id="prevStepBtn" style="display:none">Anterior</button>
+        <button type="button" class="btn btn-primary" id="nextStepBtn">Siguiente</button>
+        <button type="submit" class="btn btn-accent" id="submitBtn" style="display:none">Confirmar reserva</button>
+      </div>
+    </form>
+    <div id="result" style="margin-top:20px;display:none"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-info">
+      <p id="footerBusiness" style="font-weight:700;font-size:1.2rem"></p>
+      <p id="footerAddress"></p>
+      <p id="footerPhone"></p>
+    </div>
+    <div class="social-links" id="footerSocial"></div>
+    <p style="margin-top:30px;font-size:0.9rem;opacity:0.6">
+      © <span id="footerYear"></span> <span id="footerCopyright"></span>. Todos los derechos reservados.
+    </p>
+  </footer>
+
+  </div><!-- /page-content -->
+
+  <div id="lightbox" role="dialog" aria-label="Visor de imágenes">
+    <button class="lb-btn lb-close" id="lbClose" aria-label="Cerrar imagen">&times;</button>
+    <button class="lb-btn lb-prev" id="lbPrev" aria-label="Imagen anterior">&#8249;</button>
+    <button class="lb-btn lb-next" id="lbNext" aria-label="Imagen siguiente">&#8250;</button>
+    <img id="lightboxImg" src="" alt="Imagen de galería">
+    <div class="lb-counter" id="lightboxCounter"></div>
+  </div>
+
+  <script src="/js/landing.js"></script>
+</body>
+
+</html>
