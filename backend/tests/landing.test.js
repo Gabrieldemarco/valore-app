@@ -173,10 +173,11 @@ describe('Landing Page (público)', () => {
     });
   });
 
-  describe('404 personalizada', () => {
-    it('devuelve HTML 404 para rutas inexistentes', async () => {
+  describe('SPA catch-all', () => {
+    it('sirve index.html del SPA para rutas inexistentes', async () => {
       const res = await request(app).get('/ruta-que-no-existe');
-      expect(res.status).toBe(404);
+      // React SPA maneja sus propias rutas, el servidor sirve index.html
+      expect(res.status).toBe(200);
       expect(res.headers['content-type']).toContain('html');
     });
   });

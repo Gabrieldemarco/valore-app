@@ -1,5 +1,8 @@
 const { sendClientConfirmation, notifyStaff } = require('../services/notifications');
 
+process.env.SMTP_USER = 'test@velore.com';
+process.env.SMTP_PASS = 'secret';
+
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
     sendMail: jest.fn().mockResolvedValue({ messageId: 'mock-id-123' }),

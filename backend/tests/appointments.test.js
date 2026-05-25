@@ -211,7 +211,8 @@ describe('Appointments', () => {
       const res = await request(app)
         .get('/p/test/availability?date=2026-06-01&serviceId=1');
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveProperty('slots');
+      expect(Array.isArray(res.body.slots)).toBe(true);
     });
 
     it('rechaza sin fecha', async () => {

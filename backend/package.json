@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "tsx server.ts",
     "test": "cross-env NODE_ENV=test jest --runInBand --forceExit",
     "test:integration": "cross-env NODE_ENV=test jest --runInBand --forceExit --config jest.integration.config.js",
     "test:e2e": "npx playwright test --config tests/e2e/playwright.config.js"
@@ -37,6 +37,13 @@
     "testEnvironment": "node",
     "testMatch": [
       "**/tests/*.test.js"
-    ]
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "moduleFileExtensions": ["ts", "js", "json"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   }
 }

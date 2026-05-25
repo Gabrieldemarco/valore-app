@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 env:
   DATABASE_URL: postgresql://postgres:orion1@localhost:5432/agenda_app_test
@@ -43,6 +43,9 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
 
       - name: Unit & integration tests
         run: npm test && npm run test:integration

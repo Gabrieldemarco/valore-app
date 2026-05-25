@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": false,
+    "noImplicitAny": false,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": true,
+    "moduleResolution": "node10",
+    "allowJs": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["node"]
+  },
+  "include": [
+    "types.d.ts",
+    "server.ts",
+    "database.ts",
+    "cron-billing.ts",
+    "routes/**/*.ts",
+    "services/**/*.ts",
+    "middleware/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "test-results",
+    "uploads"
+  ]
+}
