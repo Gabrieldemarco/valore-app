@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-orion1}
+      POSTGRES_DB: ${DB_NAME:-agenda_app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${DB_NAME:-agenda_app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-orion1}@postgres:5432/${DB_NAME:-agenda_app}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_CURRENCY: ${MP_CURRENCY:-UYU}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+      APPOINTMENT_RATE_LIMIT_MAX: ${APPOINTMENT_RATE_LIMIT_MAX:-20}
+    volumes:
+      - uploads:/app/backend/uploads
+
+volumes:
+  pgdata:
+  uploads:
