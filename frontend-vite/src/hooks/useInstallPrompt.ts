@@ -9,29 +9,17 @@ interface BeforeInstallPromptEvent extends Event {
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('install-dismissed') === '1');
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [ready, setReady] = useState(false);
+
+  const isStandalone = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+  const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
 
   useEffect(() => {
-    setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
-
     const handler = (e: Event) => {
       e.preventDefault();
       setPromptEvent(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', handler);
-
-    const onLoad = () => setReady(true);
-    if (document.readyState === 'complete') {
-      setReady(true);
-    } else {
-      window.addEventListener('load', onLoad);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      window.removeEventListener('load', onLoad);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const install = useCallback(async () => {
@@ -46,7 +34,5 @@ export function useInstallPrompt() {
     setDismissed(true);
   }, []);
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
-
-  return { show: ready && !dismissed && !isStandalone, promptEvent, install, dismiss, isIOS };
+  return { show: !dismissed && !isStandalone, promptEvent, install, dismiss, isIOS };
 }
