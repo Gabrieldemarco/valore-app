@@ -8,7 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem('install-dismissed') === '1');
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('install-dismissed') === '1');
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -27,7 +27,7 @@ export function useInstallPrompt() {
   }, [promptEvent]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem('install-dismissed', '1');
+    sessionStorage.setItem('install-dismissed', '1');
     setDismissed(true);
   }, []);
 
