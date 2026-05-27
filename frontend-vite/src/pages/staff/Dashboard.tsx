@@ -8,6 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
+import PushNotificationToggle from '../../components/PushNotificationToggle';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
 
@@ -462,6 +463,10 @@ export default function StaffDashboard() {
           <span className="dash-user-name">{staffName || 'Cargando...'}</span>
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>Salir</button>
         </div>
+      </div>
+
+      <div className="dash-container" style={{ maxWidth: 700, margin: '0 auto 24px' }}>
+        <PushNotificationToggle />
       </div>
 
       {showSettings && (

@@ -1,16 +1,31 @@
 {
   "name": "Veloré - Reservá en las mejores peluquerías",
   "short_name": "Veloré",
-  "description": "Encontrá tu próximo turno en segundos",
+  "description": "Encontrá tu próximo turno en segundos. Reservá online en las mejores peluquerías.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0c",
-  "theme_color": "#0a0a0c",
+  "theme_color": "#7c3aed",
   "orientation": "portrait",
+  "scope": "/",
+  "categories": ["lifestyle", "beauty", "business"],
+  "lang": "es-UY",
   "icons": [
     {
       "src": "/favicon.svg",
-      "sizes": "any",
+      "sizes": "48x48",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }

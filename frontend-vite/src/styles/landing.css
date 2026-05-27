@@ -377,8 +377,14 @@
 
 @media (max-width: 640px) {
   .landing-view .booking-container {
-    padding: 24px 16px;
+    padding: 24px 20px;
     border-radius: 16px;
+  }
+  .landing-view .stepper {
+    overflow-x: hidden;
+  }
+  .landing-view .step::after {
+    display: none;
   }
 }
 

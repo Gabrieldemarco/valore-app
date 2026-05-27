@@ -149,6 +149,12 @@ async function notifyStaff(appointment, tenant) {
     await sendWhatsApp(tenant.notification_whatsapp, staffBody);
   }
 
+  sendPushToTenant(tenant.id, {
+    title: `📅 Nuevo turno - ${tenant.business_name}`,
+    body: `${appointment.client_name} - ${appointment.service} - ${date.toLocaleDateString('es-UY')} ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`,
+    url: '/staff/dashboard',
+  });
+
   return { success: true };
 }
 
@@ -191,4 +197,13 @@ async function sendStaffCredentials(staff: { name: string; email: string }, temp
 }
 
 // ========== EXPORTAR ==========
+async function sendPushToTenant(tenantId, payload) {
+  try {
+    const { sendPushToTenant: sendPush } = await import('./web-push');
+    await sendPush(tenantId, payload);
+  } catch (err) {
+    /* push es adicional, no crítico */
+  }
+}
+
 export { sendClientConfirmation, notifyStaff, sendStaffCredentials, createEmailTransporter };

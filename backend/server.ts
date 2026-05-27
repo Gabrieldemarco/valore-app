@@ -177,6 +177,7 @@ app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, 
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
 app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter));
 app.use('/api', require('./routes/misc').default(apiLimiter));
+app.use('/api', require('./routes/push').default());
 
 // ========== SWAGGER API DOCS ==========
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
