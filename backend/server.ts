@@ -44,6 +44,8 @@ import morgan from 'morgan';
 import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
 import { generateAvailableSlots } from './services/slots';
 import { authenticateSuperAdmin } from './middleware';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './services/swagger';
 
 const app = express();
 
@@ -175,6 +177,9 @@ app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, 
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
 app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter));
 app.use('/api', require('./routes/misc').default(apiLimiter));
+
+// ========== SWAGGER API DOCS ==========
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ========== SERVIR ARCHIVOS ESTÁTICOS DEL FRONTEND ==========
 const frontendPublicPath = path.join(__dirname, '..', 'frontend', 'public');

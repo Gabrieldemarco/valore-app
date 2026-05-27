@@ -9,6 +9,14 @@ export default defineConfig({
   build: {
     outDir: '../frontend/dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          calendar: ['@fullcalendar/react', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/list'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

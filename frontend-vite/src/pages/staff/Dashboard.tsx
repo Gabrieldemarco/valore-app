@@ -8,7 +8,6 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
-import '../../styles/global-premium.css';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
 
@@ -136,11 +135,11 @@ export default function StaffDashboard() {
     if (!staffToken) navigate('/staff/login');
   }, [staffToken, navigate]);
 
-  const addToast = (message: string, type: 'success' | 'error') => {
+  const addToast = useCallback((message: string, type: 'success' | 'error') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-  };
+  }, []);
 
   const loadAppointments = useCallback(async () => {
     try {
@@ -176,14 +175,14 @@ export default function StaffDashboard() {
     } catch { addToast('Error al cargar clientes', 'error'); } finally { setClientsLoading(false); }
   }, []);
 
-  const openClientHistory = async (client: ClientSummary) => {
+  const openClientHistory = useCallback(async (client: ClientSummary) => {
     setSelectedClient(client);
     setClientHistoryLoading(true);
     try {
       const data = await api.get<{ appointments: Appointment[] }>(`/api/tenant/clients/${encodeURIComponent(client.client_phone)}/appointments`);
       setClientHistory(data.appointments);
     } catch { addToast('Error al cargar historial', 'error'); } finally { setClientHistoryLoading(false); }
-  };
+  }, [addToast]);
 
   const saveNewAppointment = async () => {
     if (!newApptForm.clientName || !newApptForm.clientPhone || !newApptForm.serviceId || !newApptForm.appointmentDate || !newApptForm.appointmentTime) {
@@ -259,7 +258,7 @@ export default function StaffDashboard() {
     return () => bc.close();
   }, []);
 
-  const updateStatus = async (id: number, status: string) => {
+  const updateStatus = useCallback(async (id: number, status: string) => {
     const labels: Record<string, string> = { completed: 'completar', cancelled: 'cancelar', confirmed: 'confirmar' };
     if (!confirm(`¿Estás seguro de ${labels[status] || status} este turno?`)) return;
     try {
@@ -268,30 +267,30 @@ export default function StaffDashboard() {
       loadAppointments();
       try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch {}
     } catch { addToast('Error al actualizar', 'error'); }
-  };
+  }, [addToast, loadAppointments]);
 
-  const saveSettings = async () => {
+  const saveSettings = useCallback(async () => {
     try {
       await api.put('/api/tenant/settings', { ...settings, opening_hours: openingHours });
       addToast('Configuración guardada', 'success');
     } catch { addToast('Error al guardar', 'error'); }
-  };
+  }, [addToast, settings, openingHours]);
 
-  const subscribeToPlan = async (planName: string) => {
+  const subscribeToPlan = useCallback(async (planName: string) => {
     try {
       const res = await api.post<{ init_point: string }>('/api/tenant/subscribe', { plan: planName });
       if (res.init_point) window.location.href = res.init_point;
     } catch { addToast('Error al procesar suscripción', 'error'); }
-  };
+  }, [addToast]);
 
-  const handlePayInvoice = async (invoiceId: number) => {
+  const handlePayInvoice = useCallback(async (invoiceId: number) => {
     try {
       const res = await api.post<{ init_point: string }>(`/api/tenant/invoices/${invoiceId}/pay`);
       if (res.init_point) window.location.href = res.init_point;
     } catch { addToast('Error al procesar pago', 'error'); }
-  };
+  }, [addToast]);
 
-  const exportToCSV = () => {
+  const exportToCSV = useCallback(() => {
     if (appointments.length === 0) return;
     const headers = ['Cliente', 'Servicio', 'Staff', 'Fecha', 'Hora', 'Estado', 'Teléfono'];
     const rows = appointments.map(a => [a.client_name, a.service_name || a.service || '', a.staff_name || '', a.date, a.time, a.status, a.phone || a.client_phone || '']);
@@ -301,9 +300,9 @@ export default function StaffDashboard() {
     const a = document.createElement('a');
     a.href = url; a.download = `turnos-${filterDate}.csv`; a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [appointments, filterDate]);
 
-  const handleLogout = () => { logout(); navigate('/staff/login'); };
+  const handleLogout = useCallback(() => { logout(); navigate('/staff/login'); }, [logout, navigate]);
 
   const getStatusBadge = (status: string) => {
     const cls = status === 'confirmed' ? 'dash-status-confirmed'

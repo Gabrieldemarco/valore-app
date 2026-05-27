@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import '../../styles/global-premium.css';
+
 import '../../styles/auth.css';
 
 export default function StaffLogin() {

@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import '../../styles/global-premium.css';
 import '../../styles/index.css';
 
 interface Salon {
@@ -85,28 +84,28 @@ export default function PublicIndex() {
 
   useEffect(() => { filterSalons(); }, [filterSalons]);
 
-  const handleGenderFilter = (filter: string) => {
+  const handleGenderFilter = useCallback((filter: string) => {
     setCurrentGenderFilter(filter);
-  };
+  }, []);
 
-  const selectGenderFromHero = (filter: string) => {
+  const selectGenderFromHero = useCallback((filter: string) => {
     setCurrentGenderFilter(filter);
     document.getElementById('salons')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const scrollToSalon = (idx: number) => {
+  const scrollToSalon = useCallback((idx: number) => {
     if (!gridRef.current) return;
     const cards = gridRef.current.querySelectorAll<HTMLElement>('.salon-link');
     if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
-  };
+  }, []);
 
-  const getDotCount = () => {
-    if (!gridRef.current) return filtered.length;
+  const dotCount = useMemo(() => {
+    if (!gridRef.current) return Math.min(filtered.length, 10);
     const cardWidth = gridRef.current.querySelector<HTMLElement>('.salon-link')?.offsetWidth || 350;
-    const containerWidth = gridRef.current.offsetWidth;
+    const containerWidth = gridRef.current.offsetWidth || 1200;
     const visible = Math.max(1, Math.floor(containerWidth / cardWidth));
     return Math.max(0, Math.ceil(filtered.length / visible));
-  };
+  }, [filtered.length]);
 
   return (
     <>
@@ -216,7 +215,7 @@ export default function PublicIndex() {
                     <div className="salon-card glass-panel">
                       <div className="salon-image-wrapper">
                         {imageUrl
-                          ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} />
+                          ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />
                           : <div className="salon-image-fallback"><span className="salon-initials">{getInitials(salon.business_name)}</span></div>
                         }
                         <span className="salon-badge">
@@ -257,7 +256,7 @@ export default function PublicIndex() {
 
         {!loading && !error && filtered.length > 0 && (
           <div className="slider-pagination-dots" id="sliderDots">
-            {Array.from({ length: getDotCount() }).map((_, idx) => (
+            {Array.from({ length: dotCount }).map((_, idx) => (
               <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx)}></span>
             ))}
           </div>

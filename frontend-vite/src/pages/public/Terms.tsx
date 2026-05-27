@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import '../../styles/global-premium.css';
+
 
 const TABS = ['Términos y Condiciones', 'Política de Privacidad', 'Política de Cancelación'] as const;
 type Tab = typeof TABS[number];

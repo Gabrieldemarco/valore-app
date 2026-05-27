@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import '../../styles/global-premium.css';
 import '../../styles/landing.css';
 
 interface TenantData {
