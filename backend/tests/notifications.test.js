@@ -98,7 +98,7 @@ describe('notifyStaff', () => {
   test('salta cuando no hay notification_email', async () => {
     const result = await notifyStaff(mockAppointment, { ...mockTenant, notification_email: null });
     expect(result.success).toBe(true);
-    expect(result.skipped).toBe('No notification email configured');
+    expect(result.skipped).toBe('No recipients configured');
   });
 
   test('simula cuando no hay SMTP_USER', async () => {

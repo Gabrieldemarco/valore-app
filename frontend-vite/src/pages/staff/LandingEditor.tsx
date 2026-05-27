@@ -135,7 +135,7 @@ export default function LandingEditor() {
             ? JSON.parse(data.tenant.opening_hours)
             : data.tenant.opening_hours;
           setHours({ startHour: h.startHour ?? 9, endHour: h.endHour ?? 19, workDays: h.workDays ?? [1, 2, 3, 4, 5] });
-        } catch { /* ignore */ }
+        } catch { console.warn('Error al parsear opening_hours') }
       }
       const staffRes = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff').catch(() => ({ staff: [] }));
       setStaffList(staffRes.staff || []);

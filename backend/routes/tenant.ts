@@ -1,11 +1,14 @@
 
 import { Router } from 'express';
+import { body } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import sanitizeHtml from 'sanitize-html';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { getOrCreateSubscriptionInvoice } from '../services/billing';
-import { authenticateStaff,
+import { sendClientConfirmation, notifyStaff, sendStaffCredentials } from '../services/notifications';
+import { validate,
+  authenticateStaff,
   checkTenantActive,
   checkTrialExpiration, } from '../middleware';
 
@@ -21,6 +24,62 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   const router = Router();
 
   // ========== APPOINTMENTS ==========
+
+  router.post('/appointments', authenticateStaff, checkTenantActive, [
+    body('clientName').trim().isLength({ min: 1, max: 100 }).withMessage('Nombre requerido').escape(),
+    body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
+    body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
+    body('serviceId').isInt({ min: 1 }).withMessage('Servicio inválido'),
+    body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
+  ], validate, async (req, res) => {
+    try {
+      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, status } = req.body;
+      if (new Date(appointmentDate) <= new Date()) {
+        return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
+      }
+      const service = await queryOne(
+        'SELECT * FROM services WHERE id = $1 AND tenant_id = $2',
+        [serviceId, req.user.tenant_id]
+      );
+      if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
+
+      const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'];
+      const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
+
+      try {
+        const result = await query(
+          `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, staffId || null, appointmentStatus]
+        );
+        const newAppointment = result.rows[0];
+
+        if (staffId) {
+          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1 AND active = true', [staffId]);
+          if (staffMember) {
+            newAppointment.staff_name = staffMember.name;
+            newAppointment.staff_email = staffMember.email;
+          }
+        }
+
+        if (appointmentStatus === 'confirmed') {
+          const tenant = await queryOne('SELECT * FROM tenants WHERE id = $1', [req.user.tenant_id]);
+          if (tenant) {
+            sendClientConfirmation(newAppointment, tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
+            notifyStaff(newAppointment, tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
+          }
+        }
+
+        res.status(201).json({ message: 'Turno creado', appointment: newAppointment });
+      } catch (dbErr: any) {
+        if (dbErr.code === '23505') return res.status(409).json({ error: 'Horario ya reservado' });
+        throw dbErr;
+      }
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al crear turno' });
+    }
+  });
 
   router.get('/appointments', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
     try {
@@ -424,6 +483,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         [req.user.tenant_id, email, hashedPassword, name, role, specialties, photo_url, bio]
       );
 
+      const tenant = await queryOne('SELECT id, business_name FROM tenants WHERE id = $1', [req.user.tenant_id]);
+      if (tenant) {
+        sendStaffCredentials({ name, email }, tempPassword, tenant).catch(e => logger.error('Error enviando credenciales', { error: e.message }));
+      }
+
       res.status(201).json({
         message: 'Peluquero creado. Compartí la contraseña temporal con el usuario de forma segura.',
         staff: result.rows[0],
@@ -458,6 +522,146 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al actualizar peluquero' });
+    }
+  });
+
+  router.delete('/tenant/staff/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        'DELETE FROM staff WHERE id = $1 AND tenant_id = $2 RETURNING id',
+        [id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquero no encontrado' });
+      res.json({ message: 'Peluquero eliminado' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar peluquero' });
+    }
+  });
+
+  // ========== SERVICES ==========
+
+  router.get('/tenant/services', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, name, duration, price, active, image FROM services WHERE tenant_id = $1 ORDER BY name',
+        [req.user.tenant_id]
+      );
+      res.json({ services: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar servicios' });
+    }
+  });
+
+  router.post('/tenant/services', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { name, duration, price, image } = req.body;
+      if (!name || !duration || price === undefined) {
+        return res.status(400).json({ error: 'Nombre, duración y precio son obligatorios' });
+      }
+      const existing = await queryOne(
+        'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
+        [name, req.user.tenant_id]
+      );
+      if (existing) return res.status(409).json({ error: 'Ya existe un servicio con ese nombre' });
+      const result = await query(
+        `INSERT INTO services (tenant_id, name, duration, price, active, image)
+         VALUES ($1, $2, $3, $4, true, $5) RETURNING id, name, duration, price, active, image`,
+        [req.user.tenant_id, name, parseInt(duration, 10), parseFloat(price), image || null]
+      );
+      res.status(201).json({ message: 'Servicio creado', service: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al crear servicio' });
+    }
+  });
+
+  router.put('/tenant/services/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, duration, price, active, image } = req.body;
+      if (name) {
+        const existing = await queryOne(
+          'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2 AND id != $3',
+          [name, req.user.tenant_id, id]
+        );
+        if (existing) return res.status(409).json({ error: 'Ya existe otro servicio con ese nombre' });
+      }
+      const result = await query(
+        `UPDATE services SET
+           name = COALESCE($1, name),
+           duration = COALESCE($2::INTEGER, duration),
+           price = COALESCE($3::NUMERIC, price),
+           active = COALESCE($4::BOOLEAN, active),
+           image = COALESCE($5, image)
+         WHERE id = $6 AND tenant_id = $7 RETURNING id, name, duration, price, active, image`,
+        [name, duration ? parseInt(duration, 10) : null, price !== undefined ? parseFloat(price) : null, active, image !== undefined ? image : null, id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
+      res.json({ message: 'Servicio actualizado', service: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al actualizar servicio' });
+    }
+  });
+
+  router.delete('/tenant/services/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        'DELETE FROM services WHERE id = $1 AND tenant_id = $2 RETURNING id',
+        [id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
+      res.json({ message: 'Servicio eliminado' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar servicio' });
+    }
+  });
+
+  // ========== CLIENTS ==========
+
+  router.get('/tenant/clients', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { q } = req.query;
+      let sql = `SELECT client_name, client_phone, client_email,
+                  COUNT(*) as total_appointments,
+                  MAX(appointment_date) as last_appointment,
+                  MIN(appointment_date) as first_appointment
+                FROM appointments
+                WHERE tenant_id = $1`;
+      const params = [req.user.tenant_id];
+      if (q && typeof q === 'string' && q.trim()) {
+        sql += ` AND (client_name ILIKE $${params.length + 1} OR client_phone ILIKE $${params.length + 1} OR client_email ILIKE $${params.length + 1})`;
+        params.push(`%${q.trim()}%`);
+      }
+      sql += ' GROUP BY client_name, client_phone, client_email ORDER BY last_appointment DESC';
+      const result = await query(sql, params);
+      res.json({ clients: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar clientes' });
+    }
+  });
+
+  router.get('/tenant/clients/:phone/appointments', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { phone } = req.params;
+      const result = await query(
+        `SELECT a.*, s.name as staff_name
+         FROM appointments a
+         LEFT JOIN staff s ON a.staff_id = s.id
+         WHERE a.tenant_id = $1 AND a.client_phone = $2
+         ORDER BY a.appointment_date DESC`,
+        [req.user.tenant_id, phone]
+      );
+      res.json({ appointments: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar historial' });
     }
   });
 

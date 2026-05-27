@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import '../../styles/global-premium.css';
@@ -94,6 +94,7 @@ export default function Landing() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [slots, setSlots] = useState<SlotItem[]>([]);
+  const [slotsTimeout, setSlotsTimeout] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -125,15 +126,26 @@ export default function Landing() {
       .finally(() => setLoading(false));
   }, [tenantSlug]);
 
-  useEffect(() => {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fetchSlots = useCallback(() => {
     if (!selectedDate || !selectedService) { setSlots([]); return; }
+    setSlotsTimeout(false);
     const url = selectedStaff
       ? `/p/${tenantSlug}/staff/${selectedStaff}/availability?date=${selectedDate}&serviceId=${selectedService}`
       : `/p/${tenantSlug}/availability?date=${selectedDate}&serviceId=${selectedService}`;
+    timeoutRef.current = setTimeout(() => setSlotsTimeout(true), 8000);
     api.get<{ slots: SlotItem[] }>(url)
-      .then(r => setSlots(r.slots || []))
-      .catch(() => setSlots([]));
+      .then(r => { setSlotsTimeout(false); setSlots(r.slots || []); })
+      .catch(() => { setSlotsTimeout(false); setSlots([]); console.warn('Error al cargar slots'); })
+      .finally(() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); });
   }, [selectedDate, selectedService, selectedStaff, tenantSlug]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(fetchSlots, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [fetchSlots]);
 
   const gallery: string[] = Array.isArray(tenant?.landing_gallery) ? tenant.landing_gallery as string[] : [];
   const team: TeamItem[] = staff.length > 0 ? staff : (Array.isArray(tenant?.landing_team) ? tenant.landing_team as TeamItem[] : []);
@@ -183,7 +195,7 @@ export default function Landing() {
       setErrMsg('El teléfono debe tener al menos 7 dígitos');
       return;
     }
-    const apptDate = selectedTime ? `${selectedDate}T${selectedTime}:00` : selectedDate;
+    const apptDate = selectedTime ? new Date(`${selectedDate}T${selectedTime}:00`).toISOString() : selectedDate;
     try {
       const body: Record<string, unknown> = {
         clientName,
@@ -412,10 +424,15 @@ export default function Landing() {
                   </div>
                 )}
 
-                {step === 4 && (
-                  <div className="step-content form-group">
-                    <label>Elegí un horario</label>
-                    {slots.length === 0 ? (
+                    {step === 4 && (
+                      <div className="step-content form-group">
+                        <label>Elegí un horario</label>
+                        {slotsTimeout ? (
+                          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                            <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
+                            <p>La consulta está demorando más de lo normal. <button className="btn btn-link" onClick={fetchSlots} style={{ padding: 0, margin: 0, background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Reintentar</button></p>
+                          </div>
+                        ) : slots.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                         <div style={{ fontSize: 40, marginBottom: 12 }}>🕐</div>
                         <p>No hay horarios disponibles para esta fecha</p>
@@ -533,9 +550,26 @@ export default function Landing() {
   if (loading) {
     return (
       <div className="landing-view">
-        <div className="loading">
-          <div className="loading-spinner" />
-          <p>Cargando...</p>
+        <style>{`@keyframes skel{0%{opacity:.3}50%{opacity:.6}100%{opacity:.3}}`}</style>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px' }}>
+          <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center', marginBottom: 60 }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ height: 40, width: '70%', background: 'rgba(148,163,184,0.15)', borderRadius: 8, marginBottom: 16, animation: 'skel 1.5s ease-in-out infinite' }} />
+              <div style={{ height: 20, width: '90%', background: 'rgba(148,163,184,0.1)', borderRadius: 6, marginBottom: 10, animation: 'skel 1.5s ease-in-out infinite' }} />
+              <div style={{ height: 20, width: '60%', background: 'rgba(148,163,184,0.1)', borderRadius: 6, animation: 'skel 1.5s ease-in-out infinite' }} />
+            </div>
+            <div style={{ width: '100%', maxWidth: 500, height: 320, background: 'rgba(148,163,184,0.08)', borderRadius: 16, animation: 'skel 1.5s ease-in-out infinite' }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 60 }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{ height: 180, background: 'rgba(148,163,184,0.08)', borderRadius: 12, animation: 'skel 1.5s ease-in-out infinite' }} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{ width: 160, height: 180, background: 'rgba(148,163,184,0.08)', borderRadius: 12, animation: 'skel 1.5s ease-in-out infinite' }} />
+            ))}
+          </div>
         </div>
       </div>
     );

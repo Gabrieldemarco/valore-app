@@ -91,6 +91,9 @@ export default function(generateAvailableSlots, appointmentLimiter) {
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
   ], validate, async (req, res) => {
     try {
+      if (new Date(req.body.appointmentDate) <= new Date()) {
+        return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
+      }
       if (req.tenant.plan === 'free' && req.tenant.trial_end_date && new Date() > new Date(req.tenant.trial_end_date)) {
         return res.status(403).json({ error: 'El período de prueba ha finalizado. No se pueden reservar nuevos turnos.' });
       }
@@ -117,8 +120,11 @@ export default function(generateAvailableSlots, appointmentLimiter) {
         const newAppointment = result.rows[0];
 
         if (staffId) {
-          const staffMember = await queryOne('SELECT name FROM staff WHERE id = $1', [staffId]);
-          if (staffMember) newAppointment.staff_name = staffMember.name;
+          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1 AND active = true', [staffId]);
+          if (staffMember) {
+            newAppointment.staff_name = staffMember.name;
+            newAppointment.staff_email = staffMember.email;
+          }
         }
 
         sendClientConfirmation(newAppointment, req.tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));

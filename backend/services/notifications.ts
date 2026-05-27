@@ -91,8 +91,12 @@ async function sendClientConfirmation(appointment, tenant) {
  * @returns {Promise<{success: boolean, messageId?: string, skipped?: string, simulated?: boolean, error?: string}>}
  */
 async function notifyStaff(appointment, tenant) {
-  const recipient = tenant.notification_email;
-  if (!recipient) return { success: true, skipped: 'No notification email configured' };
+  const recipients = [];
+  if (tenant.notification_email) recipients.push(tenant.notification_email);
+  if (appointment.staff_email && appointment.staff_email !== tenant.notification_email) {
+    recipients.push(appointment.staff_email);
+  }
+  if (recipients.length === 0) return { success: true, skipped: 'No recipients configured' };
 
   const date = new Date(appointment.appointment_date);
 
@@ -114,28 +118,32 @@ async function notifyStaff(appointment, tenant) {
   `;
 
   try {
-    // ✅ CORREGIDO: Usar SMTP_USER en lugar de EMAIL_USER
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 [SIMULADO] Alerta a staff:', recipient);
+      console.log('📧 [SIMULADO] Alerta a staff:', recipients.join(', '));
       console.log('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
       return { success: true, simulated: true };
     }
 
     const transporter = createEmailTransporter();
 
-    const info = await transporter.sendMail({
-      from: `"Sistema Turnos" <${process.env.SMTP_USER}>`,
-      to: recipient,
-      subject: `📅 Nuevo turno: ${appointment.client_name}`,
-      html
-    });
-
-    console.log('✅ Alerta a staff enviada:', info.messageId);
+    for (const recipient of recipients) {
+      try {
+        const info = await transporter.sendMail({
+          from: `"Sistema Turnos" <${process.env.SMTP_USER}>`,
+          to: recipient,
+          subject: `📅 Nuevo turno: ${appointment.client_name}`,
+          html
+        });
+        console.log('✅ Alerta enviada a:', recipient, info.messageId);
+      } catch (err: any) {
+        logger.error('❌ Error alertando a', recipient, err.message);
+      }
+    }
   } catch (error: any) {
-    logger.error('❌ Error alertando staff:', error.message);
+    logger.error('❌ Error configurando transporte:', error.message);
   }
 
-  // WhatsApp al staff
+  // WhatsApp al staff (solo al número general del negocio)
   if (tenant.notification_whatsapp) {
     const staffBody = `📅 Nuevo turno - ${tenant.business_name}\n👤 ${appointment.client_name}\n📅 ${date.toLocaleDateString('es-UY')}\n🕐 ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📞 ${appointment.client_phone}${appointment.notes ? `\n📝 ${appointment.notes}` : ''}`;
     await sendWhatsApp(tenant.notification_whatsapp, staffBody);
@@ -144,5 +152,43 @@ async function notifyStaff(appointment, tenant) {
   return { success: true };
 }
 
+// ========== ENVIAR CREDENCIALES A NUEVO STAFF ==========
+async function sendStaffCredentials(staff: { name: string; email: string }, tempPassword: string, tenant: { business_name: string }) {
+  const loginUrl = `${process.env.BASE_URL || 'https://app.velore.com.uy'}/staff/login`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+      <h2 style="color:#10b981">👋 Bienvenido a ${tenant.business_name}</h2>
+      <p>Hola <strong>${staff.name}</strong>,</p>
+      <p>Se ha creado tu cuenta de acceso al sistema de turnos.</p>
+      <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
+        <p><strong>🔑 Contraseña temporal:</strong> <code style="background:#e5e7eb;padding:4px 8px;border-radius:4px;font-size:16px">${tempPassword}</code></p>
+        <p style="margin-top:16px"><a href="${loginUrl}" style="background:#10b981;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Iniciar sesión</a></p>
+        <p style="margin-top:12px;font-size:13px;color:#6b7280">O copiá este enlace en tu navegador: <br><a href="${loginUrl}" style="color:#10b981">${loginUrl}</a></p>
+      </div>
+      <p style="color:#6b7280;font-size:13px">Te recomendamos cambiar la contraseña después de iniciar sesión.</p>
+    </div>
+  `;
+
+  try {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log('📧 [SIMULADO] Credenciales enviadas a:', staff.email);
+      console.log('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
+      return { success: true, simulated: true };
+    }
+    const transporter = createEmailTransporter();
+    await transporter.sendMail({
+      from: `"${tenant.business_name}" <${process.env.SMTP_USER}>`,
+      to: staff.email,
+      subject: `👋 Bienvenido a ${tenant.business_name} - Tus credenciales`,
+      html
+    });
+    console.log('✅ Credenciales enviadas a:', staff.email);
+    return { success: true };
+  } catch (error: any) {
+    logger.error('❌ Error enviando credenciales a', staff.email, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 // ========== EXPORTAR ==========
-export { sendClientConfirmation, notifyStaff, createEmailTransporter };
+export { sendClientConfirmation, notifyStaff, sendStaffCredentials, createEmailTransporter };
