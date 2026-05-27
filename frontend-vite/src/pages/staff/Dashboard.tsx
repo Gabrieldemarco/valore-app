@@ -9,6 +9,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
+import SalonQR from '../../components/SalonQR';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
 
@@ -99,6 +100,7 @@ export default function StaffDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const [showSettings, setShowSettings] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [settings, setSettings] = useState<TenantSettings>({ business_name: '', business_phone: '', business_address: '', notification_email: '', notification_whatsapp: '' });
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -459,6 +461,7 @@ export default function StaffDashboard() {
           )}
           <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>Landing Page</Link>
           {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>👁️ Ver Landing</a>}
+          {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 14px', textDecoration: 'none' }}>📱 QR</button>}
           <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 16px', fontWeight: 500, borderRadius: 8 }}>Configuración</button>
           <span className="dash-user-name">{staffName || 'Cargando...'}</span>
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>Salir</button>
@@ -1290,6 +1293,7 @@ export default function StaffDashboard() {
           </div>
         </div>
       )}
+      {showQR && settings.slug && <SalonQR slug={settings.slug} onClose={() => setShowQR(false)} />}
     </div>
   );
 }
