@@ -1,8 +1,3 @@
-const { sendClientConfirmation, notifyStaff } = require('../services/notifications');
-
-process.env.SMTP_USER = 'test@velore.com';
-process.env.SMTP_PASS = 'secret';
-
 jest.mock('../database', () => ({
   queryOne: jest.fn().mockResolvedValue(null),
   query: jest.fn().mockResolvedValue({ rows: [] }),
@@ -15,6 +10,11 @@ jest.mock('nodemailer', () => ({
     sendMail: jest.fn().mockResolvedValue({ messageId: 'mock-id-123' }),
   })),
 }));
+
+process.env.SMTP_USER = 'test@velore.com';
+process.env.SMTP_PASS = 'secret';
+
+const { sendClientConfirmation, notifyStaff } = require('../services/notifications');
 
 const mockTenant = {
   id: 1,

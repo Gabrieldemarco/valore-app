@@ -1,4 +1,4 @@
-const { sendWhatsApp, ensureWhatsAppPrefix } = require('../services/twilio');
+let sendWhatsApp, ensureWhatsAppPrefix;
 
 jest.mock('../database', () => ({
   queryOne: jest.fn().mockResolvedValue(null),
@@ -12,13 +12,20 @@ jest.mock('twilio', () => jest.fn(() => ({
   messages: { create: mockCreate }
 })));
 
+beforeAll(() => {
+  jest.resetModules();
+  const twilio = require('../services/twilio');
+  sendWhatsApp = twilio.sendWhatsApp;
+  ensureWhatsAppPrefix = twilio.ensureWhatsAppPrefix;
+});
+
 describe('ensureWhatsAppPrefix', () => {
   test('agrega prefix si no tiene', () => {
-    expect(ensureWhatsAppPrefix('59899123456')).toBe('whatsapp:59899123456');
+    expect(ensureWhatsAppPrefix('59899123456')).toBe('whatsapp:+59899123456');
   });
 
   test('no duplica prefix', () => {
-    expect(ensureWhatsAppPrefix('whatsapp:59899123456')).toBe('whatsapp:59899123456');
+    expect(ensureWhatsAppPrefix('whatsapp:59899123456')).toBe('whatsapp:+59899123456');
   });
 
   test('limpia espacios y guiones', () => {

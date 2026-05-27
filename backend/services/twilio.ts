@@ -27,6 +27,7 @@ function normalizePhone(phone: string) {
   let cleaned = phone.replace(/[\s\-\(\)]+/g, '');
   if (cleaned.startsWith('whatsapp:')) cleaned = cleaned.slice(9);
   if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.startsWith('598')) return `+${cleaned}`;
   if (cleaned.startsWith('0')) cleaned = `598${cleaned.slice(1)}`;
   else cleaned = `598${cleaned}`;
   return `+${cleaned}`;
