@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import '../../styles/global-premium.css';
 import '../../styles/landing.css';
@@ -80,7 +80,8 @@ const DEFAULT_LAYOUT: LayoutBlock[] = [
 
 export default function Landing() {
   const [searchParams] = useSearchParams();
-  const tenantSlug = searchParams.get('tenant') || '';
+  const { slug: slugParam } = useParams();
+  const tenantSlug = slugParam || searchParams.get('tenant') || '';
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);

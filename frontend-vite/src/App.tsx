@@ -35,6 +35,7 @@ function App() {
           <Routes>
             <Route path="/" element={<PublicIndex />} />
             <Route path="/landing" element={<Landing />} />
+            <Route path="/p/:slug" element={<Landing />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/staff/login" element={<StaffLogin />} />
             <Route path="/staff/register" element={<StaffRegister />} />

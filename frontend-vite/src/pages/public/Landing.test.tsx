@@ -1,5 +1,5 @@
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Landing from './Landing';
 
@@ -45,6 +45,29 @@ function renderLanding(initialEntries = ['/?tenant=test-salon']) {
   );
 }
 
+const mockSuccess = (url: string) => {
+  if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
+  if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+};
+
+const mockSuccessWithSlots = (url: string, options?: RequestInit) => {
+  if (url.includes('/availability')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ slots: [{ time: '10:00', available: true }, { time: '11:00', available: true }] }),
+    });
+  }
+  if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
+  if (url.includes('/staff') && !url.includes('/availability')) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
+  }
+  if (url.includes('/appointments') && (!options || options.method === 'POST' || options.method === undefined)) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockFetch.mockReset();
@@ -71,11 +94,7 @@ describe('Landing', () => {
   });
 
   test('renders tenant business name after successful load', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-      if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-    });
+    mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => {
       expect(screen.getAllByText('Test Salon')[0]).toBeInTheDocument();
@@ -84,11 +103,7 @@ describe('Landing', () => {
   });
 
   test('renders services section', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-      if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-    });
+    mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => {
       expect(screen.getByText('Corte moderno')).toBeInTheDocument();
@@ -99,11 +114,7 @@ describe('Landing', () => {
   });
 
   test('renders staff selection in booking step 1', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-      if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-    });
+    mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => {
       expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument();
@@ -114,11 +125,7 @@ describe('Landing', () => {
   });
 
   test('advances to step 2 when selecting a staff member', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-      if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-    });
+    mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument());
     const anaCards = screen.getAllByText('Ana López');
@@ -134,24 +141,10 @@ describe('Landing', () => {
     let bookingCalled = false;
 
     mockFetch.mockImplementation((url: string, options?: RequestInit) => {
-      if (url.includes('/availability')) {
-        availabilityCalled = true;
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ slots: [{ time: '10:00', available: true }, { time: '11:00', available: true }] }),
-        });
-      }
-      if (url.includes('/landing')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-      }
-      if (url.includes('/staff') && !url.includes('/availability')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
-      }
-      if (url.includes('/appointments') && (!options || options.method === 'POST' || options.method === undefined)) {
-        bookingCalled = true;
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      const result = mockSuccessWithSlots(url, options);
+      if (url.includes('/availability')) availabilityCalled = true;
+      if (url.includes('/appointments')) bookingCalled = true;
+      return result;
     });
 
     renderLanding();
@@ -198,5 +191,20 @@ describe('Landing', () => {
       expect(screen.getByText('Turno reservado con éxito')).toBeInTheDocument();
     });
     expect(bookingCalled).toBe(true);
+  });
+
+  test('renders landing from /p/:slug path', async () => {
+    mockFetch.mockImplementation(mockSuccess);
+    render(
+      <MemoryRouter initialEntries={['/p/test-salon']}>
+        <Routes>
+          <Route path="/p/:slug" element={<Landing />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getAllByText('Test Salon')[0]).toBeInTheDocument();
+    });
+    expect(screen.getByText('Best salon in town')).toBeInTheDocument();
   });
 });

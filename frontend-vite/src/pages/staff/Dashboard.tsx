@@ -458,7 +458,7 @@ export default function StaffDashboard() {
             </span>
           )}
           <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>Landing Page</Link>
-          {settings.slug && <a href={`/landing?tenant=${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>👁️ Ver Landing</a>}
+          {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>👁️ Ver Landing</a>}
           <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 16px', fontWeight: 500, borderRadius: 8 }}>Configuración</button>
           <span className="dash-user-name">{staffName || 'Cargando...'}</span>
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>Salir</button>

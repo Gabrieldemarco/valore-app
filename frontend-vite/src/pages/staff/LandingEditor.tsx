@@ -104,7 +104,7 @@ export default function LandingEditor() {
 
   const updatePreview = useCallback(() => {
     if (!previewSlug || !iframeRef.current) return;
-    const url = `/landing?tenant=${previewSlug}&t=${Date.now()}`;
+    const url = `/p/${previewSlug}?t=${Date.now()}`;
     if (iframeRef.current.src !== url) {
       iframeRef.current.src = url;
     } else {

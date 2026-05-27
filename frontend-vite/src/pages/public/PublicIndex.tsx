@@ -212,7 +212,7 @@ export default function PublicIndex() {
                 const services = salon.services || ['Corte', 'Color', 'Alisado'];
                 const gender = getGenderCategory(salon);
                 return (
-                  <Link to={`/landing?tenant=${salon.slug}`} key={salon.id} className="salon-link">
+                  <Link to={`/p/${salon.slug}`} key={salon.id} className="salon-link">
                     <div className="salon-card glass-panel">
                       <div className="salon-image-wrapper">
                         {imageUrl
