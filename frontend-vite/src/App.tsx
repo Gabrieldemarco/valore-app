@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import InstallAppBanner from './components/InstallAppBanner';
 
 const PublicIndex = lazy(() => import('./pages/public/PublicIndex'));
 const Landing = lazy(() => import('./pages/public/Landing'));
@@ -35,7 +34,6 @@ function App() {
       <BrowserRouter>
         <ErrorBoundary>
         <Suspense fallback={<Loading />}>
-          <InstallAppBanner />
           <Routes>
             <Route path="/" element={<PublicIndex />} />
             <Route path="/landing" element={<Landing />} />
