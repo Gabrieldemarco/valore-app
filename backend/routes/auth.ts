@@ -137,10 +137,11 @@ export default function(loginLimiter, passwordResetLimiter) {
     }
   });
 
-  router.post('/staff/forgot-password', passwordResetLimiter, async (req, res) => {
+  router.post('/staff/forgot-password', passwordResetLimiter, [
+    body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  ], validate, async (req, res) => {
     try {
       const { email } = req.body;
-      if (!email) return res.status(400).json({ error: 'Email requerido' });
 
       const staff = await queryOne('SELECT id, email, name FROM staff WHERE email = $1', [email]);
 
@@ -184,15 +185,12 @@ export default function(loginLimiter, passwordResetLimiter) {
     }
   });
 
-  router.post('/staff/reset-password', passwordResetLimiter, async (req, res) => {
+  router.post('/staff/reset-password', passwordResetLimiter, [
+    body('token').notEmpty().withMessage('Token requerido'),
+    body('newPassword').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+  ], validate, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
-      if (!token || !newPassword) {
-        return res.status(400).json({ error: 'Faltan datos' });
-      }
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-      }
 
       const staff = await queryOne(
         `SELECT id, email, name FROM staff WHERE reset_token = $1 AND reset_token_expires > NOW()`,

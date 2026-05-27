@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://velore.uy/sitemap.xml

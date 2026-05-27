@@ -2,8 +2,9 @@
 import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { body } from 'express-validator';
 import { query } from '../database';
-import { authenticate, authenticateStaff, checkTenantActive, checkTrialExpiration } from '../middleware';
+import { authenticate, authenticateStaff, checkTenantActive, checkTrialExpiration, validate } from '../middleware';
 import logger from '../services/logger';
 
 /**
@@ -22,10 +23,12 @@ export default function(apiLimiter) {
     } catch (err: any) { logger.error('Error al cargar agenda', { error: err.message }); res.status(500).json({ error: 'Error al cargar agenda' }); }
   });
 
-  router.post('/agenda', authenticate(['client']), async (req, res) => {
+  router.post('/agenda', authenticate(['client']), [
+    body('titulo').trim().isLength({ min: 1, max: 200 }).withMessage('Título requerido').escape(),
+    body('fecha').isISO8601().withMessage('Fecha inválida'),
+  ], validate, async (req, res) => {
     try {
       const { titulo, fecha, descripcion } = req.body;
-      if (!titulo || !fecha) return res.status(400).json({ error: 'Faltan datos' });
       const result = await query(
         'INSERT INTO personal_agenda (user_id, titulo, fecha, descripcion) VALUES ($1, $2, $3, $4) RETURNING *',
         [req.user.id, titulo, fecha, descripcion || null]
@@ -34,7 +37,10 @@ export default function(apiLimiter) {
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al crear evento' }); }
   });
 
-  router.put('/agenda/:id', authenticate(['client']), async (req, res) => {
+  router.put('/agenda/:id', authenticate(['client']), [
+    body('titulo').optional().trim().isLength({ min: 1, max: 200 }).escape(),
+    body('fecha').optional().isISO8601().withMessage('Fecha inválida'),
+  ], validate, async (req, res) => {
     try {
       const { titulo, fecha, descripcion } = req.body;
       const result = await query(
@@ -77,10 +83,12 @@ export default function(apiLimiter) {
   });
 
   // ========== UPLOAD DE IMÁGENES ==========
-  router.post('/upload-image', authenticateStaff, checkTenantActive, checkTrialExpiration, apiLimiter, async (req, res) => {
+  router.post('/upload-image', authenticateStaff, checkTenantActive, checkTrialExpiration, apiLimiter, [
+    body('image').notEmpty().withMessage('Imagen requerida'),
+    body('filename').notEmpty().withMessage('Nombre de archivo requerido'),
+  ], validate, async (req, res) => {
     try {
       const { image, filename } = req.body;
-      if (!image || !filename) return res.status(400).json({ error: 'Faltan datos' });
 
       const matches = image.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
       if (!matches) return res.status(400).json({ error: 'Formato de imagen inválido' });

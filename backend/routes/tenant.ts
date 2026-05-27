@@ -213,7 +213,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.post('/tenant/subscribe', authenticateStaff, async (req, res) => {
+  router.post('/tenant/subscribe', authenticateStaff, [
+    body('plan').optional().isIn(['pro', 'enterprise']).withMessage('Plan no válido'),
+  ], validate, async (req, res) => {
     try {
       if (!process.env.MP_ACCESS_TOKEN) {
         return res.status(503).json({ error: 'Mercado Pago no está configurado. Contactá al administrador.' });
@@ -275,10 +277,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.post('/tenant/invoices/:id/pay', authenticateStaff, async (req, res) => {
+  router.post('/tenant/invoices/:id/pay', authenticateStaff, [
+    body('id').isInt().withMessage('invoiceId inválido'),
+  ], validate, async (req, res) => {
     try {
       const invoiceId = parseInt(req.params.id, 10);
-      if (!invoiceId) return res.status(400).json({ error: 'invoiceId inválido' });
 
       const invoice = await queryOne('SELECT * FROM invoices WHERE id = $1 AND tenant_id = $2', [invoiceId, req.user.tenant_id]);
       if (!invoice) return res.status(404).json({ error: 'Factura no encontrada' });
@@ -305,7 +308,14 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.put('/tenant/settings', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
+  const settingsValidation = [
+    body('business_name').optional().trim().isLength({ min: 2, max: 100 }).escape(),
+    body('notification_email').optional().isEmail().normalizeEmail(),
+    body('brand_primary_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('brand_secondary_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+  ];
+
+  router.put('/tenant/settings', authenticateStaff, checkTenantActive, checkTrialExpiration, settingsValidation, validate, async (req, res) => {
     try {
       const {
         business_name, business_address, business_phone,
@@ -462,11 +472,15 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.post('/tenant/staff', authenticateStaff, checkTenantActive, async (req, res) => {
+  const createStaffValidation = [
+    body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
+    body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+    body('role').optional().isIn(['staff', 'admin']).withMessage('Rol inválido'),
+  ];
+
+  router.post('/tenant/staff', authenticateStaff, checkTenantActive, createStaffValidation, validate, async (req, res) => {
     try {
       const { name, email, role = 'staff', specialties = [], photo_url, bio } = req.body;
-
-      if (!name || !email) return res.status(400).json({ error: 'Nombre y email son obligatorios' });
 
       const exists = await queryOne(
         'SELECT id FROM staff WHERE email = $1 AND tenant_id = $2',
@@ -499,7 +513,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.put('/tenant/staff/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+  const updateStaffValidation = [
+    body('name').optional().trim().isLength({ min: 2, max: 100 }).escape(),
+  ];
+
+  router.put('/tenant/staff/:id', authenticateStaff, checkTenantActive, updateStaffValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, specialties, photo_url, bio, individual_hours, active } = req.body;
@@ -555,12 +573,15 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.post('/tenant/services', authenticateStaff, checkTenantActive, async (req, res) => {
+  const createServiceValidation = [
+    body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Nombre requerido').escape(),
+    body('duration').isInt({ min: 1 }).withMessage('Duración debe ser un número positivo'),
+    body('price').isFloat({ min: 0 }).withMessage('Precio debe ser un número válido'),
+  ];
+
+  router.post('/tenant/services', authenticateStaff, checkTenantActive, createServiceValidation, validate, async (req, res) => {
     try {
       const { name, duration, price, image } = req.body;
-      if (!name || !duration || price === undefined) {
-        return res.status(400).json({ error: 'Nombre, duración y precio son obligatorios' });
-      }
       const existing = await queryOne(
         'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
         [name, req.user.tenant_id]
@@ -578,7 +599,13 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.put('/tenant/services/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+  const updateServiceValidation = [
+    body('name').optional().trim().isLength({ min: 1, max: 100 }).escape(),
+    body('duration').optional().isInt({ min: 1 }),
+    body('price').optional().isFloat({ min: 0 }),
+  ];
+
+  router.put('/tenant/services/:id', authenticateStaff, checkTenantActive, updateServiceValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, duration, price, active, image } = req.body;

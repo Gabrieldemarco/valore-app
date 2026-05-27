@@ -151,7 +151,7 @@ export default function PublicIndex() {
           <p>Encontrá tu próximo turno en segundos.</p>
           <div className="search-box">
             <input type="text" placeholder="Buscar por nombre o ubicación..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            <button className="btn btn-primary" onClick={filterSalons}>Buscar ❯</button>
+            <button className="btn btn-primary">Buscar ❯</button>
           </div>
           <div className="gender-filter-bar">
             {[

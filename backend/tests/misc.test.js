@@ -131,7 +131,7 @@ describe('Misc Routes', () => {
         .set(staffAuth())
         .send({});
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Faltan');
+      expect(res.body.errors || res.body.error).toBeTruthy();
     });
 
     it('rechaza formato inválido', async () => {

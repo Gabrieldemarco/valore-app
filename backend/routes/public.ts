@@ -257,7 +257,10 @@ export default function(generateAvailableSlots, appointmentLimiter) {
   });
 
   // PUT landing config
-  router.put('/:slug/landing', identifyTenant, authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
+  router.put('/:slug/landing', identifyTenant, authenticateStaff, checkTenantActive, checkTrialExpiration, [
+    body('landing_description').optional().trim().escape(),
+    body('landing_custom_css').optional().trim(),
+  ], validate, async (req, res) => {
     try {
       if (req.user.tenant_id !== req.tenant.id) return res.status(403).json({ error: 'Acceso denegado' });
       const {

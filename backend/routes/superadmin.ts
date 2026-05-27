@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
-import { authenticateSuperAdmin } from '../middleware';
+import { authenticateSuperAdmin, validate } from '../middleware';
+import { body } from 'express-validator';
 import { activateTenantFromPaidInvoice } from '../services/billing';
 
 /**
@@ -16,10 +17,14 @@ import { activateTenantFromPaidInvoice } from '../services/billing';
 export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) {
   const router = Router();
 
-  router.post('/super-admin/login', loginLimiter, async (req, res) => {
+  const superAdminLoginValidation = [
+    body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+    body('password').notEmpty().withMessage('Contraseña requerida'),
+  ];
+
+  router.post('/super-admin/login', loginLimiter, superAdminLoginValidation, validate, async (req, res) => {
     try {
       const { email, password } = req.body;
-      if (!email || !password) return res.status(400).json({ error: 'Faltan credenciales' });
       const admin = await queryOne('SELECT * FROM super_admins WHERE email = $1', [email]);
       if (!admin) return res.status(400).json({ error: 'Credenciales inválidas' });
       const valid = await bcrypt.compare(password, admin.password);
@@ -124,8 +129,8 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
       const tenant = await queryOne('SELECT * FROM tenants WHERE id = $1', [id]);
       if (!tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
       const result = await query(
-        `UPDATE tenants SET plan = 'free', status = 'active', trial_start_date = NOW(), trial_end_date = NOW() + INTERVAL '${trialDays} days', subscription_status = NULL, updated_at = NOW() WHERE id = $1 RETURNING *`,
-        [id]
+        `UPDATE tenants SET plan = 'free', status = 'active', trial_start_date = NOW(), trial_end_date = NOW() + $1::interval, subscription_status = NULL, updated_at = NOW() WHERE id = $2 RETURNING *`,
+        [`${trialDays} days`, id]
       );
       logger.info(`Tenant ${id} (${tenant.business_name}) puesto en trial por ${trialDays} días por superadmin`);
       res.json({ message: `Cuenta puesta en trial por ${trialDays} días`, tenant: result.rows[0] });
@@ -147,8 +152,8 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
         updateParams = [id];
       } else {
         const extensionDays = parseInt(days) || 15;
-        updateSql = `UPDATE tenants SET status = 'active', trial_end_date = NOW() + INTERVAL '${extensionDays} days', updated_at = NOW() WHERE id = $1 RETURNING *`;
-        updateParams = [id];
+        updateSql = `UPDATE tenants SET status = 'active', trial_end_date = NOW() + $1::interval, updated_at = NOW() WHERE id = $2 RETURNING *`;
+        updateParams = [`${extensionDays} days`, id];
       }
 
       const result = await query(updateSql, updateParams);
