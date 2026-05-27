@@ -5,7 +5,7 @@ import { api } from '../../api/client';
 import '../../styles/auth.css';
 
 export default function StaffRegister() {
-  const [form, setForm] = useState({ business_name: '', email: '', password: '', phone: '', address: '' });
+  const [form, setForm] = useState({ businessName: '', email: '', password: '', phone: '', address: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function StaffRegister() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nombre de la Peluquería</label>
-            <input name="business_name" value={form.business_name} onChange={handleChange} className="glass-input" required placeholder="Ej: Estilo Único" />
+            <input name="businessName" value={form.businessName} onChange={handleChange} className="glass-input" required placeholder="Ej: Estilo Único" />
           </div>
 
           <div className="form-group">

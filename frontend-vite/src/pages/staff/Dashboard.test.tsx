@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, expect, beforeEach, vi } from 'vitest';
 import StaffDashboard from './Dashboard';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Mock } from 'vitest';
@@ -71,7 +71,7 @@ const mockAppointments = {
 };
 
 function setupFetchResponses() {
-  mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+  mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/api/tenant/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantSettings) });
     if (u.includes('/api/tenant/plan')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPlan) });
@@ -193,7 +193,7 @@ describe('StaffDashboard', () => {
 
   test('paginates appointments', async () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
-    mockFetch.mockImplementation((url: string) => {
+    mockFetch.mockImplementation((url: string | URL) => {
       const u = typeof url === 'string' ? url : url.toString();
       if (u.includes('/api/tenant/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantSettings) });
       if (u.includes('/api/tenant/plan')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPlan) });

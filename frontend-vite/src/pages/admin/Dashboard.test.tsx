@@ -43,7 +43,7 @@ const mockPayments = { payments: [
 ]};
 
 function setupFetch() {
-  mockFetch.mockImplementation((url: string) => {
+  mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/stats/billing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) });
     if (u.includes('/api/super-admin/tenants') && u.match(/\/\d+$/)) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantDetail) });

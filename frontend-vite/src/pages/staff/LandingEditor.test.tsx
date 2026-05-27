@@ -37,7 +37,7 @@ const mockStaffList = { staff: [
 ]};
 
 function setupFetch() {
-  mockFetch.mockImplementation((url: string) => {
+  mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/api/tenant/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantData) });
     if (u.includes('/api/tenant/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaffList) });

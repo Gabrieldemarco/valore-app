@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, expect, beforeEach, vi } from 'vitest';
 import Landing from './Landing';
 
 const mockFetch = vi.fn();
@@ -45,24 +45,26 @@ function renderLanding(initialEntries = ['/?tenant=test-salon']) {
   );
 }
 
-const mockSuccess = (url: string) => {
-  if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-  if (url.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
+const mockSuccess = (url: string | URL) => {
+  const u = typeof url === 'string' ? url : url.toString();
+  if (u.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
+  if (u.includes('/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
   return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
 };
 
-const mockSuccessWithSlots = (url: string, options?: RequestInit) => {
-  if (url.includes('/availability')) {
+const mockSuccessWithSlots = (url: string | URL, options?: RequestInit) => {
+  const u = typeof url === 'string' ? url : url.toString();
+  if (u.includes('/availability')) {
     return Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ slots: [{ time: '10:00', available: true }, { time: '11:00', available: true }] }),
     });
   }
-  if (url.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
-  if (url.includes('/staff') && !url.includes('/availability')) {
+  if (u.includes('/landing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantLanding) });
+  if (u.includes('/staff') && !u.includes('/availability')) {
     return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaff) });
   }
-  if (url.includes('/appointments') && (!options || options.method === 'POST' || options.method === undefined)) {
+  if (u.includes('/appointments') && (!options || options.method === 'POST' || options.method === undefined)) {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
   }
   return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
@@ -137,13 +139,11 @@ describe('Landing', () => {
   });
 
   test('submits booking form and shows success message', async () => {
-    let availabilityCalled = false;
     let bookingCalled = false;
 
-    mockFetch.mockImplementation((url: string, options?: RequestInit) => {
-      const result = mockSuccessWithSlots(url, options);
-      if (url.includes('/availability')) availabilityCalled = true;
-      if (url.includes('/appointments')) bookingCalled = true;
+    mockFetch.mockImplementation((url: string | URL, options?: RequestInit) => {
+      const result = mockSuccessWithSlots(typeof url === 'string' ? url : url.toString(), options);
+      if (String(url).includes('/appointments')) bookingCalled = true;
       return result;
     });
 
