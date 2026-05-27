@@ -16,94 +16,77 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      .install-banner{position:fixed;top:0;left:0;right:0;z-index:99999;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:rgba(12,12,15,0.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(197,168,128,0.12);font-family:'Outfit',sans-serif;font-size:14px;color:#f4f4f5;animation:slideDown .3s ease-out}
-      @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-      .install-banner-text{flex:1}
-      .install-banner-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border:none;border-radius:8px;background:#c5a880;color:#0a0a0c;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
-      .install-banner-btn:hover{background:#d5be9b}
-      .install-banner-actions{display:flex;align-items:center;gap:8px}
-      .install-banner-close{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:none;border-radius:50%;background:transparent;color:#a1a1aa;font-size:16px;cursor:pointer}
-      .install-banner-close:hover{background:rgba(255,255,255,0.08);color:#f4f4f5}
+      #install-banner{display:flex;position:fixed;top:0;left:0;right:0;z-index:99999;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:#0c0c0f;border-bottom:1px solid rgba(197,168,128,0.15);font-family:Outfit,sans-serif;font-size:14px;color:#f4f4f5}
+      #install-banner.ib-hidden{display:none}
+      .ib-text{flex:1}
+      .ib-btn{display:inline-flex;align-items:center;padding:8px 20px;border:none;border-radius:8px;background:#c5a880;color:#0a0a0c;font-family:Outfit,sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+      .ib-btn:hover{background:#d5be9b}
+      .ib-actions{display:flex;align-items:center;gap:8px}
+      .ib-close{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:none;border-radius:50%;background:transparent;color:#a1a1aa;font-size:16px;cursor:pointer}
+      .ib-close:hover{background:rgba(255,255,255,0.08);color:#f4f4f5}
     </style>
   </head>
   <body class="fade-in">
-    <div id="install-banner" class="install-banner">
-      <span id="install-banner-text" class="install-banner-text"></span>
-      <div id="install-banner-actions" class="install-banner-actions">
-        <button id="install-banner-btn" class="install-banner-btn" style="display:none">Instalar app</button>
-        <button id="install-banner-close" class="install-banner-close" aria-label="Cerrar">✕</button>
+    <div id="install-banner">
+      <span id="ib-text" class="ib-text">📲 Instalá Veloré en tu celular para una experiencia más rápida</span>
+      <div class="ib-actions">
+        <button id="ib-btn" class="ib-btn" style="display:none">Instalar app</button>
+        <button id="ib-close" class="ib-close" aria-label="Cerrar">✕</button>
       </div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      (function() {
-        var banner = document.getElementById('install-banner');
-        var text = document.getElementById('install-banner-text');
-        var btn = document.getElementById('install-banner-btn');
-        var close = document.getElementById('install-banner-close');
-        var promptEvent = null;
+      try {
+        (function() {
+          var b = document.getElementById('install-banner');
+          var t = document.getElementById('ib-text');
+          var btn = document.getElementById('ib-btn');
+          var cls = document.getElementById('ib-close');
+          var pe = null;
 
-        if (!banner) return;
+          if (!b||!t||!cls) return;
 
-        function isStandalone() {
-          return window.matchMedia('(display-mode: standalone)').matches ||
-                 window.matchMedia('(display-mode: fullscreen)').matches ||
-                 window.navigator.standalone === true;
-        }
+          function hide() { b.classList.add('ib-hidden'); }
 
-        function isIOS() {
-          return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        }
+          if (window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches||window.navigator.standalone===true) { hide(); return; }
 
-        if (isStandalone()) { banner.style.display = 'none'; return; }
+          var ss;
+          try { ss = sessionStorage; } catch(e) { ss = null; }
+          if (ss && ss.getItem('ib')==='1') { hide(); return; }
 
-        if (sessionStorage.getItem('ib') === '1') { banner.style.display = 'none'; return; }
+          window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            pe = e;
+            t.textContent = '📲 Instalá Veloré para una experiencia más rápida';
+            if (btn) { btn.style.display = ''; }
+            b.classList.remove('ib-hidden');
+          }, { once: true });
 
-        window.addEventListener('beforeinstallprompt', function(e) {
-          e.preventDefault();
-          promptEvent = e;
-          showWithPrompt();
-        });
+          if (/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream) {
+            t.textContent = '📲 Instalá la app en tu iPhone: tocá Compartir ⎋ y luego "Agregar a pantalla de inicio"';
+            if (btn) btn.style.display = 'none';
+            b.classList.remove('ib-hidden');
+          }
 
-        function showWithPrompt() {
-          if (!promptEvent) return;
-          text.textContent = '📲 Instalá Veloré para una experiencia más rápida';
-          btn.style.display = '';
-          btn.onclick = function() {
-            promptEvent.prompt();
-            promptEvent.userChoice.then(function(result) {
-              if (result.outcome === 'accepted') { banner.style.display = 'none'; }
-            });
-          };
-          banner.style.display = 'flex';
-        }
+          if (cls) {
+            cls.onclick = function() {
+              if (ss) try { ss.setItem('ib', '1'); } catch(e) {}
+              hide();
+            };
+          }
 
-        function showInstructions(msg) {
-          text.textContent = msg;
-          btn.style.display = 'none';
-          banner.style.display = 'flex';
-        }
-
-        close.onclick = function() {
-          sessionStorage.setItem('ib', '1');
-          banner.style.display = 'none';
-        };
-
-        if (isIOS()) {
-          showInstructions('📲 Instalá la app en tu iPhone: tocá Compartir ⎋ y luego "Agregar a pantalla de inicio"');
-        } else if (promptEvent) {
-          showWithPrompt();
-        } else {
-          setTimeout(function() {
-            if (promptEvent) {
-              showWithPrompt();
-            } else if (!sessionStorage.getItem('ib')) {
-              showInstructions('📲 Instalá Veloré en tu celular — usá el menú: "Instalar app" o "Agregar a pantalla de inicio"');
-            }
-          }, 2000);
-        }
-      })();
+          if (btn) {
+            btn.onclick = function() {
+              if (!pe) return;
+              pe.prompt();
+              pe.userChoice.then(function(r) {
+                if (r.outcome==='accepted') hide();
+              });
+            };
+          }
+        })();
+      } catch(e) { console.error('ib:', e); }
     </script>
   </body>
 </html>

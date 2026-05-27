@@ -187,7 +187,13 @@ const frontendPublicPath = path.join(__dirname, '..', 'frontend', 'public');
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
 // Servir build de Vite (React SPA) primero
-app.use(express.static(frontendDistPath, { maxAge: '1d' }));
+// index.html nunca se cachea para que los usuarios vean updates al instante
+app.use((req, res, next) => {
+  if (req.path === '/index.html' || req.path === '/') {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+  next();
+}, express.static(frontendDistPath, { maxAge: '1d' }));
 
 // Archivos legacy NO HTML (img, css, js) aún pueden ser necesarios
 app.use((req, res, next) => {
@@ -200,6 +206,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1
 // SPA catch-all: toda ruta de frontend va a la React app (React Router maneja 404s)
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api') && !req.path.startsWith('/p/') && !req.path.startsWith('/uploads')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     const spaPath = path.join(frontendDistPath, 'index.html');
     try {
       if (fs.existsSync(spaPath)) return res.sendFile(spaPath);
