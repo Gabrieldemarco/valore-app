@@ -117,6 +117,14 @@ export default function Landing() {
 
   useEffect(() => {
     if (!tenantSlug) { setLoading(false); return; }
+    const initial = (window as any).__INITIAL_DATA__;
+    if (initial?.tenant && initial?.services) {
+      setTenant(initial.tenant);
+      setServices(initial.services || []);
+      setLoading(false);
+      delete (window as any).__INITIAL_DATA__;
+      return;
+    }
     Promise.all([
       api.get<{ tenant: TenantData; services: ServiceItem[] }>(`/p/${tenantSlug}/landing`),
       api.get<{ staff: StaffMember[] }>(`/p/${tenantSlug}/staff`).catch(() => ({ staff: [] })),

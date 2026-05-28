@@ -219,6 +219,85 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }));
 
+// ========== SSR LANDING PAGE: pre-render hero + inject data ==========
+function fixImageUrlServer(url, req) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/uploads')) {
+    const base = process.env.BASE_URL || req.protocol + '://' + req.get('host');
+    return base + url;
+  }
+  return url;
+}
+
+function prerenderHero(tenant, req) {
+  const heroImage = fixImageUrlServer(tenant.landing_hero_image, req);
+  const logo = fixImageUrlServer(tenant.brand_logo_url, req);
+  const name = tenant.business_name || '';
+  const description = tenant.landing_description || '';
+  return '<section class="hero">'
+    + (heroImage ? '<div class="hero-image" style="background-image:url(' + heroImage.replace(/"/g, '&quot;') + ')"></div>' : '')
+    + '<div class="hero-content">'
+    + (logo ? '<img src="' + logo.replace(/"/g, '&quot;') + '" alt="' + name + '" class="hero-logo">' : '')
+    + '<h1>' + name + '</h1>'
+    + (description ? '<p>' + description + '</p>' : '')
+    + '<a href="#reservar" class="btn btn-primary btn-lg">Reservar turno</a>'
+    + '<div class="hero-trust"><span>Atención personalizada</span><span>Resultados garantizados</span></div>'
+    + '</div></section>';
+}
+
+app.get('/p/:slug', async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const tenantRow = await queryOne(
+      `SELECT id, slug, business_name, business_address, business_phone,
+              brand_primary_color, brand_secondary_color, brand_logo_url,
+              landing_description, landing_hero_image,
+              landing_gallery, landing_team, landing_social_links,
+              landing_custom_css, landing_layout, opening_hours
+       FROM tenants WHERE slug = $1`,
+      [slug]
+    );
+    if (!tenantRow) return next();
+
+    const servicesRows = await query(
+      'SELECT id, name, duration, price, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name',
+      [tenantRow.id]
+    );
+
+    const initialData = {
+      tenant: {
+        ...tenantRow,
+        opening_hours: typeof tenantRow.opening_hours === 'string'
+          ? JSON.parse(tenantRow.opening_hours) : tenantRow.opening_hours,
+      },
+      services: servicesRows.rows,
+    };
+
+    const spaPath = path.join(frontendDistPath, 'index.html');
+    if (!fs.existsSync(spaPath)) return next();
+
+    let html = fs.readFileSync(spaPath, 'utf-8');
+    const primaryColor = tenantRow.brand_primary_color || '#7c3aed';
+    const secondaryColor = tenantRow.brand_secondary_color || '#a855f7';
+    const customCss = tenantRow.landing_custom_css || '';
+
+    html = html.replace('</head>',
+      '<style>:root{--primary:' + primaryColor + ';--accent:' + secondaryColor + '}'
+      + (customCss ? ' ' + customCss : '') + '</style></head>');
+    html = html.replace('<div id="root">',
+      '<script>window.__INITIAL_DATA__='
+      + JSON.stringify(initialData).replace(/</g, '\\u003c')
+      + '</script><div id="root">'
+      + prerenderHero(tenantRow, req));
+
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.send(html);
+  } catch (err) {
+    next();
+  }
+});
+
 // SPA catch-all: toda ruta de frontend va a la React app (React Router maneja 404s)
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
