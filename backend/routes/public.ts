@@ -16,8 +16,9 @@ import { validate,
  * @param {import('express').RequestHandler} appointmentLimiter
  * @returns {import('express').Router}
  */
-export default function(generateAvailableSlots, appointmentLimiter) {
+export default function(generateAvailableSlots, appointmentLimiter, publicLimiter) {
   const router = Router();
+  router.use('/', publicLimiter);
 
   router.get('/:slug/config', identifyTenant, (req, res) => {
     res.json({

@@ -37,6 +37,13 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { initDB, query, pool } from './database';
 require('dotenv').config();
+import * as Sentry from '@sentry/node';
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || '',
+  environment: process.env.NODE_ENV || 'development',
+  tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.2'),
+  enabled: !!process.env.SENTRY_DSN,
+});
 
 import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase } from './cron-billing';
 import logger from './services/logger';
@@ -61,6 +68,7 @@ process.on('uncaughtException', (err: any) => {
   process.exit(1);
 });
 
+app.use(Sentry.Handlers.requestHandler());
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
@@ -80,15 +88,15 @@ app.use(helmet({
   }
 }));
 app.use(compression());
-app.use(morgan('short'));
+app.use(morgan('combined'));
 if (process.env.ALLOWED_ORIGINS) {
   const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   app.use(cors({ origin: allowedOrigins, credentials: true }));
 } else {
   app.use(cors());
 }
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ========== CONFIGURACIÓN DE MERCADOPAGO ==========
 if (!isMercadoPagoConfigured()) {
@@ -150,6 +158,14 @@ const appointmentLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Demasiadas solicitudes públicas' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
@@ -175,7 +191,7 @@ app.use('/api', require('./routes/auth').default(loginLimiter, passwordResetLimi
 app.use('/api', require('./routes/mercadopago').default(createMercadoPagoPreference, MP_CURRENCY));
 app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS));
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
-app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter));
+app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter, publicLimiter));
 app.use('/api', require('./routes/misc').default(apiLimiter));
 app.use('/api', require('./routes/push').default());
 
@@ -217,6 +233,9 @@ app.get('*', (req, res) => {
     res.status(404).send('Not found');
   }
 });
+
+// ========== SENTRY ERROR HANDLER ==========
+app.use(Sentry.Handlers.errorHandler());
 
 // ========== PROGRAMAR TAREAS CRON ==========
 cron.schedule('0 0 1 * *', async () => {
