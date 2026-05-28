@@ -1,14 +1,17 @@
-import { useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 interface Props {
   slug: string;
+  services: { id: number; name: string }[];
   onClose: () => void;
 }
 
-export default function SalonQR({ slug, onClose }: Props) {
+export default function SalonQR({ slug, services, onClose }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const url = `${window.location.origin}/p/${slug}`;
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const selectedService = services.find(s => s.id === selectedServiceId);
+  const url = `${window.location.origin}/p/${slug}${selectedServiceId ? `?sid=${selectedServiceId}` : ''}`;
 
   const download = useCallback(() => {
     const canvas = canvasRef.current?.querySelector('canvas');
@@ -28,7 +31,7 @@ export default function SalonQR({ slug, onClose }: Props) {
       try {
         await navigator.share({
           title: 'Veloré',
-          text: 'Reservá tu turno en esta peluquería',
+          text: `Reservá tu turno en esta peluquería${selectedService ? ` - ${selectedService.name}` : ''}`,
           url,
           files: [new File([blob], `valore-${slug}.png`, { type: 'image/png' })],
         });
@@ -36,7 +39,7 @@ export default function SalonQR({ slug, onClose }: Props) {
       } catch { /* fallback to copy */ }
     }
     await navigator.clipboard?.writeText(url);
-  }, [slug, url]);
+  }, [slug, url, selectedService]);
 
   return (
     <div style={{
@@ -55,6 +58,24 @@ export default function SalonQR({ slug, onClose }: Props) {
             <QRCodeCanvas value={url} size={200} bgColor="#0a0a0c" fgColor="#c5a880" level="M" />
           </div>
           <p style={{ color: '#a1a1aa', fontSize: 13, marginTop: 16, wordBreak: 'break-all' }}>{url}</p>
+          {services.length > 0 && (
+            <div style={{ marginTop: 12, textAlign: 'left' }}>
+              <label style={{ color: '#a1a1aa', fontSize: 13, display: 'block', marginBottom: 4 }}>Servicio rápido (opcional)</label>
+              <select
+                value={selectedServiceId ?? ''}
+                onChange={e => setSelectedServiceId(e.target.value ? Number(e.target.value) : null)}
+                style={{
+                  width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--glass-border)',
+                  background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                <option value="">Sin servicio (reserva completa)</option>
+                {services.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
             <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>Descargar QR</button>
             {navigator.share ? (

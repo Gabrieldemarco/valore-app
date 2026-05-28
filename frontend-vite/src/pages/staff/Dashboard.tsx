@@ -1293,7 +1293,7 @@ export default function StaffDashboard() {
           </div>
         </div>
       )}
-      {showQR && settings.slug && <SalonQR slug={settings.slug} onClose={() => setShowQR(false)} />}
+      {showQR && settings.slug && <SalonQR slug={settings.slug} services={servicesList} onClose={() => setShowQR(false)} />}
     </div>
   );
 }

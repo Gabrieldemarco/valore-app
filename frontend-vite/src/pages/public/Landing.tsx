@@ -81,6 +81,9 @@ export default function Landing() {
   const [searchParams] = useSearchParams();
   const { slug: slugParam } = useParams();
   const tenantSlug = slugParam || searchParams.get('tenant') || '';
+  const quickServiceId = searchParams.get('sid') ? Number(searchParams.get('sid')) : null;
+  const quickStaffId = searchParams.get('staff') ? Number(searchParams.get('staff')) : null;
+  const isQuickBook = quickServiceId !== null;
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +104,7 @@ export default function Landing() {
   const [clientNotes, setClientNotes] = useState('');
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
+  const [quickBookError, setQuickBookError] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -125,6 +129,19 @@ export default function Landing() {
       .catch(() => setError('Error al cargar'))
       .finally(() => setLoading(false));
   }, [tenantSlug]);
+
+  useEffect(() => {
+    if (isQuickBook && services.length > 0 && !quickBookError) {
+      const found = services.find(s => s.id === quickServiceId);
+      if (found) {
+        setSelectedService(quickServiceId);
+        if (quickStaffId) setSelectedStaff(quickStaffId);
+        setStep(3);
+      } else {
+        setQuickBookError(true);
+      }
+    }
+  }, [isQuickBook, quickServiceId, quickStaffId, services, quickBookError]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -313,30 +330,49 @@ export default function Landing() {
 
             <div className="booking-container">
               <div className="stepper">
-                <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} onClick={() => setStep(1)}>
-                  <div className="step-number">1</div>
-                  <div className="step-label">Peluquero</div>
-                </div>
-                <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} onClick={() => step > 1 ? setStep(2) : undefined}>
-                  <div className="step-number">2</div>
-                  <div className="step-label">Servicio</div>
-                </div>
-                <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => step > 2 ? setStep(3) : undefined}>
-                  <div className="step-number">3</div>
-                  <div className="step-label">Fecha</div>
-                </div>
-                <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? setStep(4) : undefined}>
-                  <div className="step-number">4</div>
-                  <div className="step-label">Horario</div>
-                </div>
-                <div className={`step ${step >= 5 ? 'active' : ''}`}>
-                  <div className="step-number">5</div>
-                  <div className="step-label">Tus datos</div>
-                </div>
+                {isQuickBook ? (
+                  <>
+                    <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => setStep(3)}>
+                      <div className="step-number">1</div>
+                      <div className="step-label">Fecha</div>
+                    </div>
+                    <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? setStep(4) : undefined}>
+                      <div className="step-number">2</div>
+                      <div className="step-label">Horario</div>
+                    </div>
+                    <div className={`step ${step >= 5 ? 'active' : ''}`}>
+                      <div className="step-number">3</div>
+                      <div className="step-label">Tus datos</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} onClick={() => setStep(1)}>
+                      <div className="step-number">1</div>
+                      <div className="step-label">Peluquero</div>
+                    </div>
+                    <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} onClick={() => step > 1 ? setStep(2) : undefined}>
+                      <div className="step-number">2</div>
+                      <div className="step-label">Servicio</div>
+                    </div>
+                    <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => step > 2 ? setStep(3) : undefined}>
+                      <div className="step-number">3</div>
+                      <div className="step-label">Fecha</div>
+                    </div>
+                    <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? setStep(4) : undefined}>
+                      <div className="step-number">4</div>
+                      <div className="step-label">Horario</div>
+                    </div>
+                    <div className={`step ${step >= 5 ? 'active' : ''}`}>
+                      <div className="step-number">5</div>
+                      <div className="step-label">Tus datos</div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <form className="booking-form" onSubmit={e => { e.preventDefault(); handleBook(); }}>
-                {step === 1 && (
+                {step === 1 && !isQuickBook && (
                   <div className="step-content">
                     <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>Elegí tu peluquero</label>
                     {staff.length === 0 ? (
@@ -358,7 +394,21 @@ export default function Landing() {
                   </div>
                 )}
 
-                {step === 2 && (
+                {isQuickBook && !quickBookError && step < 3 && (
+                  <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
+                    <div className="spinner" style={{ margin: '0 auto' }} />
+                    <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>Preparando reserva rápida...</p>
+                  </div>
+                )}
+                {isQuickBook && quickBookError && (
+                  <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
+                    <p style={{ color: '#fca5a5' }}>Servicio no disponible para reserva rápida</p>
+                    <button type="button" className="btn btn-secondary" onClick={() => { window.location.href = `/p/${tenantSlug}`; }}>
+                      Ir a reserva normal
+                    </button>
+                  </div>
+                )}
+                {step === 2 && !isQuickBook && (
                   <div className="step-content">
                     <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>Elegí un servicio</label>
                     <div className="booking-services">
@@ -496,10 +546,10 @@ export default function Landing() {
                   </div>
                 )}
 
-                {!msg && !errMsg && step < 5 && (
+                {!msg && !errMsg && step < 5 && (!isQuickBook || step >= 4) && (
                   <div style={{ textAlign: 'center', marginTop: 20 }}>
                     <button type="button" className="btn" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '8px 20px' }}
-                      onClick={() => { setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); }}>
+                      onClick={() => { if (isQuickBook) { setStep(3); setSelectedDate(''); setSelectedTime(''); } else { setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); } }}>
                       Cancelar
                     </button>
                   </div>
@@ -510,9 +560,9 @@ export default function Landing() {
                     <div className="success-checkmark">✓</div>
                     <div className="success-title">{msg}</div>
                     <div className="success-sub">Te enviamos un recordatorio antes del turno.</div>
-                    <button type="button" className="btn btn-primary btn-lg" onClick={() => { setMsg(''); setErrMsg(''); setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); }}>
-                      Reservar otro turno
-                    </button>
+                            <button type="button" className="btn btn-primary btn-lg" onClick={() => { setMsg(''); setErrMsg(''); if (isQuickBook) { setStep(3); setSelectedDate(''); setSelectedTime(''); } else { setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); } }}>
+                              Reservar otro turno
+                            </button>
                   </div>
                 )}
                 {errMsg && <div className="result error">{errMsg}</div>}

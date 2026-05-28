@@ -205,7 +205,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1
 
 // SPA catch-all: toda ruta de frontend va a la React app (React Router maneja 404s)
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/p/') && !req.path.startsWith('/uploads')) {
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     const spaPath = path.join(frontendDistPath, 'index.html');
     try {
