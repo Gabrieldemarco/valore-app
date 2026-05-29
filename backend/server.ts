@@ -35,16 +35,16 @@ import createEmailTransporter from './services/email';
 import { isConfigured as isMercadoPagoConfigured, createPreference as mpCreatePreference } from './services/mercadopago-client';
 import helmet from 'helmet';
 import compression from 'compression';
-import { initDB, query, pool } from './database';
+import { initDB, query, queryOne, pool } from './database';
 require('dotenv').config();
-import * as Sentry from '@sentry/node';
-Sentry.init({
-  dsn: process.env.SENTRY_DSN || '',
-  environment: process.env.NODE_ENV || 'development',
-  tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.2'),
-  enabled: !!process.env.SENTRY_DSN,
-});
-
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.2'),
+  });
+}
 import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase } from './cron-billing';
 import logger from './services/logger';
 import morgan from 'morgan';
@@ -68,7 +68,6 @@ process.on('uncaughtException', (err: any) => {
   process.exit(1);
 });
 
-app.use(Sentry.Handlers.requestHandler());
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
@@ -314,7 +313,9 @@ app.get('*', (req, res) => {
 });
 
 // ========== SENTRY ERROR HANDLER ==========
-app.use(Sentry.Handlers.errorHandler());
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // ========== PROGRAMAR TAREAS CRON ==========
 cron.schedule('0 0 1 * *', async () => {
