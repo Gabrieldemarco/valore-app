@@ -3,6 +3,7 @@
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 require('dotenv').config();
+const config = require('./config');
 import logger from './services/logger';
 
 const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
@@ -84,6 +85,9 @@ async function initDB() {
         opening_hours JSONB DEFAULT '{"startHour":9,"endHour":19,"workDays":[1,2,3,4,5]}',
         status TEXT DEFAULT 'active',
         plan TEXT DEFAULT 'free',
+        subscription_status TEXT,
+        trial_start_date TIMESTAMP,
+        trial_end_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -207,6 +211,30 @@ async function initDB() {
 
       CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date 
       ON appointments(tenant_id, appointment_date);
+      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_status 
+      ON appointments(tenant_id, status);
+      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_staff_date 
+      ON appointments(tenant_id, staff_id, appointment_date);
+      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_client_phone 
+      ON appointments(tenant_id, client_phone);
+      CREATE INDEX IF NOT EXISTS idx_services_tenant_active 
+      ON services(tenant_id, active, name);
+      CREATE INDEX IF NOT EXISTS idx_personal_agenda_user_date 
+      ON personal_agenda(user_id, fecha);
+      CREATE INDEX IF NOT EXISTS idx_invoices_tenant_issue_date 
+      ON invoices(tenant_id, issue_date DESC);
+      CREATE INDEX IF NOT EXISTS idx_invoices_status 
+      ON invoices(status);
+      CREATE INDEX IF NOT EXISTS idx_payments_tenant_created_at 
+      ON payments(tenant_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_payments_invoice 
+      ON payments(invoice_id);
+      CREATE INDEX IF NOT EXISTS idx_tenants_status_landing_created_at 
+      ON tenants(status, landing_enabled, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_staff_tenant_active_role_name 
+      ON staff(tenant_id, active, role, name);
+      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date_only 
+      ON appointments(tenant_id, (appointment_date::date));
 
       -- Migraciones para Multi-Peluqueros
       ALTER TABLE staff ADD COLUMN IF NOT EXISTS photo_url TEXT;
@@ -218,6 +246,9 @@ async function initDB() {
       ALTER TABLE appointments ADD COLUMN IF NOT EXISTS staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL;
 
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS landing_layout JSONB DEFAULT NULL;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_status TEXT;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMP;
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_end_date TIMESTAMP;
     `);
 
     if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true') {
@@ -248,7 +279,7 @@ async function seedDefaults(client) {
 
       const tenantId = tenantResult.rows[0].id;
 
-      const hash = await bcrypt.hash('admin123', 10);
+      const hash = await bcrypt.hash('admin123', config.BCRYPT_ROUNDS);
 
       await client.query(
         `INSERT INTO staff (tenant_id, name, email, password, role) 

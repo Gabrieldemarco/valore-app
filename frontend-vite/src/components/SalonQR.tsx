@@ -78,7 +78,7 @@ export default function SalonQR({ slug, services, onClose }: Props) {
           )}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
             <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>Descargar QR</button>
-            {navigator.share ? (
+            {typeof navigator.share === 'function' ? (
               <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>Compartir</button>
             ) : (
               <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>Copiar enlace</button>

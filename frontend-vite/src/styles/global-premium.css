@@ -54,6 +54,13 @@ body {
   overflow-x: hidden;
 }
 
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
 /* Typography Utility Classes */
 h1, h2, h3, h4, .serif-text {
   font-family: 'Cormorant Garamond', serif !important;

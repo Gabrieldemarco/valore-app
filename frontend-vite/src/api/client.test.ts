@@ -14,7 +14,7 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
   const { method = 'GET', body, headers: extraHeaders = {} } = options;
   const headers: Record<string, string> = { ...extraHeaders };
   const token = localStorage.getItem('staffToken') || localStorage.getItem('superAdminToken');
-  if (token) headers['Authorization'] = token;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   if (body) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -71,7 +71,7 @@ describe('api client', () => {
     });
     await request('/test');
     const opts = fakeFetch.mock.calls[0][1];
-    expect(opts.headers).toHaveProperty('Authorization', 'mytoken123');
+    expect(opts.headers).toHaveProperty('Authorization', 'Bearer mytoken123');
   });
 
   it('throws on non-ok response', async () => {

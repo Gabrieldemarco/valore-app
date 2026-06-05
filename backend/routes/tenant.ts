@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import sanitizeHtml from 'sanitize-html';
+const config = require('../config');
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { getOrCreateSubscriptionInvoice } from '../services/billing';
@@ -43,6 +44,18 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       );
       if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
 
+      let validStaffId = null;
+      if (staffId) {
+        const staffMember = await queryOne(
+          'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
+          [staffId, req.user.tenant_id]
+        );
+        if (!staffMember) {
+          return res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
+        }
+        validStaffId = staffMember.id;
+      }
+
       const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'];
       const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
 
@@ -50,12 +63,12 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         const result = await query(
           `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, staffId || null, appointmentStatus]
+          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus]
         );
         const newAppointment = result.rows[0];
 
-        if (staffId) {
-          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1 AND active = true', [staffId]);
+        if (validStaffId) {
+          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
           if (staffMember) {
             newAppointment.staff_name = staffMember.name;
             newAppointment.staff_email = staffMember.email;
@@ -489,7 +502,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       if (exists) return res.status(400).json({ error: 'Email ya registrado en esta peluquería' });
 
       const tempPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      const hashedPassword = await bcrypt.hash(tempPassword, config.BCRYPT_ROUNDS);
 
       const result = await query(
         `INSERT INTO staff (tenant_id, email, password, name, role, specialties, photo_url, bio)

@@ -357,9 +357,10 @@
 
 .salons-slider-container {
   position: relative;
+  max-width: 1140px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 4px;
+  padding: 0 20px;
 }
 
 .salons-grid {
@@ -373,8 +374,7 @@
   padding: 15px 4px 35px 4px;
   width: 100%;
   scroll-snap-type: x mandatory;
-  justify-content: center;
-  justify-content: safe center;
+  justify-content: flex-start;
 }
 
 .salons-grid::-webkit-scrollbar {

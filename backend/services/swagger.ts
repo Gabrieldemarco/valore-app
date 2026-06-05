@@ -1,4 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc';
+const config = require('../config');
 
 const options = {
   definition: {
@@ -635,6 +636,23 @@ const options = {
   },
   apis: [],
 };
+
+if (config.METRICS_ENABLED) {
+  options.definition.paths['/metrics'] = {
+    get: {
+      tags: ['Monitoreo'],
+      summary: 'Metrics endpoint compatible con Prometheus',
+      responses: { 200: { description: 'Métricas Prometheus en texto plano' } },
+    },
+  };
+  options.definition.paths['/monitoring/summary'] = {
+    get: {
+      tags: ['Monitoreo'],
+      summary: 'Resumen de monitoreo en JSON con estado, métricas y uso de recursos',
+      responses: { 200: { description: 'Resumen de estado y métricas del servicio' } },
+    },
+  };
+}
 
 export const swaggerSpec = swaggerJsdoc(options);
 export default swaggerSpec;

@@ -118,9 +118,40 @@ Corre en `http://localhost:5173` con hot reload y proxy a backend.
 | `TWILIO_AUTH_TOKEN` | WhatsApp | Twilio Auth Token |
 | `TWILIO_WHATSAPP_FROM` | WhatsApp | Número verificado Twilio |
 | `ALLOWED_ORIGINS` | No | Orígenes CORS separados por coma |
+| | | En producción no uses `*`; configura dominios específicos. |
+| `SENTRY_DSN` | No | DSN de Sentry para error tracking |
+| `SENTRY_TRACES_SAMPLE_RATE` | No | Porcentaje de muestreo de transacciones Sentry (default 0.2) |
+| `BCRYPT_ROUNDS` | No | Rondas de bcrypt para hashing de contraseñas (default 12) |
+| `JWT_ALGORITHM` | No | Algoritmo JWT usado para firmar/verificar tokens (default HS256) |
+| `METRICS_ENABLED` | No | Habilita el endpoint Prometheus `/metrics` |
+| `METRICS_BASIC_AUTH_USER` | No | Usuario para autenticación básica en `/metrics` |
+| `METRICS_BASIC_AUTH_PASS` | No | Contraseña para autenticación básica en `/metrics` |
+| `SWAGGER_UI_ENABLED` | No | Habilita la documentación Swagger (default `true`) |
+| `SWAGGER_BASIC_AUTH_USER` | No | Usuario para autenticación básica en Swagger UI y JSON |
+| `SWAGGER_BASIC_AUTH_PASS` | No | Contraseña para autenticación básica en Swagger UI y JSON |
+| `SWAGGER_UI_ROUTE` | No | Ruta para el UI de Swagger (default `/api-docs`) |
+| `SWAGGER_UI_JSON_ROUTE` | No | Ruta para el JSON raw de Swagger (default `/api-docs.json`) |
+| `LOG_LEVEL` | No | Nivel de logs para Winston (`info`, `warn`, `error`) |
+| `TEST_DATABASE_URL` | No | URL del DB de prueba para `restore-test` |
+| `RESTORE_DATABASE_URL` | No | URL separada para restaurar backups en DB de prueba |
 | `BASE_URL` | No | URL base para enlaces en emails |
 | `PLAN_PRO_PRICE` | No | Precio plan Pro (default 990) |
 | `PLAN_ENTERPRISE_PRICE` | No | Precio plan Enterprise (default 2490) |
+
+## Monitoreo y logging
+
+- `LOG_LEVEL` controla el nivel de registro de Winston (`info`, `warn`, `error`).
+- El backend escribe logs en `backend/logs/error.log` y `backend/logs/combined.log`.
+- Si `SENTRY_DSN` está configurado, los errores se envían a Sentry y se habilita tracing en el middleware.
+- `SENTRY_TRACES_SAMPLE_RATE` ajusta el muestreo de transacciones (ej. `0.2`).
+- En staging/desarrollo, la app arranca aunque falte `SENTRY_DSN`, pero muestra una advertencia para no perder visibilidad.
+- El backend expone `/api/health` con estado, uptime, uso de memoria y conteo básico de entidades.
+- El backend aplica cabeceras de seguridad con Helmet (`CSP`, `X-Content-Type-Options`, `X-Frame-Options`, `Cross-Origin-Resource-Policy`, `DNS prefetch control`, `Referrer-Policy`).
+- En producción, `ALLOWED_ORIGINS` no debe contener `*`; usa dominios específicos para CORS.
+- Si `METRICS_ENABLED=true`, también expone `/metrics` con métricas Prometheus (`velore_http_request_duration_seconds`, métricas default de Node.js, etc.).
+- En producción es obligatorio proteger `/metrics` y Swagger con autenticación básica utilizando `METRICS_BASIC_AUTH_USER`, `METRICS_BASIC_AUTH_PASS`, `SWAGGER_BASIC_AUTH_USER` y `SWAGGER_BASIC_AUTH_PASS`. Si no hay auth configurada, el backend deshabilita automáticamente esos endpoints en producción.
+- El API docs UI está disponible en la ruta configurada por `SWAGGER_UI_ROUTE` y el JSON raw en `SWAGGER_UI_JSON_ROUTE` cuando `SWAGGER_UI_ENABLED` está habilitado (default `true`).
+- Los scripts de backup usan `pg_dump` y `psql`, por lo que en entornos de CI/producción debe estar instalado el cliente de PostgreSQL.
 
 ---
 
@@ -131,6 +162,10 @@ Corre en `http://localhost:5173` con hot reload y proxy a backend.
 | Script | Descripción |
 |---|---|
 | `npm start` | Inicia servidor con `tsx` (hot reload) |
+| `npm run check-env` | Verifica variables de entorno requeridas |
+| `npm run smoke` | Corre smoke tests básicos contra el servidor |
+| `npm run backup` | Crea un backup local de la base de datos usando `pg_dump` |
+| `npm run restore-test` | Restaura el último backup en un DB de prueba usando `psql` y verifica que los conteos de tablas clave coinciden |
 | `npm test` | Tests unitarios + integración (Jest) |
 | `npm run test:integration` | Tests de integración |
 | `npm run test:e2e` | Tests E2E con Playwright |
@@ -237,6 +272,8 @@ Corre en `http://localhost:5173` con hot reload y proxy a backend.
 |---|---|---|---|
 | GET | `/api/health` | — | Health check con stats de DB |
 | GET | `/api/tenants` | — | Lista de tenants activos (directorio público) |
+| GET | `/metrics` | — | Métricas Prometheus (si está habilitado) |
+| GET | `/monitoring/summary` | — | Resumen de monitoreo en JSON |
 | POST | `/api/upload-image` | Staff | Subir imagen (base64, max 5MB) |
 | GET | `/api/agenda` | Cliente | Agenda personal |
 | POST | `/api/agenda` | Cliente | Crear evento en agenda |
@@ -290,6 +327,27 @@ Para habilitar CD, configura estos secrets en GitHub:
 | `DEPLOY_PATH` | Ruta de deploy en el servidor |
 
 ---
+
+## Cierre de entrega
+
+La implementación del backend está completa y revisada. Los siguientes elementos ya están resueltos y verificados:
+
+- Validación de variables de entorno y advertencias no bloqueantes en staging/dev
+- Migraciones de base de datos y esquema estable
+- Tests, CI y compilación TypeScript sin errores
+- Seguridad reforzada con Helmet y autenticación básica en Swagger/Metrics en producción
+- Logging centralizado con Winston + Morgan
+- Monitoreo Prometheus y endpoint `/monitoring/summary`
+- Documentación Swagger y referencias de API actualizadas
+- Índices de base de datos optimizados para queries frecuentes
+- Backup/restore tests y checklist de despliegue actualizada
+
+Verificación realizada:
+
+```bash
+cd backend
+npx tsc --noEmit -p tsconfig.json
+```
 
 ## Licencia
 

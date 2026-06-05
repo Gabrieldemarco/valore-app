@@ -20,7 +20,14 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   const router = Router();
   router.use('/', publicLimiter);
 
-  router.get('/:slug/config', identifyTenant, (req, res) => {
+  const requireActivePublicTenant = (req, res, next) => {
+    if (!req.tenant || req.tenant.status !== 'active' || !req.tenant.landing_enabled) {
+      return res.status(404).json({ error: 'Peluquería no encontrada' });
+    }
+    next();
+  };
+
+  router.get('/:slug/config', identifyTenant, requireActivePublicTenant, (req, res) => {
     res.json({
       tenant: {
         slug: req.tenant.slug,
@@ -33,7 +40,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     });
   });
 
-  router.get('/:slug/services', identifyTenant, async (req, res) => {
+  router.get('/:slug/services', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       const services = await query(
         'SELECT id, name, duration, price, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name',
@@ -46,7 +53,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
-  router.get('/:slug/availability', identifyTenant, async (req, res) => {
+  router.get('/:slug/availability', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       const { date, serviceId } = req.query;
       if (!date || !serviceId) return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
@@ -84,7 +91,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
-  router.post('/:slug/appointments', appointmentLimiter, identifyTenant, [
+  router.post('/:slug/appointments', appointmentLimiter, identifyTenant, requireActivePublicTenant, [
     body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
     body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
     body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
@@ -112,16 +119,28 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       );
       if (!service) return res.status(404).json({ error: 'Servicio no disponible' });
 
+      let validStaffId = null;
+      if (staffId) {
+        const staffMember = await queryOne(
+          'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
+          [staffId, req.tenant.id]
+        );
+        if (!staffMember) {
+          return res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
+        }
+        validStaffId = staffMember.id;
+      }
+
       try {
         const result = await query(
           `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-          [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, staffId || null]
+          [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId]
         );
         const newAppointment = result.rows[0];
 
-        if (staffId) {
-          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1 AND active = true', [staffId]);
+        if (validStaffId) {
+          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
           if (staffMember) {
             newAppointment.staff_name = staffMember.name;
             newAppointment.staff_email = staffMember.email;
@@ -142,7 +161,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   });
 
   // GET: Listar peluqueros de una peluquería (público, para landing)
-  router.get('/:slug/staff', identifyTenant, async (req, res) => {
+  router.get('/:slug/staff', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       const staff = await query(
         `SELECT id, name, photo_url, bio, specialties, individual_hours
@@ -172,7 +191,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   });
 
   // GET: Disponibilidad específica de un peluquero
-  router.get('/:slug/staff/:staffId/availability', identifyTenant, async (req, res) => {
+  router.get('/:slug/staff/:staffId/availability', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       const { staffId } = req.params;
       const { date, serviceId } = req.query;
@@ -220,7 +239,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   });
 
   // GET landing config
-  router.get('/:slug/landing', identifyTenant, async (req, res) => {
+  router.get('/:slug/landing', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       if (!req.tenant.landing_enabled) {
         await query(`UPDATE tenants SET landing_enabled=true, updated_at=NOW() WHERE id=$1`, [req.tenant.id]);

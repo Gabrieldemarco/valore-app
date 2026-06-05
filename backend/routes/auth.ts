@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { body } from 'express-validator';
 import { query, queryOne } from '../database';
 import { validate } from '../middleware';
+const config = require('../config');
 import logger from '../services/logger';
 import createEmailTransporter from '../services/email';
 
@@ -28,7 +29,7 @@ export default function(loginLimiter, passwordResetLimiter) {
       if (password.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
       const exists = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
       if (exists) return res.status(400).json({ error: 'Usuario ya existe' });
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
       const result = await query(
         `INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role`,
         [username, hashedPassword, 'client']
@@ -53,8 +54,8 @@ export default function(loginLimiter, passwordResetLimiter) {
       if (!valid) return res.status(400).json({ error: 'Contraseña incorrecta' });
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        config.JWT_SECRET,
+        { expiresIn: '24h', algorithm: config.JWT_ALGORITHM }
       );
       res.json({ token, username: user.username, role: user.role });
     } catch (err: any) {
@@ -76,8 +77,8 @@ export default function(loginLimiter, passwordResetLimiter) {
       if (!valid) return res.status(400).json({ error: 'Credenciales inválidas' });
       const token = jwt.sign(
         { id: staff.id, name: staff.name, email: staff.email, role: staff.role, tenant_id: staff.tenant_id },
-        process.env.JWT_SECRET,
-        { expiresIn: '8h' }
+        config.JWT_SECRET,
+        { expiresIn: '8h', algorithm: config.JWT_ALGORITHM }
       );
       res.json({ token, name: staff.name, email: staff.email, role: staff.role });
     } catch (err: any) {
@@ -105,7 +106,7 @@ export default function(loginLimiter, passwordResetLimiter) {
         .replace(/^-+|-+$/g, '');
       slug = `${slug}-${uuidv4().slice(0, 6)}`;
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
 
       const tenantResult = await query(
         `INSERT INTO tenants (slug, business_name, business_address, business_phone, notification_email, smtp_email, landing_enabled, status, opening_hours, plan, trial_start_date, trial_end_date) 
@@ -201,7 +202,7 @@ export default function(loginLimiter, passwordResetLimiter) {
         return res.status(400).json({ error: 'Enlace inválido o expirado. Solicita un nuevo restablecimiento.' });
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, config.BCRYPT_ROUNDS);
       await query(
         `UPDATE staff SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2`,
         [hashedPassword, staff.id]

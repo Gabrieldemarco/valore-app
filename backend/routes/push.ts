@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { query } from '../database';
-import { authenticateStaff } from '../middleware';
+import { authenticateStaff, checkTenantActive, validate } from '../middleware';
 import { getVapidPublicKey, isVapidConfigured } from '../services/web-push';
 import logger from '../services/logger';
 
@@ -12,12 +12,12 @@ export default function() {
     res.json({ publicKey: getVapidPublicKey(), configured: isVapidConfigured() });
   });
 
-  router.post('/push/subscribe', authenticateStaff, [
+  router.post('/push/subscribe', authenticateStaff, checkTenantActive, [
     body('endpoint').isString().notEmpty().withMessage('Endpoint requerido'),
     body('keys').isObject().withMessage('Keys requeridas'),
     body('keys.p256dh').isString().notEmpty().withMessage('p256dh requerido'),
     body('keys.auth').isString().notEmpty().withMessage('auth requerido'),
-  ], async (req, res) => {
+  ], validate, async (req, res) => {
     try {
       const { endpoint, keys } = req.body;
       const tenantId = req.user.tenant_id;
@@ -39,9 +39,9 @@ export default function() {
     }
   });
 
-  router.post('/push/unsubscribe', authenticateStaff, [
+  router.post('/push/unsubscribe', authenticateStaff, checkTenantActive, [
     body('endpoint').isString().notEmpty().withMessage('Endpoint requerido'),
-  ], async (req, res) => {
+  ], validate, async (req, res) => {
     try {
       const { endpoint } = req.body;
       await query('DELETE FROM push_subscriptions WHERE endpoint = $1', [endpoint]);

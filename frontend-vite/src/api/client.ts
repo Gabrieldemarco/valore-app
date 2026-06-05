@@ -33,7 +33,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const { method = 'GET', body, headers: extraHeaders = {} } = options;
   const headers: Record<string, string> = { ...extraHeaders };
   const token = getToken();
-  if (token) headers['Authorization'] = token;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   if (body) headers['Content-Type'] = 'application/json';
 
   const cacheKey = `${method}:${path}`;

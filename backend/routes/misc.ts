@@ -63,11 +63,18 @@ export default function(apiLimiter) {
   // ========== HEALTH CHECK ==========
   router.get('/health', async (req, res) => {
     try {
-      const services = await query('SELECT COUNT(*) FROM services');
-      const appointments = await query('SELECT COUNT(*) FROM appointments');
-      const tenants = await query('SELECT COUNT(*) FROM tenants');
-      res.json({ status: 'ok', database: 'PostgreSQL', services: parseInt(services.rows[0].count), appointments: parseInt(appointments.rows[0].count), tenants: parseInt(tenants.rows[0].count) });
-    } catch (err: any) { res.status(500).json({ status: 'error', message: err.message }); }
+      await query('SELECT 1');
+      res.json({
+        status: 'ok',
+        environment: process.env.NODE_ENV || 'development',
+        sentry: Boolean(process.env.SENTRY_DSN),
+        uptime_seconds: Math.round(process.uptime()),
+        database: 'PostgreSQL'
+      });
+    } catch (err: any) {
+      logger.error('Health check error', { error: err?.message || err });
+      res.status(500).json({ status: 'error', message: err?.message || 'Health check failed' });
+    }
   });
 
   // ========== LISTADO PÚBLICO DE TENANTS ==========
@@ -90,10 +97,21 @@ export default function(apiLimiter) {
     try {
       const { image, filename } = req.body;
 
+      const allowedTypes: Record<string, string> = {
+        jpeg: 'jpg',
+        jpg: 'jpg',
+        png: 'png',
+        gif: 'gif',
+        webp: 'webp'
+      };
+
       const matches = image.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
       if (!matches) return res.status(400).json({ error: 'Formato de imagen inválido' });
 
-      const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+      const mimeType = matches[1].toLowerCase();
+      const ext = allowedTypes[mimeType];
+      if (!ext) return res.status(400).json({ error: 'Tipo de imagen no soportado' });
+
       const base64Data = matches[2];
       const buffer = Buffer.from(base64Data, 'base64');
 

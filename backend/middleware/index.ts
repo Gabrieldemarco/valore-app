@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
+const config = require('../config');
 
 /**
  * Middleware que valida los resultados de express-validator.
@@ -27,7 +28,7 @@ function authenticate(allowedRoles) {
       const authHeader = req.headers.authorization;
       if (!authHeader) return res.status(401).json({ error: 'Token requerido' });
       const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded: any = jwt.verify(token, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
       if (!allowedRoles.includes(decoded.role)) {
         return res.status(403).json({ error: 'Acceso denegado' });
       }
@@ -45,7 +46,7 @@ function authenticateStaff(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Token requerido' });
     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded: any = jwt.verify(token, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
     if (!['staff', 'admin'].includes(decoded.role)) {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
@@ -62,7 +63,7 @@ function authenticateSuperAdmin(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Token requerido' });
     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded: any = jwt.verify(token, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
     if (decoded.role !== 'super_admin') {
       return res.status(403).json({ error: 'Acceso denegado' });
     }

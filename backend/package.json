@@ -4,6 +4,11 @@
   "main": "server.js",
   "scripts": {
     "start": "tsx server.ts",
+    "migrate": "node migrations/run-migrations.js",
+    "check-env": "node scripts/check-env.js",
+    "smoke": "node scripts/smoke-test.js",
+    "backup": "node scripts/backup-db.js",
+    "restore-test": "node scripts/restore-test.js",
     "test": "cross-env NODE_ENV=test jest --runInBand --forceExit",
     "test:integration": "cross-env NODE_ENV=test jest --runInBand --forceExit --config jest.integration.config.js",
     "test:e2e": "npx playwright test --config tests/e2e/playwright.config.js"
@@ -30,7 +35,8 @@
     "twilio": "^6.0.0",
     "uuid": "^9.0.0",
     "web-push": "^3.6.7",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "prom-client": "^15.0.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

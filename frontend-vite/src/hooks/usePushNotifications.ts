@@ -16,7 +16,7 @@ async function getVapidKey(): Promise<string | null> {
   return null;
 }
 
-async function urlBase64ToUint8Array(base64String: string): Promise<Uint8Array<ArrayBuffer>> {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
@@ -59,6 +59,12 @@ export function usePushNotifications() {
         return;
       }
 
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        setError('Las notificaciones push requieren HTTPS');
+        setLoading(false);
+        return;
+      }
+
       const vapidKey = await getVapidKey();
       if (!vapidKey) {
         setError('Push no configurado en el servidor');
@@ -66,13 +72,31 @@ export function usePushNotifications() {
         return;
       }
 
-      const reg = await navigator.serviceWorker.ready;
+      if (!('serviceWorker' in navigator)) {
+        setError('Service Workers no soportados');
+        setLoading(false);
+        return;
+      }
+
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg || !reg.active) {
+        try {
+          reg = await navigator.serviceWorker.register('/sw.js');
+        } catch (swErr: any) {
+          console.error('SW registration failed:', swErr);
+          setError('El Service Worker no pudo registrarse');
+          setLoading(false);
+          return;
+        }
+      }
+      reg = await navigator.serviceWorker.ready;
+
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: await urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
       }
 
@@ -86,7 +110,17 @@ export function usePushNotifications() {
 
       setSubscribed(true);
     } catch (err: any) {
-      setError(err.message || 'Error al suscribir');
+      console.error('Push subscribe error:', err.name, err.message, err);
+      const msg = err.name === 'AbortError'
+        ? 'El servicio de notificaciones no está disponible (posiblemente bloqueado por red o firewall)'
+        : err.name === 'NetworkError'
+          ? 'Error de red al conectar con el servicio de notificaciones'
+          : err.name === 'InvalidStateError'
+            ? 'El Service Worker no está activo'
+            : err.name === 'NotSupportedError'
+              ? 'Push no soportado en este navegador'
+              : err.message || 'Error al suscribir';
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { authenticateSuperAdmin, validate } from '../middleware';
+const config = require('../config');
 import { body } from 'express-validator';
 import { activateTenantFromPaidInvoice } from '../services/billing';
 
@@ -31,8 +32,8 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
       if (!valid) return res.status(400).json({ error: 'Credenciales inválidas' });
       const token = jwt.sign(
         { id: admin.id, email: admin.email, name: admin.name, role: 'super_admin' },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        config.JWT_SECRET,
+        { expiresIn: '24h', algorithm: config.JWT_ALGORITHM }
       );
       res.json({ token, name: admin.name, email: admin.email, role: 'super_admin' });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error de autenticación' }); }

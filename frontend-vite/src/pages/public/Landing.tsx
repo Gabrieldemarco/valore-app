@@ -2,6 +2,11 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import '../../styles/landing.css';
+import LandingSkeletonLoader from './LandingSkeletonLoader';
+import LandingHeroSection from './LandingHeroSection';
+import LandingServicesSection from './LandingServicesSection';
+import LandingTeamSection from './LandingTeamSection';
+import LandingBookingSection from './LandingBookingSection';
 
 interface TenantData {
   business_name: string;
@@ -77,6 +82,11 @@ const DEFAULT_LAYOUT: LayoutBlock[] = [
   { id: 'reservar', type: 'booking', enabled: true },
 ];
 
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAY_NAMES = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const daysInMonth = (m: number, y: number) => new Date(y, m + 1, 0).getDate();
+const firstDayOfMonth = (m: number, y: number) => (new Date(y, m, 1).getDay() + 6) % 7;
+
 export default function Landing() {
   const [searchParams] = useSearchParams();
   const { slug: slugParam } = useParams();
@@ -84,13 +94,15 @@ export default function Landing() {
   const quickServiceId = searchParams.get('sid') ? Number(searchParams.get('sid')) : null;
   const quickStaffId = searchParams.get('staff') ? Number(searchParams.get('staff')) : null;
   const isQuickBook = quickServiceId !== null;
+
+  // ── Data state ──
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-
+  // ── Booking state ──
   const [step, setStep] = useState(1);
   const [selectedStaff, setSelectedStaff] = useState<number | null>(null);
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -105,16 +117,15 @@ export default function Landing() {
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
   const [quickBookError, setQuickBookError] = useState(false);
+
+  // ── UI state ──
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
 
-  const todayObj = new Date();
-  const daysInMonth = (m: number, y: number) => new Date(y, m + 1, 0).getDate();
-  const firstDayOfMonth = (m: number, y: number) => (new Date(y, m, 1).getDay() + 6) % 7; // 0=Mon
-  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const today = new Date().toISOString().split('T')[0];
 
+  // ── Data fetching ──
   useEffect(() => {
     if (!tenantSlug) { setLoading(false); return; }
     const initial = (window as any).__INITIAL_DATA__;
@@ -138,6 +149,7 @@ export default function Landing() {
       .finally(() => setLoading(false));
   }, [tenantSlug]);
 
+  // ── QuickBook pre-selection ──
   useEffect(() => {
     if (isQuickBook && services.length > 0 && !quickBookError) {
       const found = services.find(s => s.id === quickServiceId);
@@ -151,6 +163,7 @@ export default function Landing() {
     }
   }, [isQuickBook, quickServiceId, quickStaffId, services, quickBookError]);
 
+  // ── Slots fetching ──
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fetchSlots = useCallback(() => {
@@ -172,12 +185,7 @@ export default function Landing() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [fetchSlots]);
 
-  const gallery: string[] = Array.isArray(tenant?.landing_gallery) ? tenant.landing_gallery as string[] : [];
-  const team: TeamItem[] = staff.length > 0 ? staff : (Array.isArray(tenant?.landing_team) ? tenant.landing_team as TeamItem[] : []);
-  const social = tenant?.landing_social_links || {};
-  const hasSocial = Object.values(social).some(Boolean);
-  const today = new Date().toISOString().split('T')[0];
-
+  // ── Side effects ──
   useEffect(() => {
     if (tenant?.landing_custom_css) {
       const el = document.createElement('style');
@@ -197,7 +205,7 @@ export default function Landing() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxIdx, gallery.length]);
+  }, [lightboxIdx]);
 
   useEffect(() => {
     if (tenant?.business_name) document.title = `${tenant.business_name} | Veloré`;
@@ -214,6 +222,7 @@ export default function Landing() {
     };
   }, [tenant?.brand_primary_color, tenant?.brand_secondary_color]);
 
+  // ── Booking submission ──
   const handleBook = async () => {
     setMsg(''); setErrMsg('');
     if (clientPhone.replace(/[^0-9]/g, '').length < 7) {
@@ -223,8 +232,7 @@ export default function Landing() {
     const apptDate = selectedTime ? new Date(`${selectedDate}T${selectedTime}:00`).toISOString() : selectedDate;
     try {
       const body: Record<string, unknown> = {
-        clientName,
-        clientPhone,
+        clientName, clientPhone,
         clientEmail: clientEmail || undefined,
         serviceId: selectedService,
         appointmentDate: apptDate,
@@ -240,58 +248,45 @@ export default function Landing() {
     }
   };
 
+  // ── Derived data ──
+  const gallery: string[] = Array.isArray(tenant?.landing_gallery) ? tenant.landing_gallery as string[] : [];
+  const team: TeamItem[] = staff.length > 0 ? staff : (Array.isArray(tenant?.landing_team) ? tenant.landing_team as TeamItem[] : []);
+  const social = tenant?.landing_social_links || {};
+  const hasSocial = Object.values(social).some(Boolean);
+
   const layout = useMemo(() => {
     const l = tenant?.landing_layout;
     return Array.isArray(l) && l.length > 0 ? l : DEFAULT_LAYOUT;
   }, [tenant?.landing_layout]);
 
+  // ── Section renderer ──
   const renderSection = (block: LayoutBlock) => {
     if (!block.enabled) return null;
 
     switch (block.type) {
       case 'hero':
         return (
-          <section key={block.id} className="hero">
-            {tenant!.landing_hero_image && <div className="hero-image" style={{ backgroundImage: `url(${fixImageUrl(tenant!.landing_hero_image)})` }} />}
-            <div className="hero-content">
-              {tenant!.brand_logo_url && <img src={fixImageUrl(tenant!.brand_logo_url)} alt={tenant!.business_name} className="hero-logo" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />}
-              <h1>{tenant!.business_name}</h1>
-              {tenant!.landing_description && <p>{tenant!.landing_description}</p>}
-              <a href="#reservar" className="btn btn-primary btn-lg">Reservar turno</a>
-              <div className="hero-trust">
-                <span>Atención personalizada</span>
-                <span>Resultados garantizados</span>
-              </div>
-            </div>
-          </section>
+          <LandingHeroSection
+            key={block.id}
+            businessName={tenant!.business_name}
+            description={tenant!.landing_description}
+            heroImage={tenant!.landing_hero_image}
+            logoUrl={tenant!.brand_logo_url}
+            fixImageUrl={fixImageUrl}
+          />
         );
 
       case 'services':
-        if (services.length === 0) return null;
         return (
-          <section key={block.id} id="servicios">
-            <h2 className="section-title">Servicios</h2>
-            <p className="section-subtitle">Elegí el servicio que mejor se adapte a vos</p>
-            <div className="services-grid">
-              {services.map(s => (
-                <div key={s.id} className="service-card">
-                  {s.image && <div className="service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})`, height: 180 }} />}
-                  <div className="service-content">
-                    <h3 className="service-name">{s.name}</h3>
-                    <div className="service-meta">
-                      <span className="service-duration">{s.duration} min</span>
-                      <span className="service-price">${s.price}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          <LandingServicesSection
+            key={block.id}
+            services={services}
+            fixImageUrl={fixImageUrl}
+          />
         );
 
       case 'gallery':
-        if (gallery.length === 0) return null;
-        return (
+        return gallery.length > 0 ? (
           <section key={block.id} id="galeria">
             <h2 className="section-title">Galería</h2>
             <p className="section-subtitle">Conocé nuestro trabajo</p>
@@ -303,280 +298,65 @@ export default function Landing() {
               ))}
             </div>
           </section>
-        );
+        ) : null;
 
       case 'team':
-        if (team.length === 0) return null;
-        return (
-          <section key={block.id} id="equipo">
-            <h2 className="section-title">Nuestro Equipo</h2>
-            <p className="section-subtitle">Conocé a los profesionales</p>
-            <div className="team-grid">
-              {team.map((m, i) => {
-                const staffMember = staff.find(s => s.name === m.name);
-                const staffId = staffMember?.id || (m as StaffMember).id;
-                return (
-                <div key={i} className="team-card" style={staffId ? { cursor: 'pointer' } : undefined}
-                  onClick={() => { if (staffId) { setSelectedStaff(staffId); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); } }}>
-                {(m.photo_url || m.photo) && <img src={fixImageUrl(m.photo_url || m.photo || '')} alt={m.name} className="team-photo" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} loading="lazy" />}
-                <h3 className="team-name">{m.name}</h3>
-                {(m.specialties?.join(', ') || m.role) && <p className="team-role">{m.specialties?.join(', ') || m.role}</p>}
-                  {m.bio && <p className="team-bio">{m.bio}</p>}
-                </div>
-              );
-              })}
-            </div>
-          </section>
-        );
+        return team.length > 0 ? (
+          <LandingTeamSection
+            key={block.id}
+            team={team}
+            staff={staff}
+            gallery={[]}
+            fixImageUrl={fixImageUrl}
+            onSelectStaff={(id) => { setSelectedStaff(id); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); }}
+            onOpenLightbox={setLightboxIdx}
+          />
+        ) : null;
 
       case 'booking':
-        const selStaff = selectedStaff ? staff.find(s => s.id === selectedStaff) : null;
         return (
-          <section key={block.id} id="reservar" className="booking-section">
-            <h2 className="section-title">Reservá tu turno</h2>
-            <p className="section-subtitle">Completá los pasos para agendar</p>
-
-            <div className="booking-container">
-              <div className="stepper">
-                {isQuickBook ? (
-                  <>
-                    <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => setStep(3)}>
-                      <div className="step-number">1</div>
-                      <div className="step-label">Fecha</div>
-                    </div>
-                    <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? setStep(4) : undefined}>
-                      <div className="step-number">2</div>
-                      <div className="step-label">Horario</div>
-                    </div>
-                    <div className={`step ${step >= 5 ? 'active' : ''}`}>
-                      <div className="step-number">3</div>
-                      <div className="step-label">Tus datos</div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} onClick={() => setStep(1)}>
-                      <div className="step-number">1</div>
-                      <div className="step-label">Peluquero</div>
-                    </div>
-                    <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} onClick={() => step > 1 ? setStep(2) : undefined}>
-                      <div className="step-number">2</div>
-                      <div className="step-label">Servicio</div>
-                    </div>
-                    <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => step > 2 ? setStep(3) : undefined}>
-                      <div className="step-number">3</div>
-                      <div className="step-label">Fecha</div>
-                    </div>
-                    <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? setStep(4) : undefined}>
-                      <div className="step-number">4</div>
-                      <div className="step-label">Horario</div>
-                    </div>
-                    <div className={`step ${step >= 5 ? 'active' : ''}`}>
-                      <div className="step-number">5</div>
-                      <div className="step-label">Tus datos</div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <form className="booking-form" onSubmit={e => { e.preventDefault(); handleBook(); }}>
-                {step === 1 && !isQuickBook && (
-                  <div className="step-content">
-                    <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>Elegí tu peluquero</label>
-                    {staff.length === 0 ? (
-                      <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay peluqueros disponibles</p>
-                    ) : (
-                      <div className="team-grid">
-                        {staff.map(s => (
-                          <div key={s.id} className={`team-card ${selectedStaff === s.id ? 'selected' : ''}`}
-                            style={{ cursor: 'pointer', border: selectedStaff === s.id ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}
-                            onClick={() => { setSelectedStaff(s.id); setStep(2); }}>
-                            {s.photo_url && <img src={fixImageUrl(s.photo_url)} alt={s.name} className="team-photo" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />}
-                            <h3 className="team-name">{s.name}</h3>
-                            {s.specialties?.length ? <p className="team-role">{s.specialties.join(', ')}</p> : null}
-                            {s.bio && <p className="team-bio">{s.bio}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isQuickBook && !quickBookError && step < 3 && (
-                  <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
-                    <div className="spinner" style={{ margin: '0 auto' }} />
-                    <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>Preparando reserva rápida...</p>
-                  </div>
-                )}
-                {isQuickBook && quickBookError && (
-                  <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
-                    <p style={{ color: '#fca5a5' }}>Servicio no disponible para reserva rápida</p>
-                    <button type="button" className="btn btn-secondary" onClick={() => { window.location.href = `/p/${tenantSlug}`; }}>
-                      Ir a reserva normal
-                    </button>
-                  </div>
-                )}
-                {step === 2 && !isQuickBook && (
-                  <div className="step-content">
-                    <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>Elegí un servicio</label>
-                    <div className="booking-services">
-                      {services.map(s => (
-                        <div key={s.id}
-                          className={`booking-service-card ${selectedService === s.id ? 'selected' : ''}`}
-                          onClick={() => { setSelectedService(s.id); setStep(3); }}>
-                          {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
-                          <div className="booking-service-info">
-                            <div className="booking-service-name">{s.name}</div>
-                            <div className="booking-service-meta">
-                              <span className="booking-service-duration">{s.duration} min</span>
-                              <span className="booking-service-price">${s.price}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div className="step-content form-group" style={{ textAlign: 'center' }}>
-                    <label style={{ textAlign: 'center', marginBottom: 16, fontSize: '1rem' }}>Elegí una fecha disponible</label>
-                    <div className="custom-calendar" style={{ margin: '0 auto' }}>
-                      <div className="cal-header">
-                        <button type="button" className="cal-nav" onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else { setCalMonth(calMonth - 1); } }}>&lsaquo;</button>
-                        <span className="cal-month-year">{monthNames[calMonth]} {calYear}</span>
-                        <button type="button" className="cal-nav" onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else { setCalMonth(calMonth + 1); } }}>&rsaquo;</button>
-                      </div>
-                      <div className="cal-weekdays">
-                        {dayNames.map((d, i) => <span key={i} className={i >= 5 ? 'cal-weekend' : ''}>{d}</span>)}
-                      </div>
-                      <div className="cal-days">
-                        {Array.from({ length: firstDayOfMonth(calMonth, calYear) }).map((_, i) => (
-                          <div key={`e${i}`} className="cal-day empty" />
-                        ))}
-                        {Array.from({ length: daysInMonth(calMonth, calYear) }).map((_, i) => {
-                          const day = i + 1;
-                          const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const isPast = new Date(dateStr) < new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate());
-                          const isToday = dateStr === today;
-                          const isSelected = dateStr === selectedDate;
-                          const d = new Date(calYear, calMonth, day);
-                          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                          let cls = 'cal-day';
-                          if (isPast) cls += ' disabled';
-                          if (isToday) cls += ' today';
-                          if (isSelected) cls += ' selected';
-                          if (!isPast && isWeekend) cls += ' weekend';
-                          return (
-                            <div key={day} className={cls}
-                              onClick={() => { if (!isPast) { setSelectedDate(dateStr); setStep(4); } }}>
-                              {day}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="cal-footer">
-                        <button type="button" className="cal-today-btn" onClick={() => { setCalMonth(todayObj.getMonth()); setCalYear(todayObj.getFullYear()); }}>Hoy</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                    {step === 4 && (
-                      <div className="step-content form-group">
-                        <label>Elegí un horario</label>
-                        {slotsTimeout ? (
-                          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                            <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-                            <p>La consulta está demorando más de lo normal. <button className="btn btn-link" onClick={fetchSlots} style={{ padding: 0, margin: 0, background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Reintentar</button></p>
-                          </div>
-                        ) : slots.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                        <div style={{ fontSize: 40, marginBottom: 12 }}>🕐</div>
-                        <p>No hay horarios disponibles para esta fecha</p>
-                      </div>
-                    ) : (
-                      <div className="slots-grid" style={{ marginTop: 6 }}>
-                        {slots.map(s => (
-                          <button key={s.time} type="button" className={`slot-btn ${selectedTime === s.time ? 'selected' : ''} ${!s.available ? 'disabled' : ''}`}
-                            disabled={!s.available} onClick={() => { setSelectedTime(s.time); setStep(5); }}>
-                            {s.time}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {step === 5 && (
-                  <div className="step-content" style={{ maxWidth: 480, margin: '0 auto' }}>
-                    <div className="booking-summary">
-                      {selStaff && <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--glass-border)' }}>
-                        {selStaff.photo_url && <img src={fixImageUrl(selStaff.photo_url)} alt={selStaff.name} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />}
-                        <div><strong>{selStaff.name}</strong></div>
-                      </div>}
-                      {(() => { const sv = services.find(s => s.id === selectedService); return sv ? (
-                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                          <div className="booking-summary-icon">✂️</div>
-                          <div className="booking-summary-details">
-                            <div className="booking-summary-title">{sv.name}</div>
-                            <div className="booking-summary-sub">{sv.duration} min &middot; ${sv.price}</div>
-                          </div>
-                          <div className="booking-summary-right">
-                            <div>{selectedDate}</div>
-                            <div>{selectedTime}</div>
-                          </div>
-                        </div>
-                      ) : null })()}
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Nombre</label>
-                        <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} required placeholder="Tu nombre" />
-                      </div>
-                      <div className="form-group">
-                        <label>Teléfono</label>
-                        <input type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} required placeholder="099 123 456" />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>Email (opcional)</label>
-                      <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="mail@ejemplo.com" />
-                    </div>
-                    <div className="form-group">
-                      <label>Notas (opcional)</label>
-                      <textarea value={clientNotes} onChange={e => setClientNotes(e.target.value)} placeholder="Algún comentario..." rows={3} />
-                    </div>
-                    <div className="booking-actions">
-                      <button type="button" className="btn btn-secondary" onClick={() => setStep(4)}>Volver</button>
-                      <button type="submit" className="btn btn-primary btn-lg">Confirmar turno</button>
-                    </div>
-                  </div>
-                )}
-
-                {!msg && !errMsg && step < 5 && (!isQuickBook || step >= 4) && (
-                  <div style={{ textAlign: 'center', marginTop: 20 }}>
-                    <button type="button" className="btn" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '8px 20px' }}
-                      onClick={() => { if (isQuickBook) { setStep(3); setSelectedDate(''); setSelectedTime(''); } else { setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); } }}>
-                      Cancelar
-                    </button>
-                  </div>
-                )}
-
-                {msg && (
-                  <div className="step-content booking-success">
-                    <div className="success-checkmark">✓</div>
-                    <div className="success-title">{msg}</div>
-                    <div className="success-sub">Te enviamos un recordatorio antes del turno.</div>
-                            <button type="button" className="btn btn-primary btn-lg" onClick={() => { setMsg(''); setErrMsg(''); if (isQuickBook) { setStep(3); setSelectedDate(''); setSelectedTime(''); } else { setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); } }}>
-                              Reservar otro turno
-                            </button>
-                  </div>
-                )}
-                {errMsg && <div className="result error">{errMsg}</div>}
-              </form>
-            </div>
-          </section>
+          <LandingBookingSection
+            key={block.id}
+            staff={staff}
+            services={services}
+            slots={slots}
+            slotsTimeout={slotsTimeout}
+            step={step}
+            selectedStaff={selectedStaff}
+            selectedService={selectedService}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            clientName={clientName}
+            clientPhone={clientPhone}
+            clientEmail={clientEmail}
+            clientNotes={clientNotes}
+            msg={msg}
+            errMsg={errMsg}
+            isQuickBook={isQuickBook}
+            quickBookError={quickBookError}
+            tenantSlug={tenantSlug}
+            calMonth={calMonth}
+            calYear={calYear}
+            today={today}
+            monthNames={MONTH_NAMES}
+            dayNames={DAY_NAMES}
+            daysInMonth={daysInMonth}
+            firstDayOfMonth={firstDayOfMonth}
+            fixImageUrl={fixImageUrl}
+            onSetStep={setStep}
+            onSetSelectedStaff={setSelectedStaff}
+            onSetSelectedService={setSelectedService}
+            onSetSelectedDate={setSelectedDate}
+            onSetSelectedTime={setSelectedTime}
+            onSetClientName={setClientName}
+            onSetClientPhone={setClientPhone}
+            onSetClientEmail={setClientEmail}
+            onSetClientNotes={setClientNotes}
+            onSetCalMonth={setCalMonth}
+            onSetCalYear={setCalYear}
+            onFetchSlots={fetchSlots}
+            onSubmit={handleBook}
+          />
         );
 
       case 'custom':
@@ -592,6 +372,7 @@ export default function Landing() {
     }
   };
 
+  // ── Guards ──
   if (!tenantSlug) {
     return (
       <div className="landing-view">
@@ -605,33 +386,7 @@ export default function Landing() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="landing-view">
-        <style>{`@keyframes skel{0%{opacity:.3}50%{opacity:.6}100%{opacity:.3}}`}</style>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px' }}>
-          <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center', marginBottom: 60 }}>
-            <div style={{ flex: 1, minWidth: 280 }}>
-              <div style={{ height: 40, width: '70%', background: 'rgba(148,163,184,0.15)', borderRadius: 8, marginBottom: 16, animation: 'skel 1.5s ease-in-out infinite' }} />
-              <div style={{ height: 20, width: '90%', background: 'rgba(148,163,184,0.1)', borderRadius: 6, marginBottom: 10, animation: 'skel 1.5s ease-in-out infinite' }} />
-              <div style={{ height: 20, width: '60%', background: 'rgba(148,163,184,0.1)', borderRadius: 6, animation: 'skel 1.5s ease-in-out infinite' }} />
-            </div>
-            <div style={{ width: '100%', maxWidth: 500, height: 320, background: 'rgba(148,163,184,0.08)', borderRadius: 16, animation: 'skel 1.5s ease-in-out infinite' }} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 60 }}>
-            {[1, 2, 3].map(i => (
-              <div key={i} style={{ height: 180, background: 'rgba(148,163,184,0.08)', borderRadius: 12, animation: 'skel 1.5s ease-in-out infinite' }} />
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {[1, 2, 3].map(i => (
-              <div key={i} style={{ width: 160, height: 180, background: 'rgba(148,163,184,0.08)', borderRadius: 12, animation: 'skel 1.5s ease-in-out infinite' }} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LandingSkeletonLoader />;
 
   if (error || !tenant) {
     return (
@@ -646,6 +401,7 @@ export default function Landing() {
     );
   }
 
+  // ── Main render ──
   return (
     <div className="landing-view">
       {layout.map(renderSection)}

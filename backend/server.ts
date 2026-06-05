@@ -28,6 +28,7 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
@@ -37,6 +38,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { initDB, query, queryOne, pool } from './database';
 require('dotenv').config();
+const config = require('./config');
 const Sentry = require('@sentry/node');
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -46,15 +48,36 @@ if (process.env.SENTRY_DSN) {
   });
 }
 import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase } from './cron-billing';
-import logger from './services/logger';
+import logger, { stream as loggerStream } from './services/logger';
 import morgan from 'morgan';
 import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
 import { generateAvailableSlots } from './services/slots';
 import { authenticateSuperAdmin } from './middleware';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './services/swagger';
+import { metricsMiddleware, createMetricsHandler, refreshDbPoolMetrics } from './services/metrics';
+import metricsRegister from './services/metrics';
 
 const app = express();
+
+function createBasicAuthMiddleware(validUser: string, validPass: string) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      res.set('WWW-Authenticate', 'Basic realm="Protected"');
+      return res.status(401).send('Unauthorized');
+    }
+
+    const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString('utf8');
+    const [user, pass] = credentials.split(':');
+    if (user !== validUser || pass !== validPass) {
+      res.set('WWW-Authenticate', 'Basic realm="Protected"');
+      return res.status(401).send('Unauthorized');
+    }
+
+    next();
+  };
+}
 
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
@@ -86,13 +109,33 @@ app.use(helmet({
     }
   }
 }));
+app.use(helmet.noSniff());
+app.use(helmet.frameguard({ action: 'deny' }));
+app.use(helmet.crossOriginResourcePolicy({ policy: 'same-origin' }));
+app.use(helmet.dnsPrefetchControl());
+app.use(helmet.referrerPolicy({ policy: 'no-referrer' }));
+app.use(helmet.permittedCrossDomainPolicies());
 app.use(compression());
-app.use(morgan('combined'));
-if (process.env.ALLOWED_ORIGINS) {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-  app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(morgan('combined', { stream: loggerStream }));
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.requestHandler());
+}
+if (config.METRICS_ENABLED) {
+  app.use(metricsMiddleware);
+}
+if (config.ALLOWED_ORIGINS) {
+  app.use(cors({ origin: config.ALLOWED_ORIGINS, credentials: true }));
 } else {
   app.use(cors());
+}
+
+// En producción/config.FORCE_HTTPS, forzar HTTPS y HSTS
+if (config.FORCE_HTTPS) {
+  app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }));
+  app.use((req, res, next) => {
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
+    return res.redirect(301, `https://${req.get('host')}${req.originalUrl}`);
+  });
 }
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -186,16 +229,66 @@ initDB().then(async () => {
 }).catch(err => logger.error('Error initDB', { error: err.message }));
 
 // ========== ROUTES ==========
+app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter, publicLimiter));
+app.use('/api', apiLimiter);
 app.use('/api', require('./routes/auth').default(loginLimiter, passwordResetLimiter));
 app.use('/api', require('./routes/mercadopago').default(createMercadoPagoPreference, MP_CURRENCY));
 app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS));
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
-app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter, publicLimiter));
 app.use('/api', require('./routes/misc').default(apiLimiter));
 app.use('/api', require('./routes/push').default());
 
 // ========== SWAGGER API DOCS ==========
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+if (config.SWAGGER_UI_ENABLED) {
+  if (config.NODE_ENV === 'production' && !config.SWAGGER_BASIC_AUTH_ENABLED) {
+    logger.warn('Swagger UI deshabilitado en producción porque no hay autenticación básica configurada. Establece SWAGGER_BASIC_AUTH_USER y SWAGGER_BASIC_AUTH_PASS o deshabilita SWAGGER_UI_ENABLED.');
+  } else {
+    const swaggerAuth = config.SWAGGER_BASIC_AUTH_ENABLED
+      ? createBasicAuthMiddleware(config.SWAGGER_BASIC_AUTH_USER, config.SWAGGER_BASIC_AUTH_PASS)
+      : undefined;
+
+    if (swaggerAuth) {
+      app.use(config.SWAGGER_UI_ROUTE, swaggerAuth, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+      app.get(config.SWAGGER_UI_JSON_ROUTE, swaggerAuth, (req, res) => res.json(swaggerSpec));
+    } else {
+      app.use(config.SWAGGER_UI_ROUTE, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+      app.get(config.SWAGGER_UI_JSON_ROUTE, (req, res) => res.json(swaggerSpec));
+    }
+  }
+}
+if (config.METRICS_ENABLED) {
+  if (config.NODE_ENV === 'production' && !config.METRICS_AUTH_ENABLED) {
+    logger.warn('Endpoint /metrics deshabilitado en producción porque no hay autenticación básica configurada. Establece METRICS_BASIC_AUTH_USER y METRICS_BASIC_AUTH_PASS o deshabilita METRICS_ENABLED.');
+  } else {
+    const metricsHandlerInstance = createMetricsHandler(pool);
+    const metricsAuth = config.METRICS_AUTH_ENABLED
+      ? createBasicAuthMiddleware(config.METRICS_BASIC_AUTH_USER, config.METRICS_BASIC_AUTH_PASS)
+      : undefined;
+
+    app.get('/metrics', metricsAuth || ((req, res, next) => next()), metricsHandlerInstance);
+    app.get('/monitoring/summary', metricsAuth || ((req, res, next) => next()), async (req, res) => {
+      try {
+        if (pool) refreshDbPoolMetrics(pool);
+        const metrics = await metricsRegister.getMetricsAsJSON();
+        res.json({
+          status: 'ok',
+          environment: config.NODE_ENV,
+          uptime_seconds: Math.round(process.uptime()),
+          memory_usage: process.memoryUsage(),
+          load_average: os.loadavg(),
+          db_pool: {
+            total: pool.totalCount,
+            idle: pool.idleCount,
+            waiting: pool.waitingCount,
+          },
+          metrics,
+        });
+      } catch (err: any) {
+        res.status(500).json({ error: 'Error al obtener métricas', detail: err.message });
+      }
+    });
+  }
+}
 
 // ========== SERVIR ARCHIVOS ESTÁTICOS DEL FRONTEND ==========
 const frontendPublicPath = path.join(__dirname, '..', 'frontend', 'public');
@@ -208,15 +301,15 @@ app.use((req, res, next) => {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   }
   next();
-}, express.static(frontendDistPath, { maxAge: '1d' }));
+}, express.static(frontendDistPath, { maxAge: '1d', dotfiles: 'ignore', index: false }));
 
 // Archivos legacy NO HTML (img, css, js) aún pueden ser necesarios
 app.use((req, res, next) => {
   if (req.path.endsWith('.html')) return next();
-  express.static(frontendPublicPath, { maxAge: '1d' })(req, res, next);
+  express.static(frontendPublicPath, { maxAge: '1d', dotfiles: 'ignore', index: false })(req, res, next);
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d', dotfiles: 'ignore', index: false }));
 
 // ========== SSR LANDING PAGE: pre-render hero + inject data ==========
 function fixImageUrlServer(url, req) {
@@ -314,8 +407,22 @@ app.get('*', (req, res) => {
 
 // ========== SENTRY ERROR HANDLER ==========
 if (process.env.SENTRY_DSN) {
-  Sentry.setupExpressErrorHandler(app);
+  app.use(Sentry.Handlers.errorHandler());
 }
+
+app.use((err: any, req: any, res: any, next: any) => {
+  logger.error('Unhandled request error', {
+    message: err?.message || 'Unknown error',
+    stack: err?.stack,
+    path: req?.path,
+    method: req?.method,
+  });
+
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err?.status || 500).json({ error: 'Internal server error' });
+});
 
 // ========== PROGRAMAR TAREAS CRON ==========
 cron.schedule('0 0 1 * *', async () => {
@@ -412,12 +519,12 @@ let server;
 if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, () => {
     logger.info(`Backend activo: http://localhost:${PORT}`);
-    logger.info('Multi-tenant: /p/:slug/...');
-    logger.info('Staff: /api/staff/login');
-    logger.info('Landing: GET /landing?tenant=slug');
-    logger.info('Super Admin: /api/super-admin/login');
+    logger.info('Entorno:', { NODE_ENV: config.NODE_ENV, FORCE_HTTPS: config.FORCE_HTTPS });
+    logger.info('Monitoreo:', { METRICS_ENABLED: config.METRICS_ENABLED, METRICS_AUTH_ENABLED: config.METRICS_AUTH_ENABLED });
+    logger.info('Documentacion:', { SWAGGER_UI_ENABLED: config.SWAGGER_UI_ENABLED, SWAGGER_BASIC_AUTH_ENABLED: config.SWAGGER_BASIC_AUTH_ENABLED, SWAGGER_UI_ROUTE: config.SWAGGER_UI_ROUTE });
+    logger.info('CORS:', { allowedOrigins: config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.join(', ') : 'any' });
+    logger.info('Rutas clave:', { multiTenant: '/p/:slug/...', staffLogin: '/api/staff/login', superAdminLogin: '/api/super-admin/login', forgotPassword: '/staff/forgot-password' });
     logger.info(`Frontend servido desde: ${frontendPublicPath}`);
-    logger.info('Recuperacion de contrasena: /staff/forgot-password');
   });
 }
 
