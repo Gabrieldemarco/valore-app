@@ -47,7 +47,7 @@ if (process.env.SENTRY_DSN) {
     tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.2'),
   });
 }
-import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase } from './cron-billing';
+import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase, sendAppointmentReminders } from './cron-billing';
 import logger, { stream as loggerStream } from './services/logger';
 import morgan from 'morgan';
 import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
@@ -445,6 +445,16 @@ cron.schedule('0 8 * * *', async () => {
   }
 });
 
+cron.schedule('30 8 * * *', async () => {
+  console.log('🔔 Ejecutando recordatorios de turnos del día...');
+  try {
+    const result = await sendAppointmentReminders();
+    console.log('🔔 Resultado recordatorios:', result);
+  } catch (err: any) {
+    logger.error('❌ Error en recordatorios de turnos:', err);
+  }
+});
+
 cron.schedule('0 9 * * *', async () => {
   console.log('🔔 Revisando tenants con trial por expirar...');
   try {
@@ -509,6 +519,7 @@ console.log('⏰ Tareas programadas:');
 console.log('  • Facturación: Día 1 de cada mes a las 00:00');
 console.log('  • Backup DB: Diario a las 03:00');
 console.log('  • Suspensión trials: Diario a las 08:00');
+console.log('  • Recordatorio turnos: Diario a las 08:30');
 console.log('  • Recordatorio trial: Diario a las 09:00');
 console.log('  • Recordatorio pagos: Diario a las 10:00');
 console.log('  • Suspensión vencidos: Diario a las 23:00');

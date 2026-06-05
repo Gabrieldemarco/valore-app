@@ -8,6 +8,7 @@ import { verifyMercadoPagoWebhook,
   isPaymentNotification, } from '../services/mercadopago-webhook';
 import { getPayment as mpGetPayment } from '../services/mercadopago-client';
 import { activateTenantFromPaidInvoice } from '../services/billing';
+import { sendClientConfirmation, notifyStaff } from '../services/notifications';
 
 /**
  * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} createMercadoPagoPreference
@@ -79,7 +80,44 @@ export default function(createMercadoPagoPreference, MP_CURRENCY) {
       }
 
       const paymentData = await mpGetPayment(paymentId);
-      const invoiceId = parseInt(paymentData.external_reference, 10);
+      const extRef = paymentData.external_reference || '';
+
+      if (extRef.startsWith('appointment:')) {
+        const appointmentId = parseInt(extRef.split(':')[1], 10);
+        if (!appointmentId) return res.status(400).send('Turno no encontrado en la referencia');
+
+        const appointment = await queryOne('SELECT * FROM appointments WHERE id = $1', [appointmentId]);
+        if (!appointment) return res.status(404).send('Turno no encontrado');
+
+        await query(
+          `UPDATE payments SET status = $1, mp_payment_id = $2, raw_payload = COALESCE(raw_payload::jsonb, '{}'::jsonb) || $3::jsonb WHERE invoice_id IS NULL AND mp_payment_id = $4`,
+          [paymentData.status, paymentData.id, JSON.stringify(paymentData), paymentData.id]
+        );
+
+        if (paymentData.status === 'approved' && !appointment.deposit_paid) {
+          await query(
+            `UPDATE appointments SET deposit_paid = true, deposit_payment_id = $1, status = 'confirmed', updated_at = NOW() WHERE id = $2`,
+            [paymentData.id, appointmentId]
+          );
+          const tenant = await queryOne('SELECT * FROM tenants WHERE id = $1', [appointment.tenant_id]);
+          const updated = await queryOne('SELECT * FROM appointments WHERE id = $1', [appointmentId]);
+          if (tenant && updated) {
+            const staffMember = updated.staff_id
+              ? await queryOne('SELECT name, email FROM staff WHERE id = $1', [updated.staff_id])
+              : null;
+            if (staffMember) {
+              updated.staff_name = staffMember.name;
+              updated.staff_email = staffMember.email;
+            }
+            sendClientConfirmation(updated, tenant).catch(e => logger.error('Error notif cliente seña', { error: e.message }));
+            notifyStaff(updated, tenant).catch(e => logger.error('Error notif staff seña', { error: e.message }));
+          }
+          logger.info('Seña pagada y turno confirmado', { appointmentId });
+        }
+        return res.status(200).send('OK');
+      }
+
+      const invoiceId = parseInt(extRef, 10);
       if (!invoiceId) return res.status(400).send('Factura no encontrada en la referencia');
 
       const invoice = await queryOne('SELECT id, amount, status FROM invoices WHERE id = $1', [invoiceId]);

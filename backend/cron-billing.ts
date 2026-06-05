@@ -3,6 +3,7 @@
 
 import { query, queryOne } from './database';
 import createEmailTransporter from './services/email';
+import { sendWhatsApp } from './services/twilio';
 import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -412,13 +413,95 @@ async function backupDatabase() {
     });
 }
 
+// ========== 5. RECORDATORIOS DE TURNOS (diario a las 8:00 para turnos del día) ==========
+/**
+ * Envía recordatorios por WhatsApp/email a clientes con turnos confirmados para hoy.
+ * @returns {Promise<{success: boolean, reminded?: number, error?: string}>}
+ */
+async function sendAppointmentReminders() {
+    console.log('🔔 [CRON] Enviando recordatorios de turnos para hoy...');
+    try {
+        const result = await query(
+            `SELECT a.id, a.client_name, a.client_phone, a.client_email, a.service,
+                    a.appointment_date, a.staff_id, a.tenant_id,
+                    t.slug, t.business_name, t.business_address, t.business_phone,
+                    t.brand_primary_color, t.notification_whatsapp,
+                    s.name as staff_name
+             FROM appointments a
+             JOIN tenants t ON a.tenant_id = t.id
+             LEFT JOIN staff s ON a.staff_id = s.id
+             WHERE a.appointment_date::date = CURRENT_DATE
+               AND a.status = 'confirmed'
+               AND a.reminder_sent = false
+             ORDER BY a.appointment_date`
+        );
+        const appointments = result.rows || [];
+        if (appointments.length === 0) {
+            console.log('✅ No hay turnos para recordar hoy');
+            return { success: true, reminded: 0 };
+        }
+        console.log(`📨 Enviando ${appointments.length} recordatorios...`);
+        let sentCount = 0;
+        const transporter = createEmailTransporter();
+        for (const apt of appointments) {
+            try {
+                const date = new Date(apt.appointment_date);
+                const timeStr = date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long' });
+
+                // WhatsApp
+                if (apt.client_phone) {
+                    const waBody = `🔔 Recordatorio ${apt.business_name}\nHola ${apt.client_name}, te recordamos que tenés turno hoy:\n📅 ${dateStr}\n🕐 ${timeStr}\n✂️ ${apt.service}${apt.staff_name ? `\n💈 ${apt.staff_name}` : ''}\n📍 ${apt.business_address || ''}`;
+                    await sendWhatsApp(apt.client_phone, waBody);
+                }
+
+                // Email
+                if (apt.client_email) {
+                    const html = `
+                        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                            <h2 style="color:${apt.brand_primary_color || '#2563eb'}">🔔 Recordatorio de Turno</h2>
+                            <p>Hola <strong>${apt.client_name}</strong>,</p>
+                            <p>Te recordamos que tenés un turno hoy en <strong>${apt.business_name}</strong>:</p>
+                            <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
+                                <p><strong>📅 Fecha:</strong> ${dateStr}</p>
+                                <p><strong>🕐 Hora:</strong> ${timeStr}</p>
+                                <p><strong>✂️ Servicio:</strong> ${apt.service}</p>
+                                ${apt.staff_name ? `<p><strong>💈 Peluquero:</strong> ${apt.staff_name}</p>` : ''}
+                            </div>
+                            <p>📍 ${apt.business_address || ''}<br>📞 ${apt.business_phone || ''}</p>
+                            <p style="color:#6b7280;font-size:14px;margin-top:20px">💡 Llegá 5 minutos antes</p>
+                        </div>`;
+                    await transporter.sendMail({
+                        from: `"${apt.business_name}" <${process.env.SMTP_USER}>`,
+                        to: apt.client_email,
+                        subject: `🔔 Recordatorio: Turno hoy en ${apt.business_name}`,
+                        html,
+                    });
+                }
+
+                await query('UPDATE appointments SET reminder_sent = true, updated_at = NOW() WHERE id = $1', [apt.id]);
+                sentCount++;
+                console.log(`✅ Recordatorio enviado: ${apt.client_name} - ${timeStr}`);
+            } catch (err: any) {
+                logger.error(`❌ Error en recordatorio para turno ${apt.id}:`, err.message);
+            }
+        }
+        console.log(`✅ Recordatorios enviados: ${sentCount}/${appointments.length}`);
+        return { success: true, reminded: sentCount };
+    } catch (err: any) {
+        logger.error('💥 Error en sendAppointmentReminders:', err);
+        return { success: false, error: err.message };
+    }
+}
+
 // ========== EXPORTAR TODAS LAS FUNCIONES ==========
 export {
     generateMonthlyInvoices,
     sendPaymentReminders,
     suspendOverdueTenants,
-    suspendExpiredFreeTrials,  // <-- ✅ AGREGAR ESTA LÍNEA
+    suspendExpiredFreeTrials,
     backupDatabase,
+    sendAppointmentReminders,
     PLANS,
     MP_CURRENCY
 };

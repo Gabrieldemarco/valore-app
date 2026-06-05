@@ -30,6 +30,11 @@ async function sendClientConfirmation(appointment, tenant) {
 
   const date = new Date(appointment.appointment_date);
 
+  const manageLink = appointment.management_link
+    ? `<p style="margin-top:20px"><a href="${appointment.management_link}" style="background:${tenant.brand_primary_color || '#2563eb'};color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Gestionar turno</a></p>
+       <p style="font-size:13px;color:#6b7280">O copiá este enlace: <a href="${appointment.management_link}" style="color:${tenant.brand_primary_color || '#2563eb'}">${appointment.management_link}</a></p>`
+    : '';
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
       <h2 style="color:${tenant.brand_primary_color || '#2563eb'}">✅ Turno Confirmado</h2>
@@ -42,6 +47,7 @@ async function sendClientConfirmation(appointment, tenant) {
         ${appointment.staff_name ? `<p><strong>💈 Peluquero:</strong> ${appointment.staff_name}</p>` : ''}
       </div>
       <p>📍 ${tenant.business_address || ''}<br>📞 ${tenant.business_phone || ''}</p>
+      ${manageLink}
       <p style="color:#6b7280;font-size:14px;margin-top:30px">💡 Llegá 5 minutos antes</p>
     </div>
   `;
@@ -70,7 +76,10 @@ async function sendClientConfirmation(appointment, tenant) {
 
   // WhatsApp al cliente
   if (appointment.client_phone) {
-    const clientBody = `✅ Hola ${appointment.client_name}, tu turno en ${tenant.business_name} fue confirmado:\n📅 ${date.toLocaleDateString('es-UY')}\n🕐 ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📍 ${tenant.business_address || ''}`;
+    let clientBody = `✅ Hola ${appointment.client_name}, tu turno en ${tenant.business_name} fue confirmado:\n📅 ${date.toLocaleDateString('es-UY')}\n🕐 ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📍 ${tenant.business_address || ''}`;
+    if (appointment.management_link) {
+      clientBody += `\n\n🔗 Gestioná tu turno: ${appointment.management_link}`;
+    }
     await sendWhatsApp(appointment.client_phone, clientBody);
   }
 

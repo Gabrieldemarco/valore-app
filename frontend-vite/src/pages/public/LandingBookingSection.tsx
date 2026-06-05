@@ -61,6 +61,12 @@ interface LandingBookingSectionProps {
   onSetCalYear: (y: number) => void;
   onFetchSlots: () => void;
   onSubmit: () => void;
+  recurringEnabled: boolean;
+  recurringFrequency: string;
+  recurringCount: number;
+  onSetRecurringEnabled: (v: boolean) => void;
+  onSetRecurringFrequency: (v: string) => void;
+  onSetRecurringCount: (v: number) => void;
 }
 
 export default function LandingBookingSection({
@@ -73,6 +79,8 @@ export default function LandingBookingSection({
   onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
   onSetClientName, onSetClientPhone, onSetClientEmail, onSetClientNotes,
   onSetCalMonth, onSetCalYear, onFetchSlots, onSubmit,
+  recurringEnabled, recurringFrequency, recurringCount,
+  onSetRecurringEnabled, onSetRecurringFrequency, onSetRecurringCount,
 }: LandingBookingSectionProps) {
   const selStaff = selectedStaff ? staff.find(s => s.id === selectedStaff) : null;
   const todayObj = new Date();
@@ -348,6 +356,28 @@ export default function LandingBookingSection({
               <div className="form-group">
                 <label>Notas (opcional)</label>
                 <textarea value={clientNotes} onChange={e => onSetClientNotes(e.target.value)} placeholder="Algún comentario..." rows={3} />
+              </div>
+              <div className="form-group" style={{ marginTop: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={recurringEnabled} onChange={e => onSetRecurringEnabled(e.target.checked)} style={{ width: 18, height: 18 }} />
+                  Repetir turno
+                </label>
+                {recurringEnabled && (
+                  <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
+                    <select value={recurringFrequency} onChange={e => onSetRecurringFrequency(e.target.value)}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'inherit' }}>
+                      <option value="weekly">Todas las semanas</option>
+                      <option value="biweekly">Cada 2 semanas</option>
+                      <option value="monthly">Todos los meses</option>
+                    </select>
+                    <select value={recurringCount} onChange={e => onSetRecurringCount(parseInt(e.target.value))}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'inherit' }}>
+                      {[2, 3, 4, 5, 6, 8, 10, 12].map(n => (
+                        <option key={n} value={n}>{n} turnos</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="booking-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => onSetStep(4)}>Volver</button>

@@ -245,6 +245,22 @@ async function initDB() {
 
       ALTER TABLE appointments ADD COLUMN IF NOT EXISTS staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL;
 
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_token TEXT UNIQUE;
+
+      CREATE INDEX IF NOT EXISTS idx_appointments_client_token ON appointments(client_token);
+
+      ALTER TABLE services ADD COLUMN IF NOT EXISTS deposit_amount DECIMAL(10,2) DEFAULT NULL;
+
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_amount DECIMAL(10,2) DEFAULT NULL;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_paid BOOLEAN DEFAULT false;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_payment_id TEXT;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_preference_id TEXT;
+
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS recurring_group TEXT;
+      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS recurring_rule JSONB;
+
+      CREATE INDEX IF NOT EXISTS idx_appointments_recurring_group ON appointments(recurring_group);
+
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS landing_layout JSONB DEFAULT NULL;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_status TEXT;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMP;

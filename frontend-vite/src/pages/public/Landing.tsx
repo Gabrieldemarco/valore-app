@@ -117,6 +117,9 @@ export default function Landing() {
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
   const [quickBookError, setQuickBookError] = useState(false);
+  const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState('weekly');
+  const [recurringCount, setRecurringCount] = useState(4);
 
   // ── UI state ──
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -239,10 +242,18 @@ export default function Landing() {
         notes: clientNotes || undefined,
       };
       if (selectedStaff) body.staffId = selectedStaff;
-      await api.post(`/p/${tenantSlug}/appointments`, body);
-      setMsg('Turno reservado con éxito');
+      if (recurringEnabled) {
+        body.recurring = { frequency: recurringFrequency, count: recurringCount };
+      }
+      const res = await api.post(`/p/${tenantSlug}/appointments`, body);
+      if (res.deposit_required && res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
+      setMsg(res.recurring ? `${res.recurring_count} turnos creados` : 'Turno reservado con éxito');
       setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime('');
       setClientName(''); setClientPhone(''); setClientEmail(''); setClientNotes('');
+      setRecurringEnabled(false); setRecurringFrequency('weekly'); setRecurringCount(4);
     } catch (e: unknown) {
       setErrMsg(e instanceof Error ? e.message : 'Error al reservar');
     }
@@ -356,6 +367,12 @@ export default function Landing() {
             onSetCalYear={setCalYear}
             onFetchSlots={fetchSlots}
             onSubmit={handleBook}
+            recurringEnabled={recurringEnabled}
+            recurringFrequency={recurringFrequency}
+            recurringCount={recurringCount}
+            onSetRecurringEnabled={setRecurringEnabled}
+            onSetRecurringFrequency={setRecurringFrequency}
+            onSetRecurringCount={setRecurringCount}
           />
         );
 

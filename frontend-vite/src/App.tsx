@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 const PublicIndex = lazy(() => import('./pages/public/PublicIndex'));
 const Landing = lazy(() => import('./pages/public/Landing'));
+const AppointmentManage = lazy(() => import('./pages/public/AppointmentManage'));
 const Terms = lazy(() => import('./pages/public/Terms'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const StaffLogin = lazy(() => import('./pages/staff/Login'));
@@ -38,6 +39,7 @@ function App() {
             <Route path="/" element={<PublicIndex />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/p/:slug" element={<Landing />} />
+            <Route path="/p/:slug/manage/:token" element={<AppointmentManage />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/staff/login" element={<StaffLogin />} />
             <Route path="/staff/register" element={<StaffRegister />} />

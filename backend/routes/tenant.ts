@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 const config = require('../config');
 import { query, queryOne } from '../database';
@@ -59,11 +60,13 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'];
       const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
 
+      const clientToken = crypto.randomUUID();
+
       try {
         const result = await query(
-          `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus]
+          `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status, client_token)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
         );
         const newAppointment = result.rows[0];
 
