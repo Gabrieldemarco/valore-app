@@ -315,4 +315,4 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
   });
 
   return router;
-};
+}

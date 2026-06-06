@@ -11,6 +11,7 @@ RUN apk add --no-cache tzdata
 COPY --from=builder /app/backend/dist /app/backend/dist
 COPY --from=builder /app/backend/node_modules /app/backend/node_modules
 COPY frontend /app/frontend
-RUN mkdir -p /app/backend/uploads
+RUN mkdir -p /app/backend/uploads && addgroup -S appgroup && adduser -S appuser -G appgroup && chown -R appuser:appgroup /app
+USER appuser
 EXPOSE 3000
 CMD ["node", "backend/dist/server.js"]

@@ -73,7 +73,7 @@ export default function(apiLimiter) {
       });
     } catch (err: any) {
       logger.error('Health check error', { error: err?.message || err });
-      res.status(500).json({ status: 'error', message: err?.message || 'Health check failed' });
+      res.status(500).json({ status: 'error', error: err?.message || 'Health check failed' });
     }
   });
 
@@ -137,4 +137,4 @@ export default function(apiLimiter) {
   });
 
   return router;
-};
+}

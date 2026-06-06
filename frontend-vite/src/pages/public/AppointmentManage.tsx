@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface Appointment {
   id: number;
@@ -27,22 +28,10 @@ interface RecurringAppointment {
   client_token: string;
 }
 
-interface TenantInfo {
-  slug: string;
-  business_name: string;
-  brand_primary_color: string;
-  brand_secondary_color: string;
-  brand_logo_url: string;
-  business_phone: string;
-  business_address: string;
-  opening_hours: any;
-}
-
 export default function AppointmentManage() {
+  const { t } = useTranslation();
   const { slug, token } = useParams<{ slug: string; token: string }>();
-  const navigate = useNavigate();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -63,16 +52,15 @@ export default function AppointmentManage() {
       const res = await fetch(`/p/${slug}/appointments/manage/${token}`);
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Turno no encontrado');
+        throw new Error(data.error || t('appointmentManage.notFound'));
       }
       const data = await res.json();
       setAppointment(data.appointment);
 
-      const configRes = await fetch(`/p/${slug}/config`);
-      if (configRes.ok) {
-        const configData = await configRes.json();
-        setTenant(configData.tenant);
+      if (data.recurring_appointments) {
+        setRecurringAppointments(data.recurring_appointments);
       }
+
     } catch (err: any) {
       setError(err.message);
       const servicesRes = await fetch(`/p/${slug}/services`);
@@ -80,23 +68,19 @@ export default function AppointmentManage() {
         const servicesData = await servicesRes.json();
         setServices(servicesData.services || []);
       }
-
-      if (data.recurring_appointments) {
-        setRecurringAppointments(data.recurring_appointments);
-      }
     } finally {
       setLoading(false);
     }
   }
 
   async function handleCancel() {
-    if (!confirm('¿Estás seguro de que querés cancelar este turno?')) return;
+    if (!confirm(t('appointmentManage.cancelConfirm'))) return;
     setActionLoading(true);
     try {
       const res = await fetch(`/p/${slug}/appointments/manage/${token}/cancel`, { method: 'PUT' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setMessage('Turno cancelado exitosamente');
+      setMessage(t('appointmentManage.cancelSuccess'));
       setAppointment(prev => prev ? { ...prev, status: 'cancelled' } : null);
     } catch (err: any) {
       setError(err.message);
@@ -132,7 +116,7 @@ export default function AppointmentManage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setMessage('Turno reprogramado exitosamente');
+      setMessage(t('appointmentManage.rescheduleSuccess'));
       setAppointment(data.appointment);
       setRescheduling(false);
     } catch (err: any) {
@@ -143,11 +127,11 @@ export default function AppointmentManage() {
   }
 
   if (loading) {
-    return renderContainer(slug, token, renderLoading());
+    return renderContainer(t, slug, renderLoading(t));
   }
 
   if (error && !appointment) {
-    return renderContainer(slug, token, renderError(error));
+    return renderContainer(t, slug, renderError(error));
   }
 
   const date = appointment ? new Date(appointment.appointment_date) : null;
@@ -155,7 +139,7 @@ export default function AppointmentManage() {
   const canCancel = appointment && !['cancelled', 'completed', 'no-show'].includes(appointment.status) && !isPast;
   const canReschedule = appointment && !['cancelled', 'completed', 'no-show'].includes(appointment.status) && !isPast;
 
-  return renderContainer(slug, token, (
+  return renderContainer(t, slug, (
     <>
       {message && (
         <div style={{ background: '#d1fae5', color: '#065f46', padding: '12px 20px', borderRadius: 8, marginBottom: 20, fontSize: 15, fontWeight: 500 }}>
@@ -172,27 +156,27 @@ export default function AppointmentManage() {
         <>
           <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <StatusBadge status={appointment.status} />
+              <StatusBadge t={t} status={appointment.status} />
               <span style={{ fontSize: 13, color: '#6b7280' }}>
                 #{appointment.id}
               </span>
             </div>
 
             <div style={{ display: 'grid', gap: 12 }}>
-              <InfoRow label="Cliente" value={appointment.client_name} />
-              <InfoRow label="Teléfono" value={appointment.client_phone} />
-              {appointment.client_email && <InfoRow label="Email" value={appointment.client_email} />}
-              <InfoRow label="Servicio" value={appointment.service} />
-              {appointment.staff_name && <InfoRow label="Peluquero" value={appointment.staff_name} />}
-              {date && <InfoRow label="Fecha" value={date.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />}
-              {date && <InfoRow label="Horario" value={date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })} />}
-              {appointment.notes && <InfoRow label="Notas" value={appointment.notes} />}
+              <InfoRow label={t('appointmentManage.infoCliente')} value={appointment.client_name} />
+              <InfoRow label={t('appointmentManage.infoTelefono')} value={appointment.client_phone} />
+              {appointment.client_email && <InfoRow label={t('appointmentManage.infoEmail')} value={appointment.client_email} />}
+              <InfoRow label={t('appointmentManage.infoServicio')} value={appointment.service} />
+              {appointment.staff_name && <InfoRow label={t('appointmentManage.infoPeluquero')} value={appointment.staff_name} />}
+              {date && <InfoRow label={t('appointmentManage.infoFecha')} value={date.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />}
+              {date && <InfoRow label={t('appointmentManage.infoHorario')} value={date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })} />}
+              {appointment.notes && <InfoRow label={t('appointmentManage.infoNotas')} value={appointment.notes} />}
             </div>
 
             {recurringAppointments.length > 1 && (
               <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
                 <p style={{ fontSize: 14, fontWeight: 600, color: '#60a5fa', margin: '0 0 8px' }}>
-                  Turnos recurrentes ({recurringAppointments.length})
+                  {t('appointmentManage.recurringTitle')} ({recurringAppointments.length})
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {recurringAppointments.map(ra => {
@@ -208,7 +192,7 @@ export default function AppointmentManage() {
                         <span style={{ color: isCurrent ? '#93c5fd' : '#9ca3af', fontWeight: isCurrent ? 600 : 400 }}>
                           {d.toLocaleDateString('es-UY', { weekday: 'short', day: 'numeric', month: 'short' })} - {d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <StatusBadge status={ra.status} />
+                        <StatusBadge t={t} status={ra.status} />
                       </div>
                     );
                   })}
@@ -220,15 +204,15 @@ export default function AppointmentManage() {
               <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: appointment.deposit_paid ? '#d1fae5' : '#fef3c7' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: appointment.deposit_paid ? '#065f46' : '#92400e' }}>
-                    Seña: ${parseFloat(appointment.deposit_amount).toLocaleString('es-UY')}
+                    {t('appointmentManage.depositLabel')}: ${parseFloat(appointment.deposit_amount).toLocaleString('es-UY')}
                   </span>
                   <span style={{ fontSize: 13, fontWeight: 500, color: appointment.deposit_paid ? '#065f46' : '#92400e' }}>
-                    {appointment.deposit_paid ? '✓ Pagada' : 'Pendiente'}
+                    {appointment.deposit_paid ? t('appointmentManage.depositPaid') : t('appointmentManage.depositPending')}
                   </span>
                 </div>
                 {!appointment.deposit_paid && appointment.status === 'pending' && (
                   <p style={{ fontSize: 13, color: '#92400e', margin: '8px 0 0' }}>
-                    El turno se confirmará automáticamente al pagar la seña.
+                    {t('appointmentManage.depositHint')}
                   </p>
                 )}
               </div>
@@ -239,14 +223,14 @@ export default function AppointmentManage() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {canReschedule && (
                 <button onClick={() => { setRescheduling(true); setNewDate(''); setNewTime(''); }}
-                  style={buttonStyle('#f59e0b', tenant)}>
-                  Reprogramar
+                  style={buttonStyle('#f59e0b')}>
+                  {t('appointmentManage.rescheduleButton')}
                 </button>
               )}
               {canCancel && (
                 <button onClick={handleCancel} disabled={actionLoading}
-                  style={{ ...buttonStyle('#ef4444', tenant), opacity: actionLoading ? 0.6 : 1 }}>
-                  {actionLoading ? 'Cancelando...' : 'Cancelar turno'}
+                  style={{ ...buttonStyle('#ef4444'), opacity: actionLoading ? 0.6 : 1 }}>
+                  {actionLoading ? t('appointmentManage.cancelling') : t('appointmentManage.cancelButton')}
                 </button>
               )}
             </div>
@@ -254,22 +238,22 @@ export default function AppointmentManage() {
 
           {rescheduling && (
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-              <h3 style={{ color: '#fff', margin: '0 0 16px', fontSize: 18 }}>Reprogramar turno</h3>
+              <h3 style={{ color: '#fff', margin: '0 0 16px', fontSize: 18 }}>{t('appointmentManage.rescheduleTitle')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label style={{ color: '#9ca3af', fontSize: 14 }}>Nueva fecha</label>
+                <label style={{ color: '#9ca3af', fontSize: 14 }}>{t('appointmentManage.newDateLabel')}</label>
                 <input type="date"
                   value={newDate}
                   onChange={e => { setNewDate(e.target.value); loadSlots(e.target.value); }}
-                  style={inputStyle(tenant)} />
+                  style={inputStyle()} />
                 {availableSlots.length > 0 && (
                   <>
-                    <label style={{ color: '#9ca3af', fontSize: 14, marginTop: 8 }}>Nuevo horario</label>
+                    <label style={{ color: '#9ca3af', fontSize: 14, marginTop: 8 }}>{t('appointmentManage.newTimeLabel')}</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                       {availableSlots.map(slot => (
                         <button key={slot.time}
                           onClick={() => setNewTime(slot.time)}
                           style={{
-                            ...slotStyle(slot.time === newTime, tenant),
+                            ...slotStyle(slot.time === newTime),
                             opacity: slot.available ? 1 : 0.4,
                             cursor: slot.available ? 'pointer' : 'not-allowed',
                           }}>
@@ -280,16 +264,16 @@ export default function AppointmentManage() {
                   </>
                 )}
                 {availableSlots.length === 0 && newDate && (
-                  <p style={{ color: '#ef4444', fontSize: 14 }}>No hay horarios disponibles para esta fecha</p>
+                  <p style={{ color: '#ef4444', fontSize: 14 }}>{t('appointmentManage.noSlots')}</p>
                 )}
                 <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
                   <button onClick={handleReschedule} disabled={!newDate || !newTime || actionLoading}
-                    style={{ ...buttonStyle('#10b981', tenant), opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
-                    {actionLoading ? 'Reprogramando...' : 'Confirmar nueva fecha'}
+                    style={{ ...buttonStyle('#10b981'), opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
+                    {actionLoading ? t('appointmentManage.rescheduling') : t('appointmentManage.confirmNewDate')}
                   </button>
                   <button onClick={() => setRescheduling(false)}
-                    style={{ ...buttonStyle('#6b7280', tenant), background: 'transparent', border: '1px solid #4b5563' }}>
-                    Volver
+                    style={{ ...buttonStyle('#6b7280'), background: 'transparent', border: '1px solid #4b5563' }}>
+                    {t('appointmentManage.backButton')}
                   </button>
                 </div>
               </div>
@@ -301,7 +285,7 @@ export default function AppointmentManage() {
   ));
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   const colors: Record<string, string> = {
     confirmed: '#10b981',
     pending: '#f59e0b',
@@ -310,11 +294,11 @@ function StatusBadge({ status }: { status: string }) {
     'no-show': '#6b7280',
   };
   const labels: Record<string, string> = {
-    confirmed: 'Confirmado',
-    pending: 'Pendiente',
-    cancelled: 'Cancelado',
-    completed: 'Completado',
-    'no-show': 'No asistió',
+    confirmed: t('appointmentManage.statusConfirmed'),
+    pending: t('appointmentManage.statusPending'),
+    cancelled: t('appointmentManage.statusCancelled'),
+    completed: t('appointmentManage.statusCompleted'),
+    'no-show': t('appointmentManage.statusNoShow'),
   };
   return (
     <span style={{
@@ -339,7 +323,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function renderContainer(slug?: string, token?: string, children?: any) {
+function renderContainer(t: (key: string) => string, slug?: string, children?: any) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -350,7 +334,7 @@ function renderContainer(slug?: string, token?: string, children?: any) {
     }}>
       <div style={{ width: '100%', maxWidth: 480, padding: '40px 20px' }}>
         <a href={`/p/${slug}`} style={{ color: '#9ca3af', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}>
-          ← Volver
+          {t('appointmentManage.backLink')}
         </a>
         {children}
       </div>
@@ -358,11 +342,11 @@ function renderContainer(slug?: string, token?: string, children?: any) {
   );
 }
 
-function renderLoading() {
+function renderLoading(t: (key: string) => string) {
   return (
     <div style={{ textAlign: 'center', paddingTop: 80, color: '#6b7280' }}>
       <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: '#c5a880', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
-      Cargando turno...
+      {t('appointmentManage.loading')}
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -377,7 +361,7 @@ function renderError(msg: string) {
   );
 }
 
-function buttonStyle(color: string, tenant?: TenantInfo | null) {
+function buttonStyle(color: string) {
   return {
     background: color,
     color: '#fff',
@@ -390,7 +374,7 @@ function buttonStyle(color: string, tenant?: TenantInfo | null) {
   };
 }
 
-function inputStyle(tenant?: TenantInfo | null) {
+function inputStyle() {
   return {
     width: '100%',
     padding: '12px 16px',
@@ -404,7 +388,7 @@ function inputStyle(tenant?: TenantInfo | null) {
   };
 }
 
-function slotStyle(selected: boolean, tenant?: TenantInfo | null) {
+function slotStyle(selected: boolean) {
   return {
     padding: '8px 12px',
     borderRadius: 8,

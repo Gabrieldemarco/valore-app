@@ -37,6 +37,9 @@ import { isConfigured as isMercadoPagoConfigured, createPreference as mpCreatePr
 import helmet from 'helmet';
 import compression from 'compression';
 import { initDB, query, queryOne, pool } from './database';
+import { AppError } from './services/errors';
+import { i18nMiddleware } from './services/i18n';
+import { closeRedis } from './services/redis';
 require('dotenv').config();
 const config = require('./config');
 const Sentry = require('@sentry/node');
@@ -115,6 +118,10 @@ app.use(helmet.crossOriginResourcePolicy({ policy: 'same-origin' }));
 app.use(helmet.dnsPrefetchControl());
 app.use(helmet.referrerPolicy({ policy: 'no-referrer' }));
 app.use(helmet.permittedCrossDomainPolicies());
+const hpp = require('hpp');
+app.use(hpp());
+const responseTime = require('response-time');
+app.use(responseTime());
 app.use(compression());
 app.use(morgan('combined', { stream: loggerStream }));
 if (process.env.SENTRY_DSN) {
@@ -228,6 +235,9 @@ initDB().then(async () => {
   await loadPlanPricesFromDB(query);
 }).catch(err => logger.error('Error initDB', { error: err.message }));
 
+// ========== I18N ==========
+app.use(i18nMiddleware);
+
 // ========== ROUTES ==========
 app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter, publicLimiter));
 app.use('/api', apiLimiter);
@@ -295,9 +305,9 @@ const frontendPublicPath = path.join(__dirname, '..', 'frontend', 'public');
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
 // Servir build de Vite (React SPA) primero
-// index.html nunca se cachea para que los usuarios vean updates al instante
+// index.html y sw.js nunca se cachean para que los usuarios vean updates al instante
 app.use((req, res, next) => {
-  if (req.path === '/index.html' || req.path === '/') {
+  if (req.path === '/index.html' || req.path === '/' || req.path === '/sw.js') {
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   }
   next();
@@ -411,17 +421,21 @@ if (process.env.SENTRY_DSN) {
 }
 
 app.use((err: any, req: any, res: any, next: any) => {
-  logger.error('Unhandled request error', {
-    message: err?.message || 'Unknown error',
-    stack: err?.stack,
+  const { formatError } = require('./services/errors');
+  const isAppError = err instanceof AppError;
+  logger.error(isAppError ? err.message : 'Unhandled request error', {
+    error: err.message,
+    stack: err.stack,
     path: req?.path,
     method: req?.method,
+    code: err.code,
   });
 
   if (res.headersSent) {
     return next(err);
   }
-  res.status(err?.status || 500).json({ error: 'Internal server error' });
+  const { status, body } = formatError(err);
+  res.status(status).json(body);
 });
 
 // ========== PROGRAMAR TAREAS CRON ==========
@@ -549,8 +563,9 @@ function gracefulShutdown(signal) {
   console.log(`\n🛑 Recibido ${signal}, cerrando servidor...`);
   server.close(() => {
     console.log('✅ HTTP server cerrado');
-    pool.end().then(() => {
+    pool.end().then(async () => {
       console.log('✅ Pool de DB cerrado');
+      await closeRedis();
       process.exit(0);
     }).catch(err => {
       logger.error('❌ Error cerrando pool:', err.message);

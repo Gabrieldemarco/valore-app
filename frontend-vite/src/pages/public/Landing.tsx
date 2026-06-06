@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 import '../../styles/landing.css';
 import LandingSkeletonLoader from './LandingSkeletonLoader';
 import LandingHeroSection from './LandingHeroSection';
@@ -67,10 +69,11 @@ interface SlotItem {
 
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
 
+const CACHE_BUST = Date.now();
 function fixImageUrl(url: string | null | undefined): string {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads')) return window.location.origin + url;
+  if (url.startsWith('/uploads')) return window.location.origin + url + '?v=' + CACHE_BUST;
   return url;
 }
 
@@ -88,6 +91,7 @@ const daysInMonth = (m: number, y: number) => new Date(y, m + 1, 0).getDate();
 const firstDayOfMonth = (m: number, y: number) => (new Date(y, m, 1).getDay() + 6) % 7;
 
 export default function Landing() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { slug: slugParam } = useParams();
   const tenantSlug = slugParam || searchParams.get('tenant') || '';
@@ -148,7 +152,7 @@ export default function Landing() {
         setServices(landing.services || []);
         setStaff(staffRes.staff || []);
       })
-      .catch(() => setError('Error al cargar'))
+      .catch(() => setError(t('landing.loadError')))
       .finally(() => setLoading(false));
   }, [tenantSlug]);
 
@@ -245,17 +249,17 @@ export default function Landing() {
       if (recurringEnabled) {
         body.recurring = { frequency: recurringFrequency, count: recurringCount };
       }
-      const res = await api.post(`/p/${tenantSlug}/appointments`, body);
+      const res: any = await api.post(`/p/${tenantSlug}/appointments`, body);
       if (res.deposit_required && res.checkout_url) {
         window.location.href = res.checkout_url;
         return;
       }
-      setMsg(res.recurring ? `${res.recurring_count} turnos creados` : 'Turno reservado con éxito');
+      setMsg(res.recurring ? `${res.recurring_count} ${t('landing.appointmentsCreated')}` : t('landing.bookSuccess'));
       setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime('');
       setClientName(''); setClientPhone(''); setClientEmail(''); setClientNotes('');
       setRecurringEnabled(false); setRecurringFrequency('weekly'); setRecurringCount(4);
     } catch (e: unknown) {
-      setErrMsg(e instanceof Error ? e.message : 'Error al reservar');
+      setErrMsg(e instanceof Error ? e.message : t('landing.bookError'));
     }
   };
 
@@ -299,8 +303,8 @@ export default function Landing() {
       case 'gallery':
         return gallery.length > 0 ? (
           <section key={block.id} id="galeria">
-            <h2 className="section-title">Galería</h2>
-            <p className="section-subtitle">Conocé nuestro trabajo</p>
+            <h2 className="section-title">{t('landing.galleryTitle')}</h2>
+            <p className="section-subtitle">{t('landing.gallerySubtitle')}</p>
             <div className="gallery-grid">
               {gallery.map((g, i) => (
                 <div key={i} className="gallery-item" onClick={() => setLightboxIdx(i)}>
@@ -393,11 +397,14 @@ export default function Landing() {
   if (!tenantSlug) {
     return (
       <div className="landing-view">
+        <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000 }}>
+          <LanguageSwitcher />
+        </div>
         <div className="error-page">
-          <div className="error-code">404</div>
-          <h1>Salón no encontrado</h1>
-          <p>No se especificó un salón.</p>
-          <Link to="/" className="btn btn-primary">Volver al inicio</Link>
+          <div className="error-code">{t('landing.errorCode404')}</div>
+          <h1>{t('landing.noSlugTitle')}</h1>
+          <p>{t('landing.noSlugMessage')}</p>
+          <Link to="/" className="btn btn-primary">{t('landing.noSlugBack')}</Link>
         </div>
       </div>
     );
@@ -408,11 +415,14 @@ export default function Landing() {
   if (error || !tenant) {
     return (
       <div className="landing-view">
+        <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000 }}>
+          <LanguageSwitcher />
+        </div>
         <div className="error-page">
-          <div className="error-code">Error</div>
-          <h1>No pudimos cargar esta página</h1>
-          <p>{error || 'El salón no existe o no está disponible.'}</p>
-          <Link to="/" className="btn btn-primary">Volver al inicio</Link>
+          <div className="error-code">{t('landing.errorCode')}</div>
+          <h1>{t('landing.errorTitle')}</h1>
+          <p>{error || t('landing.errorMessage')}</p>
+          <Link to="/" className="btn btn-primary">{t('landing.errorBack')}</Link>
         </div>
       </div>
     );
@@ -421,17 +431,20 @@ export default function Landing() {
   // ── Main render ──
   return (
     <div className="landing-view">
+      <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000 }}>
+        <LanguageSwitcher />
+      </div>
       {layout.map(renderSection)}
 
       {hasSocial && (
         <section id="redes">
-          <h2 className="section-title">Seguinos</h2>
+          <h2 className="section-title">{t('landing.socialTitle')}</h2>
           <div className="social-links">
-            {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="social-link">📷 Instagram</a>}
-            {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="social-link">📘 Facebook</a>}
-            {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="social-link">💬 WhatsApp</a>}
-            {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" className="social-link">🎵 TikTok</a>}
-            {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="social-link">🐦 Twitter</a>}
+            {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialInstagram')}</a>}
+            {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialFacebook')}</a>}
+            {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialWhatsApp')}</a>}
+            {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTikTok')}</a>}
+            {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTwitter')}</a>}
           </div>
         </section>
       )}
@@ -451,7 +464,7 @@ export default function Landing() {
             </div>
           )}
           <p style={{ marginTop: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-            &copy; {new Date().getFullYear()} - Todos los derechos reservados
+            &copy; {new Date().getFullYear()} - {t('landing.footerRights')}
           </p>
         </div>
       </footer>

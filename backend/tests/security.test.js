@@ -31,9 +31,9 @@ describe('Seguridad - Headers', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
-  test('X-Frame-Options: SAMEORIGIN', async () => {
+  test('X-Frame-Options: DENY', async () => {
     const res = await request(app).get('/');
-    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(res.headers['x-frame-options']).toBe('DENY');
   });
 
   test('Content-Security-Policy presente', async () => {

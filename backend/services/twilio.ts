@@ -24,7 +24,7 @@ async function loadTwilioConfig() {
 
 function normalizePhone(phone: string) {
   if (!phone) return '';
-  let cleaned = phone.replace(/[\s\-\(\)]+/g, '');
+  let cleaned = phone.replace(/[\s\-()]+/g, '');
   if (cleaned.startsWith('whatsapp:')) cleaned = cleaned.slice(9);
   if (cleaned.startsWith('+')) return cleaned;
   if (cleaned.startsWith('598')) return `+${cleaned}`;

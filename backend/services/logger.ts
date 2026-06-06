@@ -11,8 +11,15 @@ if (!fs.existsSync(logsPath)) {
   fs.mkdirSync(logsPath, { recursive: true });
 }
 
+function safeStringify(val: any): string {
+  if (val instanceof Error) {
+    return JSON.stringify({ message: val.message, stack: val.stack, name: val.name, ...val });
+  }
+  try { return JSON.stringify(val); } catch { return String(val); }
+}
+
 const logFormat = printf(({ level, message, timestamp, ...meta }) => {
-  const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+  const metaStr = Object.keys(meta).length ? ` ${safeStringify(meta)}` : '';
   return `${timestamp} [${level}]: ${message}${metaStr}`;
 });
 

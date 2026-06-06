@@ -42,6 +42,19 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: TypeScript type check
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Security audit
+        continue-on-error: true
+        working-directory: backend
+        run: npm run audit
+
       - name: Check env (backend)
         working-directory: backend
         run: NODE_ENV=test npm run check-env

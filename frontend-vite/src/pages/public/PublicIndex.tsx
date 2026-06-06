@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 import '../../styles/index.css';
 
 interface Salon {
@@ -18,10 +20,11 @@ interface TenantsResponse {
   tenants?: Salon[];
 }
 
+const CACHE_BUST = Date.now();
 function fixImageUrl(url: string | undefined | null): string {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  if (url.startsWith('/uploads')) return url;
+  if (url.startsWith('/uploads')) return url + '?v=' + CACHE_BUST;
   return url;
 }
 
@@ -46,6 +49,7 @@ function getGenderCategory(salon: Salon): 'hombre' | 'mujer' | 'unisex' {
 }
 
 export default function PublicIndex() {
+  const { t } = useTranslation();
   const [allSalons, setAllSalons] = useState<Salon[]>([]);
   const [filtered, setFiltered] = useState<Salon[]>([]);
   const [currentGenderFilter, setCurrentGenderFilter] = useState<string>('all');
@@ -62,7 +66,7 @@ export default function PublicIndex() {
         setAllSalons(salons);
         setFiltered(salons);
       })
-      .catch(() => setError('No pudimos cargar las peluquerías.'))
+      .catch(() => setError(t('publicIndex.error')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -120,9 +124,10 @@ export default function PublicIndex() {
             <span className="logo-text">Veloré</span>
           </a>
           <nav className="nav-links">
-            <a href="#salons" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>Salones</a>
-            <Link to="/staff/register" className="btn btn-secondary btn-outline" style={{ padding: '8px 18px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>Sumate a Veloré</Link>
-            <Link to="/staff/login" className="btn btn-primary btn-studio-access" style={{ padding: '10px 24px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>Studio Access</Link>
+            <a href="#salons" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>{t('publicIndex.navSalones')}</a>
+            <Link to="/staff/register" className="btn btn-secondary btn-outline" style={{ padding: '8px 18px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>{t('publicIndex.navSumate')}</Link>
+            <Link to="/staff/login" className="btn btn-primary btn-studio-access" style={{ padding: '10px 24px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>{t('publicIndex.navStudioAccess')}</Link>
+            <LanguageSwitcher />
           </nav>
         </div>
       </header>
@@ -132,35 +137,35 @@ export default function PublicIndex() {
           <div className="collage-card card-1" onClick={() => selectGenderFromHero('mujer')}>
             <img src="/uploads/velore_hero_model.png" alt="Veloré female style" loading="lazy" />
             <div className="collage-label">
-              <span className="collage-label-title">Salon Collection</span>
-              <span className="collage-label-sub">Color, estilo y estética premium</span>
+              <span className="collage-label-title">{t('publicIndex.salonCollection')}</span>
+              <span className="collage-label-sub">{t('publicIndex.salonCollectionSub')}</span>
             </div>
           </div>
           <div className="collage-card card-2" onClick={() => selectGenderFromHero('hombre')}>
             <img src="/uploads/velore_gentleman_hero.png" alt="Veloré male style" loading="lazy" />
             <div className="collage-label">
-              <span className="collage-label-title">Grooming Collection</span>
-              <span className="collage-label-sub">Barberías y experiencias de autor</span>
+              <span className="collage-label-title">{t('publicIndex.groomingCollection')}</span>
+              <span className="collage-label-sub">{t('publicIndex.groomingCollectionSub')}</span>
             </div>
           </div>
         </div>
 
         <div className="hero-content">
-          <h1>Reservá en los mejores <span className="text-gradient" style={{ fontStyle: 'italic', fontFamily: "'Cormorant Garamond', serif" }}>salones</span> de Uruguay</h1>
-          <p>Encontrá tu próximo turno en segundos.</p>
+          <h1>{t('publicIndex.heroTitle')}</h1>
+          <p>{t('publicIndex.heroSubtitle')}</p>
           <div className="search-box">
-            <input type="text" placeholder="Buscar por nombre o ubicación..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            <button className="btn btn-primary">Buscar ❯</button>
+            <input type="text" placeholder={t('publicIndex.searchPlaceholder')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <button className="btn btn-primary">{t('publicIndex.searchButton')}</button>
           </div>
           <div className="gender-filter-bar">
             {[
-              { key: 'all', label: 'Todos' },
-              { key: 'hombre', label: 'Caballeros' },
-              { key: 'mujer', label: 'Damas' },
-              { key: 'unisex', label: 'Unisex' },
+              { key: 'all', label: () => t('publicIndex.filterAll') },
+              { key: 'hombre', label: () => t('publicIndex.filterCaballeros') },
+              { key: 'mujer', label: () => t('publicIndex.filterDamas') },
+              { key: 'unisex', label: () => t('publicIndex.filterUnisex') },
             ].map(g => (
               <button key={g.key} className={`filter-btn${currentGenderFilter === g.key ? ' active' : ''}`} onClick={() => handleGenderFilter(g.key)}>
-                {g.label}
+                {g.label()}
               </button>
             ))}
           </div>
@@ -180,35 +185,35 @@ export default function PublicIndex() {
 
       <main className="container salons-section" id="salons">
         <div className="section-header">
-          <h2 className="section-title">Salones Destacados en Estética Capilar</h2>
-          <p className="section-subtitle">Explorá las firmas boutique de mayor prestigio en el país.</p>
+          <h2 className="section-title">{t('publicIndex.sectionTitle')}</h2>
+          <p className="section-subtitle">{t('publicIndex.sectionSubtitle')}</p>
         </div>
 
         <div className="salons-slider-container">
           {loading && (
             <div className="loading">
               <div className="spinner"></div>
-              Cargando peluquerías...
+              {t('publicIndex.loadingSalons')}
             </div>
           )}
           {error && (
             <div className="empty-state glass-panel">
-              <h3 className="text-gradient">⚠️ Sin conexión</h3>
+              <h3 className="text-gradient">{t('publicIndex.noConnection')}</h3>
               <p>{error}</p>
-              <Link to="/staff/register" className="btn btn-accent">Registrar mi peluquería</Link>
+              <Link to="/staff/register" className="btn btn-accent">{t('publicIndex.registerSalon')}</Link>
             </div>
           )}
           {!loading && !error && filtered.length === 0 && (
             <div className="empty-state glass-panel" style={{ width: '100%' }}>
-              <h3 className="text-gradient">🔍 No se encontraron peluquerías</h3>
-              <p>Probá ajustando tus filtros de búsqueda.</p>
+              <h3 className="text-gradient">{t('publicIndex.noSalonsFound')}</h3>
+              <p>{t('publicIndex.noSalonsFoundHint')}</p>
             </div>
           )}
           {!loading && !error && filtered.length > 0 && (
             <div className="salons-grid" ref={gridRef}>
               {filtered.map(salon => {
                 const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
-                const services = salon.services || ['Corte', 'Color', 'Alisado'];
+                const services = salon.services || [t('publicIndex.defaultService1'), t('publicIndex.defaultService2'), t('publicIndex.defaultService3')];
                 const gender = getGenderCategory(salon);
                 return (
                   <Link to={`/p/${salon.slug}`} key={salon.id} className="salon-link">
@@ -219,7 +224,7 @@ export default function PublicIndex() {
                           : <div className="salon-image-fallback"><span className="salon-initials">{getInitials(salon.business_name)}</span></div>
                         }
                         <span className="salon-badge">
-                          {gender === 'hombre' ? 'Caballeros' : gender === 'mujer' ? 'Damas' : 'Unisex'}
+                          {gender === 'hombre' ? t('publicIndex.badgeCaballeros') : gender === 'mujer' ? t('publicIndex.badgeDamas') : t('publicIndex.badgeUnisex')}
                         </span>
                       </div>
                       <div className="salon-content">
@@ -229,7 +234,7 @@ export default function PublicIndex() {
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                             <circle cx="12" cy="10" r="3"></circle>
                           </svg>
-                          {salon.business_address || 'Ubicación no especificada'}
+                          {salon.business_address || t('publicIndex.locationUnknown')}
                         </div>
                         <div className="salon-services">
                           {services.slice(0, 3).map((s, i) => (
@@ -241,9 +246,9 @@ export default function PublicIndex() {
                             <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 13, height: 13, fill: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5 }}>
                               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                             </svg>
-                            5.0 <small>(Excelente)</small>
+                            {t('publicIndex.ratingValue')} <small>({t('publicIndex.ratingLabel')})</small>
                           </div>
-                          <span className="btn btn-primary">Reservar →</span>
+                          <span className="btn btn-primary">{t('publicIndex.reserveButton')}</span>
                         </div>
                       </div>
                     </div>
@@ -265,8 +270,8 @@ export default function PublicIndex() {
 
       <section className="container features-section">
         <div className="section-header">
-          <h2 className="section-title">¿Cómo funciona?</h2>
-          <p className="section-subtitle">Reservá tu turno de forma rápida, simple y totalmente digital</p>
+          <h2 className="section-title">{t('publicIndex.howItWorksTitle')}</h2>
+          <p className="section-subtitle">{t('publicIndex.howItWorksSubtitle')}</p>
         </div>
         <div className="features-grid">
           <div className="feature-card glass-panel">
@@ -276,8 +281,8 @@ export default function PublicIndex() {
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
             </div>
-            <h3>1. Buscá tu Peluquería</h3>
-            <p>Explorá los salones mejor calificados, compará sus servicios y elegí tu preferido en nuestra web.</p>
+            <h3>{t('publicIndex.step1Title')}</h3>
+            <p>{t('publicIndex.step1Desc')}</p>
           </div>
           <div className="feature-card glass-panel">
             <div className="feature-icon">
@@ -289,8 +294,8 @@ export default function PublicIndex() {
                 <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
               </svg>
             </div>
-            <h3>2. Elegí el Servicio</h3>
-            <p>Seleccioná el corte, tratamiento o peinado que desees, junto con tu estilista y horario favorito.</p>
+            <h3>{t('publicIndex.step2Title')}</h3>
+            <p>{t('publicIndex.step2Desc')}</p>
           </div>
           <div className="feature-card glass-panel">
             <div className="feature-icon">
@@ -302,24 +307,23 @@ export default function PublicIndex() {
                 <polyline points="8 14 11 17 16 12"></polyline>
               </svg>
             </div>
-            <h3>3. Confirmá en Segundos</h3>
-            <p>Tu turno queda agendado de inmediato y recibirás una notificación de confirmación instantánea.</p>
+            <h3>{t('publicIndex.step3Title')}</h3>
+            <p>{t('publicIndex.step3Desc')}</p>
           </div>
         </div>
       </section>
 
       <footer className="footer">
-        <p>&copy; 2026 Veloré. Todos los derechos reservados.</p>
+        <p>{t('publicIndex.footerCopyright')}</p>
         <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 20, lineHeight: 1.6 }}>
-          Empezá a recibir reservas online hoy mismo. <br />
-          <Link to="/staff/register" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: 12, display: 'inline-block', marginTop: 8, borderBottom: '1px solid rgba(197, 168, 128, 0.4)', paddingBottom: 2 }}>Acceso completo durante 15 días.</Link>
+          {t('publicIndex.footerCTA')}
         </p>
         <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 16, opacity: 0.8, display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
-          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>Términos y Condiciones</Link>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>{t('publicIndex.termsLink')}</Link>
           <span style={{ color: 'rgba(197, 168, 128, 0.2)' }}>|</span>
-          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>Política de Privacidad</Link>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>{t('publicIndex.privacyLink')}</Link>
           <span style={{ color: 'rgba(197, 168, 128, 0.2)' }}>|</span>
-          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>Política de Cancelaciones</Link>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>{t('publicIndex.cancellationPolicyLink')}</Link>
         </div>
       </footer>
     </>

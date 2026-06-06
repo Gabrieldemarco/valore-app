@@ -27,6 +27,73 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   // ========== APPOINTMENTS ==========
 
+  async function resolveServiceAndStaffForStaffAppointment(serviceId, staffId, tenantId, res) {
+    const service = await queryOne(
+      'SELECT * FROM services WHERE id = $1 AND tenant_id = $2',
+      [serviceId, tenantId]
+    );
+    if (!service) {
+      res.status(404).json({ error: 'Servicio no encontrado' });
+      return null;
+    }
+
+    let validStaffId = null;
+    if (staffId) {
+      const staffMember = await queryOne(
+        'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
+        [staffId, tenantId]
+      );
+      if (!staffMember) {
+        res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
+        return null;
+      }
+      validStaffId = staffMember.id;
+    }
+
+    return { service, validStaffId };
+  }
+
+  async function insertStaffAppointment(tenantId, body, service, validStaffId) {
+    const { clientName, clientPhone, clientEmail, appointmentDate, notes, status } = body;
+
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'];
+    const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
+
+    const clientToken = crypto.randomUUID();
+
+    try {
+      const result = await query(
+        `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status, client_token)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [tenantId, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
+      );
+      const newAppointment = result.rows[0];
+
+      if (validStaffId) {
+        const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
+        if (staffMember) {
+          newAppointment.staff_name = staffMember.name;
+          newAppointment.staff_email = staffMember.email;
+        }
+      }
+
+      return newAppointment;
+    } catch (dbErr: any) {
+      if (dbErr.code === '23505') return null;
+      throw dbErr;
+    }
+  }
+
+  async function sendStaffAppointmentNotifications(appointment, tenantId, status) {
+    if (status === 'confirmed') {
+      const tenant = await queryOne('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+      if (tenant) {
+        sendClientConfirmation(appointment, tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
+        notifyStaff(appointment, tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
+      }
+    }
+  }
+
   router.post('/appointments', authenticateStaff, checkTenantActive, [
     body('clientName').trim().isLength({ min: 1, max: 100 }).withMessage('Nombre requerido').escape(),
     body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
@@ -39,58 +106,18 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       if (new Date(appointmentDate) <= new Date()) {
         return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
       }
-      const service = await queryOne(
-        'SELECT * FROM services WHERE id = $1 AND tenant_id = $2',
-        [serviceId, req.user.tenant_id]
-      );
-      if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
 
-      let validStaffId = null;
-      if (staffId) {
-        const staffMember = await queryOne(
-          'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
-          [staffId, req.user.tenant_id]
-        );
-        if (!staffMember) {
-          return res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
-        }
-        validStaffId = staffMember.id;
+      const resolved = await resolveServiceAndStaffForStaffAppointment(serviceId, staffId, req.user.tenant_id, res);
+      if (!resolved) return;
+
+      const newAppointment = await insertStaffAppointment(req.user.tenant_id, req.body, resolved.service, resolved.validStaffId);
+      if (!newAppointment) {
+        return res.status(409).json({ error: 'Horario ya reservado' });
       }
 
-      const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'];
-      const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
+      await sendStaffAppointmentNotifications(newAppointment, req.user.tenant_id, newAppointment.status);
 
-      const clientToken = crypto.randomUUID();
-
-      try {
-        const result = await query(
-          `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status, client_token)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-          [req.user.tenant_id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
-        );
-        const newAppointment = result.rows[0];
-
-        if (validStaffId) {
-          const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
-          if (staffMember) {
-            newAppointment.staff_name = staffMember.name;
-            newAppointment.staff_email = staffMember.email;
-          }
-        }
-
-        if (appointmentStatus === 'confirmed') {
-          const tenant = await queryOne('SELECT * FROM tenants WHERE id = $1', [req.user.tenant_id]);
-          if (tenant) {
-            sendClientConfirmation(newAppointment, tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
-            notifyStaff(newAppointment, tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
-          }
-        }
-
-        res.status(201).json({ message: 'Turno creado', appointment: newAppointment });
-      } catch (dbErr: any) {
-        if (dbErr.code === '23505') return res.status(409).json({ error: 'Horario ya reservado' });
-        throw dbErr;
-      }
+      res.status(201).json({ message: 'Turno creado', appointment: newAppointment });
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al crear turno' });
@@ -324,6 +351,138 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  function sanitizeLandingLayout(layout) {
+    if (layout && Array.isArray(layout)) {
+      const sanitizeOpts = {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+          'iframe', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'img', 'figure', 'figcaption', 'hr', 'br',
+          'span', 'div', 'section', 'header', 'footer',
+          'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+          'table', 'thead', 'tbody', 'tr', 'th', 'td',
+          'sup', 'sub', 'ins', 'del', 'mark', 'small',
+          'video', 'source',
+        ]),
+        allowedAttributes: {
+          '*': ['style', 'class', 'id', 'data-*'],
+          'a': ['href', 'target', 'rel', 'title'],
+          'img': ['src', 'alt', 'width', 'height', 'loading'],
+          'iframe': ['src', 'width', 'height', 'style', 'allowfullscreen', 'loading', 'frameborder', 'allow', 'title', 'referrerpolicy'],
+          'video': ['src', 'controls', 'width', 'height', 'autoplay', 'loop', 'muted', 'poster'],
+          'source': ['src', 'type'],
+          'td': ['colspan', 'rowspan'],
+          'th': ['colspan', 'rowspan'],
+        },
+        allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+        allowedSchemesByTag: {
+          iframe: ['https', 'http'],
+          img: ['https', 'http', 'data'],
+          video: ['https', 'http'],
+        },
+        allowProtocolRelative: false,
+        disallowedTagsMode: 'discard' as const,
+      };
+      for (const block of layout) {
+        if (block.type === 'custom' && block.content) {
+          block.content = sanitizeHtml(block.content, sanitizeOpts);
+        }
+        if (block.title) {
+          block.title = sanitizeHtml(block.title, { allowedTags: [], allowedAttributes: {} });
+        }
+        if (block.label) {
+          block.label = sanitizeHtml(block.label, { allowedTags: [], allowedAttributes: {} });
+        }
+      }
+      return layout;
+    }
+    return null;
+  }
+
+  async function updateTenantServices(tenantId, services, servicesToDelete) {
+    if (services && Array.isArray(services)) {
+      if (servicesToDelete?.length) {
+        for (const id of servicesToDelete) {
+          await query('DELETE FROM services WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+        }
+      }
+      for (const s of services) {
+        if (s.name?.trim()) {
+          const duration = parseInt(s.duration);
+          if (isNaN(duration) || duration <= 0) return `Duración inválida: ${s.name}`;
+          const price = parseFloat(s.price) || 0;
+          if (isNaN(price) || price < 0) return `Precio inválido: ${s.name}`;
+          if (s.id && s.id !== 'new') {
+            await query(
+              `UPDATE services SET name=$1,duration=$2,price=$3,active=true,image=$4 WHERE id=$5 AND tenant_id=$6`,
+              [s.name.trim(), duration, price, s.image || '', s.id, tenantId]
+            );
+          } else {
+            await query(
+              `INSERT INTO services (tenant_id,name,duration,price,active,image) VALUES ($1,$2,$3,$4,true,$5)`,
+              [tenantId, s.name.trim(), duration, price, s.image || '']
+            );
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function buildTenantUpdateQuery(tenantId, body) {
+    const {
+      business_name, business_address, business_phone,
+      notification_email, notification_whatsapp,
+      smtp_email, smtp_password,
+      landing_description, landing_enabled, landing_hero_image,
+      landing_gallery, landing_team, landing_services_info,
+      landing_social_links, landing_custom_css, landing_layout,
+      brand_primary_color, brand_secondary_color, brand_logo_url,
+      opening_hours,
+    } = body;
+
+    const sql = `UPDATE tenants SET
+             business_name=COALESCE(NULLIF($1,''),business_name),
+             business_address=COALESCE(NULLIF($2,''),business_address),
+             business_phone=COALESCE(NULLIF($3,''),business_phone),
+             notification_email=COALESCE(NULLIF($4,''),notification_email),
+             notification_whatsapp=COALESCE(NULLIF($5,''),notification_whatsapp),
+             smtp_email=COALESCE(NULLIF($6,''),smtp_email),
+             smtp_password=COALESCE(NULLIF($7,''),smtp_password),
+             landing_description=COALESCE($8,landing_description),
+             landing_enabled=COALESCE($9::boolean,landing_enabled),
+             landing_hero_image=COALESCE($10,landing_hero_image),
+             landing_gallery=COALESCE($11::jsonb,landing_gallery),
+             landing_team=COALESCE($12::jsonb,landing_team),
+             landing_services_info=COALESCE($13::jsonb,landing_services_info),
+             landing_social_links=COALESCE($14::jsonb,landing_social_links),
+             landing_custom_css=COALESCE($15,landing_custom_css),
+             landing_layout=COALESCE($16::jsonb,landing_layout),
+             brand_primary_color=COALESCE($17,brand_primary_color),
+             brand_secondary_color=COALESCE($18,brand_secondary_color),
+             brand_logo_url=COALESCE($19,brand_logo_url),
+             opening_hours=COALESCE($20::jsonb,opening_hours),
+             updated_at=NOW()
+            WHERE id=$21 RETURNING *`;
+
+    const params = [
+      business_name, business_address, business_phone,
+      notification_email, notification_whatsapp,
+      smtp_email, smtp_password,
+      landing_description, landing_enabled, landing_hero_image,
+      landing_gallery ? JSON.stringify(landing_gallery) : null,
+      landing_team ? JSON.stringify(landing_team) : null,
+      landing_services_info ? JSON.stringify(landing_services_info) : null,
+      landing_social_links ? JSON.stringify(landing_social_links) : null,
+      landing_custom_css,
+      landing_layout ? JSON.stringify(landing_layout) : null,
+      brand_primary_color, brand_secondary_color, brand_logo_url,
+      opening_hours ? JSON.stringify(opening_hours) : null,
+      tenantId,
+    ];
+
+    return { sql, params };
+  }
+
   const settingsValidation = [
     body('business_name').optional().trim().isLength({ min: 2, max: 100 }).escape(),
     body('notification_email').optional().isEmail().normalizeEmail(),
@@ -333,132 +492,17 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.put('/tenant/settings', authenticateStaff, checkTenantActive, checkTrialExpiration, settingsValidation, validate, async (req, res) => {
     try {
-      const {
-        business_name, business_address, business_phone,
-        notification_email, notification_whatsapp,
-        smtp_email, smtp_password,
-        landing_description, landing_enabled, landing_hero_image,
-        landing_gallery, landing_team, landing_services_info,
-        landing_social_links, landing_custom_css, landing_layout,
-        brand_primary_color, brand_secondary_color, brand_logo_url,
-        opening_hours,
-        services,
-        servicesToDelete,
-      } = req.body;
-
       if (!req.user.tenant_id) return res.status(400).json({ error: 'Usuario no asociado a una peluquería' });
 
-      // Sanitizar bloques custom del layout
-      if (landing_layout && Array.isArray(landing_layout)) {
-        const sanitizeOpts = {
-          allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-            'iframe', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'img', 'figure', 'figcaption', 'hr', 'br',
-            'span', 'div', 'section', 'header', 'footer',
-            'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-            'table', 'thead', 'tbody', 'tr', 'th', 'td',
-            'sup', 'sub', 'ins', 'del', 'mark', 'small',
-            'video', 'source',
-          ]),
-          allowedAttributes: {
-            '*': ['style', 'class', 'id', 'data-*'],
-            'a': ['href', 'target', 'rel', 'title'],
-            'img': ['src', 'alt', 'width', 'height', 'loading'],
-            'iframe': ['src', 'width', 'height', 'style', 'allowfullscreen', 'loading', 'frameborder', 'allow', 'title', 'referrerpolicy'],
-            'video': ['src', 'controls', 'width', 'height', 'autoplay', 'loop', 'muted', 'poster'],
-            'source': ['src', 'type'],
-            'td': ['colspan', 'rowspan'],
-            'th': ['colspan', 'rowspan'],
-          },
-          allowedSchemes: ['http', 'https', 'mailto', 'tel'],
-          allowedSchemesByTag: {
-            iframe: ['https', 'http'],
-            img: ['https', 'http', 'data'],
-            video: ['https', 'http'],
-          },
-          allowProtocolRelative: false,
-          disallowedTagsMode: 'discard' as const,
-        };
-        for (const block of landing_layout) {
-          if (block.type === 'custom' && block.content) {
-            block.content = sanitizeHtml(block.content, sanitizeOpts);
-          }
-          if (block.title) {
-            block.title = sanitizeHtml(block.title, { allowedTags: [], allowedAttributes: {} });
-          }
-          if (block.label) {
-            block.label = sanitizeHtml(block.label, { allowedTags: [], allowedAttributes: {} });
-          }
-        }
-      }
+      const { services, servicesToDelete } = req.body;
 
-      if (services && Array.isArray(services)) {
-        if (servicesToDelete?.length) {
-          for (let id of servicesToDelete) {
-            await query('DELETE FROM services WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
-          }
-        }
-        for (let s of services) {
-          if (s.name?.trim()) {
-            const duration = parseInt(s.duration);
-            if (isNaN(duration) || duration <= 0) return res.status(400).json({ error: `Duración inválida: ${s.name}` });
-            const price = parseFloat(s.price) || 0;
-            if (isNaN(price) || price < 0) return res.status(400).json({ error: `Precio inválido: ${s.name}` });
-            if (s.id && s.id !== 'new') {
-              await query(
-                `UPDATE services SET name=$1,duration=$2,price=$3,active=true,image=$4 WHERE id=$5 AND tenant_id=$6`,
-                [s.name.trim(), duration, price, s.image || '', s.id, req.user.tenant_id]
-              );
-            } else {
-              await query(
-                `INSERT INTO services (tenant_id,name,duration,price,active,image) VALUES ($1,$2,$3,$4,true,$5)`,
-                [req.user.tenant_id, s.name.trim(), duration, price, s.image || '']
-              );
-            }
-          }
-        }
-      }
+      req.body.landing_layout = sanitizeLandingLayout(req.body.landing_layout);
 
-      const result = await query(
-        `UPDATE tenants SET
-           business_name=COALESCE(NULLIF($1,''),business_name),
-           business_address=COALESCE(NULLIF($2,''),business_address),
-           business_phone=COALESCE(NULLIF($3,''),business_phone),
-           notification_email=COALESCE(NULLIF($4,''),notification_email),
-           notification_whatsapp=COALESCE(NULLIF($5,''),notification_whatsapp),
-           smtp_email=COALESCE(NULLIF($6,''),smtp_email),
-           smtp_password=COALESCE(NULLIF($7,''),smtp_password),
-           landing_description=COALESCE($8,landing_description),
-           landing_enabled=COALESCE($9::boolean,landing_enabled),
-           landing_hero_image=COALESCE($10,landing_hero_image),
-           landing_gallery=COALESCE($11::jsonb,landing_gallery),
-           landing_team=COALESCE($12::jsonb,landing_team),
-           landing_services_info=COALESCE($13::jsonb,landing_services_info),
-           landing_social_links=COALESCE($14::jsonb,landing_social_links),
-           landing_custom_css=COALESCE($15,landing_custom_css),
-           landing_layout=COALESCE($16::jsonb,landing_layout),
-           brand_primary_color=COALESCE($17,brand_primary_color),
-           brand_secondary_color=COALESCE($18,brand_secondary_color),
-           brand_logo_url=COALESCE($19,brand_logo_url),
-           opening_hours=COALESCE($20::jsonb,opening_hours),
-           updated_at=NOW()
-          WHERE id=$21 RETURNING *`,
-        [
-          business_name, business_address, business_phone,
-          notification_email, notification_whatsapp,
-          smtp_email, smtp_password,
-          landing_description, landing_enabled, landing_hero_image,
-          landing_gallery ? JSON.stringify(landing_gallery) : null,
-          landing_team ? JSON.stringify(landing_team) : null,
-          landing_services_info ? JSON.stringify(landing_services_info) : null,
-          landing_social_links ? JSON.stringify(landing_social_links) : null,
-          landing_custom_css,
-          landing_layout ? JSON.stringify(landing_layout) : null,
-          brand_primary_color, brand_secondary_color, brand_logo_url,
-          opening_hours ? JSON.stringify(opening_hours) : null,
-          req.user.tenant_id,
-        ]
-      );
+      const serviceError = await updateTenantServices(req.user.tenant_id, services, servicesToDelete);
+      if (serviceError) return res.status(400).json({ error: serviceError });
+
+      const { sql, params } = buildTenantUpdateQuery(req.user.tenant_id, req.body);
+      const result = await query(sql, params);
       if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquería no encontrada' });
 
       const servicesResult = await query(
@@ -694,9 +738,10 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     try {
       const { phone } = req.params;
       const result = await query(
-        `SELECT a.*, s.name as staff_name
+        `SELECT a.*, s.name as staff_name, sv.price as service_price
          FROM appointments a
          LEFT JOIN staff s ON a.staff_id = s.id
+         LEFT JOIN services sv ON sv.tenant_id = a.tenant_id AND sv.name = a.service
          WHERE a.tenant_id = $1 AND a.client_phone = $2
          ORDER BY a.appointment_date DESC`,
         [req.user.tenant_id, phone]
@@ -708,5 +753,44 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  // ===== BLOCKED DATES =====
+  router.get('/tenant/blocked-dates', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, date, reason FROM blocked_dates WHERE tenant_id = $1 ORDER BY date DESC',
+        [req.user.tenant_id]
+      );
+      res.json({ blockedDates: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar días bloqueados' });
+    }
+  });
+
+  router.post('/tenant/blocked-dates', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { date, reason } = req.body;
+      if (!date) return res.status(400).json({ error: 'La fecha es requerida' });
+      await query(
+        'INSERT INTO blocked_dates (tenant_id, date, reason) VALUES ($1, $2, $3) ON CONFLICT (tenant_id, date) DO NOTHING',
+        [req.user.tenant_id, date, reason || '']
+      );
+      res.json({ message: 'Fecha bloqueada' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al bloquear fecha' });
+    }
+  });
+
+  router.delete('/tenant/blocked-dates/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      await query('DELETE FROM blocked_dates WHERE id = $1 AND tenant_id = $2', [req.params.id, req.user.tenant_id]);
+      res.json({ message: 'Fecha desbloqueada' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al desbloquear fecha' });
+    }
+  });
+
   return router;
-};
+}

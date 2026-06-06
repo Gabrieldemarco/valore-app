@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import crypto from 'crypto';
+import NodeCache from 'memory-cache';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { sendClientConfirmation, notifyStaff } from '../services/notifications';
@@ -23,15 +24,127 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   const router = Router();
   router.use('/', publicLimiter);
 
-  const requireActivePublicTenant = (req, res, next) => {
-    if (!req.tenant || req.tenant.status !== 'active' || !req.tenant.landing_enabled) {
-      return res.status(404).json({ error: 'Peluquería no encontrada' });
+  // --- Helper functions for booking ---
+  async function validateBookingRequest(req, res, tenant) {
+    if (new Date(req.body.appointmentDate) <= new Date()) {
+      res.status(400).json({ error: 'La fecha del turno debe ser futura' });
+      return null;
     }
+    if (tenant.plan === 'free' && tenant.trial_end_date && new Date() > new Date(tenant.trial_end_date)) {
+      res.status(403).json({ error: 'El período de prueba ha finalizado. No se pueden reservar nuevos turnos.' });
+      return null;
+    }
+    if (!(await checkPlanLimits(tenant.id, 'appointments'))) {
+      res.status(403).json({ error: 'Límite de plan alcanzado. Contactá al administrador.' });
+      return null;
+    }
+    const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring } = req.body;
+    if (!clientName || !clientPhone || !serviceId || !appointmentDate) {
+      res.status(400).json({ error: 'Datos obligatorios faltantes' });
+      return null;
+    }
+    return { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring };
+  }
+
+  async function resolveServiceAndStaff(serviceId, staffId, tenantId, res) {
+    const service = await queryOne(
+      'SELECT * FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
+      [serviceId, tenantId]
+    );
+    if (!service) {
+      res.status(404).json({ error: 'Servicio no disponible' });
+      return null;
+    }
+    let validStaffId = null;
+    if (staffId) {
+      const staffMember = await queryOne(
+        'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
+        [staffId, tenantId]
+      );
+      if (!staffMember) {
+        res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
+        return null;
+      }
+      validStaffId = staffMember.id;
+    }
+    return { service, validStaffId };
+  }
+
+  function buildAppointmentDates(appointmentDate, recurring, service) {
+    const clientToken = crypto.randomUUID();
+    const appointmentStatus = service.deposit_amount > 0 ? 'pending' : 'confirmed';
+    const recurringGroup = crypto.randomUUID();
+    const appointmentDates: { date: string; token: string }[] = [{ date: appointmentDate, token: clientToken }];
+    if (recurring && recurring.frequency && recurring.count > 1) {
+      const frequencies: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 30 };
+      const interval = frequencies[recurring.frequency] || 7;
+      for (let i = 1; i < Math.min(recurring.count, 12); i++) {
+        const nextDate = new Date(appointmentDate);
+        nextDate.setDate(nextDate.getDate() + interval * i);
+        if (nextDate <= new Date()) continue;
+        appointmentDates.push({ date: nextDate.toISOString(), token: crypto.randomUUID() });
+      }
+    }
+    return { clientToken, appointmentStatus, recurringGroup, appointmentDates };
+  }
+
+  function buildRecurringInfo(recurring, count) {
+    return recurring && recurring.count > 1
+      ? { recurring: true, recurring_frequency: recurring.frequency, recurring_count: count }
+      : {};
+  }
+
+  async function handleDepositCheckout(service, appointment, req, tenant) {
+    if (!(service.deposit_amount > 0 && mpConfigured())) return null;
+    try {
+      const origin = (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+      const successUrl = `${origin}/p/${tenant.slug}/manage/${appointment.client_token}?deposit=ok`;
+      const failureUrl = `${origin}/p/${tenant.slug}/manage/${appointment.client_token}?deposit=fail`;
+      const preference = await mpCreatePreference({
+        items: [{
+          title: `Seña ${service.name} - ${tenant.business_name}`,
+          quantity: 1,
+          currency_id: MP_CURRENCY,
+          unit_price: parseFloat(service.deposit_amount),
+        }],
+        external_reference: `appointment:${appointment.id}`,
+        back_urls: { success: successUrl, failure: failureUrl, pending: successUrl },
+        notification_url: `${origin}/api/payments/mercadopago/webhook`,
+        auto_return: 'approved',
+      });
+      const checkoutUrl = preference.init_point || preference.sandbox_init_point;
+      await query('UPDATE appointments SET deposit_preference_id = $1 WHERE id = $2', [preference.id, appointment.id]);
+      await query(
+        `INSERT INTO payments (tenant_id, amount, currency, method, status, raw_payload)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [tenant.id, service.deposit_amount, MP_CURRENCY, 'mercadopago', 'pending', JSON.stringify(preference)]
+      );
+      return checkoutUrl;
+    } catch (mpErr: any) {
+      logger.error('Error creando preferencia de seña', { error: mpErr.message });
+      return null;
+    }
+  }
+
+  function sendNotifications(appointment, tenant, status) {
+    if (status === 'confirmed') {
+      sendClientConfirmation(appointment, tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
+      notifyStaff(appointment, tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
+    }
+  }
+
+  const requireActivePublicTenant = (req, res, next) => {
+    if (!req.tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
+    if (req.tenant.status !== 'active') return res.status(403).json({ error: 'Peluquería no disponible' });
+    if (!req.tenant.landing_enabled) return res.status(404).json({ error: 'Peluquería no encontrada' });
     next();
   };
 
   router.get('/:slug/config', identifyTenant, requireActivePublicTenant, (req, res) => {
-    res.json({
+    const cacheKey = `config:${req.params.slug}`;
+    const cached = NodeCache.get(cacheKey);
+    if (cached) return res.json(cached);
+    const body = {
       tenant: {
         slug: req.tenant.slug,
         business_name: req.tenant.business_name,
@@ -40,16 +153,23 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         brand_logo_url: req.tenant.brand_logo_url,
         business_phone: req.tenant.business_phone,
       },
-    });
+    };
+    NodeCache.put(cacheKey, body, 120000);
+    res.json(body);
   });
 
   router.get('/:slug/services', identifyTenant, requireActivePublicTenant, async (req, res) => {
+    const cacheKey = `services:${req.params.slug}`;
+    const cached = NodeCache.get(cacheKey);
+    if (cached) return res.json(cached);
     try {
       const services = await query(
         'SELECT id, name, duration, price, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name',
         [req.tenant.id]
       );
-      res.json({ tenant: req.tenant, services: services.rows });
+      const body = { tenant: req.tenant, services: services.rows };
+      NodeCache.put(cacheKey, body, 60000);
+      res.json(body);
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al cargar servicios' });
@@ -81,7 +201,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         }
       }
 
-      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig);
+      const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
+
+      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig, blockedDates.rows);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
         const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -94,6 +216,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
+  /**
+   * Crea uno o más turnos (booking público):
+   * - Si el servicio tiene deposit_amount > 0, el turno nace como "pending"
+   * - Si se envía recurring.frequency, genera hasta 12 turnos recurrentes
+   * - Retorna management_link para autogestión y checkout_url si requiere seña
+   */
   router.post('/:slug/appointments', appointmentLimiter, identifyTenant, requireActivePublicTenant, [
     body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
     body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
@@ -102,54 +230,15 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
   ], validate, async (req, res) => {
     try {
-      if (new Date(req.body.appointmentDate) <= new Date()) {
-        return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
-      }
-      if (req.tenant.plan === 'free' && req.tenant.trial_end_date && new Date() > new Date(req.tenant.trial_end_date)) {
-        return res.status(403).json({ error: 'El período de prueba ha finalizado. No se pueden reservar nuevos turnos.' });
-      }
-      if (!(await checkPlanLimits(req.tenant.id, 'appointments'))) {
-        return res.status(403).json({ error: 'Límite de plan alcanzado. Contactá al administrador.' });
-      }
+      const validated = await validateBookingRequest(req, res, req.tenant);
+      if (!validated) return;
+      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring } = validated;
 
-      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring } = req.body;
-      if (!clientName || !clientPhone || !serviceId || !appointmentDate) {
-        return res.status(400).json({ error: 'Datos obligatorios faltantes' });
-      }
-      const service = await queryOne(
-        'SELECT * FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
-        [serviceId, req.tenant.id]
-      );
-      if (!service) return res.status(404).json({ error: 'Servicio no disponible' });
+      const resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res);
+      if (!resolved) return;
+      const { service, validStaffId } = resolved;
 
-      let validStaffId = null;
-      if (staffId) {
-        const staffMember = await queryOne(
-          'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
-          [staffId, req.tenant.id]
-        );
-        if (!staffMember) {
-          return res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
-        }
-        validStaffId = staffMember.id;
-      }
-
-      const clientToken = crypto.randomUUID();
-      const appointmentStatus = service.deposit_amount > 0 ? 'pending' : 'confirmed';
-      const recurringGroup = crypto.randomUUID();
-
-      let appointmentDates: { date: string; token: string }[] = [{ date: appointmentDate, token: clientToken }];
-
-      if (recurring && recurring.frequency && recurring.count > 1) {
-        const frequencies: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 30 };
-        const interval = frequencies[recurring.frequency] || 7;
-        for (let i = 1; i < Math.min(recurring.count, 12); i++) {
-          const nextDate = new Date(appointmentDate);
-          nextDate.setDate(nextDate.getDate() + interval * i);
-          if (nextDate <= new Date()) continue;
-          appointmentDates.push({ date: nextDate.toISOString(), token: crypto.randomUUID() });
-        }
-      }
+      const { clientToken, appointmentStatus, recurringGroup, appointmentDates } = buildAppointmentDates(appointmentDate, recurring, service);
 
       const newAppointments: any[] = [];
 
@@ -179,56 +268,22 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
       const newAppointment = newAppointments[0];
       newAppointment.recurring_count = newAppointments.length;
-
       newAppointment.management_link = `${req.protocol}://${req.get('host')}/p/${req.tenant.slug}/manage/${clientToken}`;
 
-        let depositCheckoutUrl = null;
-        if (service.deposit_amount > 0 && mpConfigured()) {
-          try {
-            const origin = (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-            const successUrl = `${origin}/p/${req.tenant.slug}/manage/${clientToken}?deposit=ok`;
-            const failureUrl = `${origin}/p/${req.tenant.slug}/manage/${clientToken}?deposit=fail`;
-            const preference = await mpCreatePreference({
-              items: [{
-                title: `Seña ${service.name} - ${req.tenant.business_name}`,
-                quantity: 1,
-                currency_id: MP_CURRENCY,
-                unit_price: parseFloat(service.deposit_amount),
-              }],
-              external_reference: `appointment:${newAppointment.id}`,
-              back_urls: { success: successUrl, failure: failureUrl, pending: successUrl },
-              notification_url: `${origin}/api/payments/mercadopago/webhook`,
-              auto_return: 'approved',
-            });
-            depositCheckoutUrl = preference.init_point || preference.sandbox_init_point;
-            await query('UPDATE appointments SET deposit_preference_id = $1 WHERE id = $2', [preference.id, newAppointment.id]);
-            await query(
-              `INSERT INTO payments (tenant_id, amount, currency, method, status, raw_payload)
-               VALUES ($1, $2, $3, $4, $5, $6)`,
-              [req.tenant.id, service.deposit_amount, MP_CURRENCY, 'mercadopago', 'pending', JSON.stringify(preference)]
-            );
-          } catch (mpErr: any) {
-            logger.error('Error creando preferencia de seña', { error: mpErr.message });
-          }
-        }
+      const depositCheckoutUrl = await handleDepositCheckout(service, newAppointment, req, req.tenant);
 
-        if (appointmentStatus === 'confirmed') {
-          sendClientConfirmation(newAppointment, req.tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
-          notifyStaff(newAppointment, req.tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
-        }
+      sendNotifications(newAppointment, req.tenant, appointmentStatus);
 
-        const recurringInfo = recurring && recurring.count > 1
-          ? { recurring: true, recurring_frequency: recurring.frequency, recurring_count: newAppointments.length }
-          : {};
+      const recurringInfo = buildRecurringInfo(recurring, newAppointments.length);
 
-        res.status(201).json({
-          message: service.deposit_amount > 0 ? 'Turno creado. Se requiere seña para confirmar.' : newAppointments.length > 1 ? `${newAppointments.length} turnos creados` : 'Turno reservado',
-          appointment: newAppointment,
-          deposit_required: service.deposit_amount > 0,
-          deposit_amount: service.deposit_amount || null,
-          checkout_url: depositCheckoutUrl,
-          ...recurringInfo,
-        });
+      res.status(201).json({
+        message: service.deposit_amount > 0 ? 'Turno creado. Se requiere seña para confirmar.' : newAppointments.length > 1 ? `${newAppointments.length} turnos creados` : 'Turno reservado',
+        appointment: newAppointment,
+        deposit_required: service.deposit_amount > 0,
+        deposit_amount: service.deposit_amount || null,
+        checkout_url: depositCheckoutUrl,
+        ...recurringInfo,
+      });
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al reservar turno' });
@@ -300,7 +355,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         [staffId, date]
       );
 
-      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig);
+      const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
+
+      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig, blockedDates.rows);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
         const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -313,8 +370,8 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
-  // GET landing config
-  router.get('/:slug/landing', identifyTenant, requireActivePublicTenant, async (req, res) => {
+  // GET landing config (allow even when disabled, so it can be activated)
+  router.get('/:slug/landing', identifyTenant, async (req, res) => {
     try {
       if (!req.tenant.landing_enabled) {
         await query(`UPDATE tenants SET landing_enabled=true, updated_at=NOW() WHERE id=$1`, [req.tenant.id]);
@@ -386,6 +443,10 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
   // ========== CLIENT SELF-SERVICE (by token) ==========
 
+  /**
+   * Obtiene los datos de un turno mediante el token único enviado al cliente.
+   * Incluye turnos del mismo recurring_group si existen.
+   */
   router.get('/:slug/appointments/manage/:token', identifyTenant, async (req, res) => {
     try {
       const appointment = await queryOne(
@@ -416,6 +477,10 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
+  /**
+   * Cancela un turno mediante el token único del cliente.
+   * No permite cancelar turnos ya cancelados, completados o no-show.
+   */
   router.put('/:slug/appointments/manage/:token/cancel', identifyTenant, async (req, res) => {
     try {
       const appointment = await queryOne(
@@ -437,6 +502,10 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
+  /**
+   * Reprograma un turno mediante el token único del cliente.
+   * Valida que la nueva fecha sea futura y que el turno no esté cancelado/completado.
+   */
   router.put('/:slug/appointments/manage/:token/reschedule', identifyTenant, [
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
     body('staffId').optional({ values: 'null' }).isInt(),
@@ -494,7 +563,8 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       }
 
       const dateStr = newDate.toISOString().split('T')[0];
-      const rawSlots = generateAvailableSlots(dateStr, appointment.service_duration, existing.rows, hoursConfig);
+      const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
+      const rawSlots = generateAvailableSlots(dateStr, appointment.service_duration, existing.rows, hoursConfig, blockedDates.rows);
       const slotFound = rawSlots.some(s => Math.abs(new Date(s).getTime() - newDate.getTime()) < 60000);
 
       if (!slotFound) {
@@ -522,4 +592,4 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   });
 
   return router;
-};
+}

@@ -125,7 +125,7 @@ export default function(loginLimiter, passwordResetLimiter) {
         { name: 'Lavado y Secado', duration: 20, price: 0 },
         { name: 'Tinte / Color', duration: 120, price: 0 }
       ];
-      for (let service of defaultServices) {
+      for (const service of defaultServices) {
         await query(
           `INSERT INTO services (tenant_id, name, duration, price, active) VALUES ($1, $2, $3, $4, true)`,
           [newTenantId, service.name, service.duration, service.price]
@@ -229,5 +229,4 @@ export default function(loginLimiter, passwordResetLimiter) {
   });
 
   return router;
-};
-
+}

@@ -39,7 +39,8 @@ function mockIdentifyTenant() {
     id: 1, slug: 'test', status: 'active', plan: 'pro',
     business_name: 'Test Pelu',
     brand_primary_color: '#2563eb', brand_secondary_color: '#7c3aed',
-    opening_hours: { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] }
+    opening_hours: { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] },
+    landing_enabled: true
   });
   query.mockResolvedValueOnce({ rows: [] });
 }
@@ -78,7 +79,7 @@ describe('Appointments', () => {
           clientName: 'Juan Pérez',
           clientPhone: '099123456',
           serviceId: 1,
-          appointmentDate: '2026-06-01T14:00:00.000Z'
+          appointmentDate: '2026-06-15T14:00:00.000Z'
         });
       expect(res.status).toBe(201);
       expect(res.body.appointment).toBeDefined();
@@ -206,6 +207,7 @@ describe('Appointments', () => {
     it('devuelve slots disponibles', async () => {
       mockIdentifyTenant();
       queryOne.mockResolvedValueOnce({ id: 1, name: 'Corte', duration: 30, price: 500, active: true });
+      query.mockResolvedValueOnce({ rows: [] });
       query.mockResolvedValueOnce({ rows: [] });
 
       const res = await request(app)

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface ServiceItem {
   id: number;
   name: string;
@@ -12,12 +14,13 @@ interface LandingServicesSectionProps {
 }
 
 export default function LandingServicesSection({ services, fixImageUrl }: LandingServicesSectionProps) {
+  const { t } = useTranslation();
   if (services.length === 0) return null;
 
   return (
     <section id="servicios">
-      <h2 className="section-title">Servicios</h2>
-      <p className="section-subtitle">Elegí el servicio que mejor se adapte a vos</p>
+      <h2 className="section-title">{t('landingServices.title')}</h2>
+      <p className="section-subtitle">{t('landingServices.subtitle')}</p>
       <div className="services-grid">
         {services.map(s => (
           <div key={s.id} className="service-card">
@@ -30,8 +33,8 @@ export default function LandingServicesSection({ services, fixImageUrl }: Landin
             <div className="service-content">
               <h3 className="service-name">{s.name}</h3>
               <div className="service-meta">
-                <span className="service-duration">{s.duration} min</span>
-                <span className="service-price">${s.price}</span>
+                <span className="service-duration">{s.duration} {t('landingServices.minutes')}</span>
+                <span className="service-price">{t('landingServices.pricePrefix')}{s.price}</span>
               </div>
             </div>
           </div>

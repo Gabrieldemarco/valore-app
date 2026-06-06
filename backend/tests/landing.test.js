@@ -145,6 +145,7 @@ describe('Landing Page (público)', () => {
       queryOne.mockResolvedValueOnce({ id: 1, individual_hours: null });
       queryOne.mockResolvedValueOnce({ duration: 30 });
       query.mockResolvedValueOnce({ rows: [] });
+      query.mockResolvedValueOnce({ rows: [] });
 
       const res = await request(app)
         .get('/p/test-pelu/staff/1/availability?date=2026-06-01&serviceId=1');

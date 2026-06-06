@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
 
 interface TeamItem {
@@ -34,12 +36,13 @@ export default function LandingTeamSection({
   onSelectStaff,
   onOpenLightbox,
 }: LandingTeamSectionProps) {
+  const { t } = useTranslation();
   return (
     <>
       {gallery.length > 0 && (
         <section id="galeria">
-          <h2 className="section-title">Galería</h2>
-          <p className="section-subtitle">Conocé nuestro trabajo</p>
+          <h2 className="section-title">{t('landingTeam.galleryTitle')}</h2>
+          <p className="section-subtitle">{t('landingTeam.gallerySubtitle')}</p>
           <div className="gallery-grid">
             {gallery.map((g, i) => (
               <div key={i} className="gallery-item" onClick={() => onOpenLightbox(i)}>
@@ -57,8 +60,8 @@ export default function LandingTeamSection({
 
       {team.length > 0 && (
         <section id="equipo">
-          <h2 className="section-title">Nuestro Equipo</h2>
-          <p className="section-subtitle">Conocé a los profesionales</p>
+          <h2 className="section-title">{t('landingTeam.title')}</h2>
+          <p className="section-subtitle">{t('landingTeam.subtitle')}</p>
           <div className="team-grid">
             {team.map((m, i) => {
               const staffMember = staff.find(s => s.name === m.name);

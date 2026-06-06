@@ -40,9 +40,7 @@ describe('API Endpoints - Tests Críticos', () => {
   describe('GET /api/health', () => {
     it('debería responder con status ok', async () => {
       const { query } = require('../database');
-      query.mockResolvedValueOnce({ rows: [{ count: '5' }] });
-      query.mockResolvedValueOnce({ rows: [{ count: '10' }] });
-      query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
+      query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
 
       const res = await request(app).get('/api/health');
       expect(res.status).toBe(200);
@@ -137,7 +135,8 @@ describe('API Endpoints - Tests Críticos', () => {
       const { queryOne } = require('../database');
       queryOne.mockResolvedValueOnce({
         id: 1, slug: 'test', status: 'active', plan: 'pro',
-        brand_primary_color: '#2563eb', brand_secondary_color: '#7c3aed'
+        brand_primary_color: '#2563eb', brand_secondary_color: '#7c3aed',
+        landing_enabled: true
       });
 
       const res = await request(app)

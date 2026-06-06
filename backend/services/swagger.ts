@@ -45,6 +45,7 @@ const options = {
             name: { type: 'string' },
             duration: { type: 'integer' },
             price: { type: 'number' },
+            deposit_amount: { type: 'number', nullable: true, description: 'Monto de seña requerida (opcional)' },
             active: { type: 'boolean' },
             image: { type: 'string', nullable: true },
           },
@@ -68,10 +69,18 @@ const options = {
             id: { type: 'integer' },
             client_name: { type: 'string' },
             client_phone: { type: 'string' },
-            service_id: { type: 'integer' },
+            client_email: { type: 'string', nullable: true },
+            client_token: { type: 'string', description: 'Token único para autogestión del turno' },
+            service: { type: 'string' },
+            service_duration: { type: 'integer' },
             appointment_date: { type: 'string', format: 'date-time' },
             status: { type: 'string', enum: ['pending', 'confirmed', 'completed', 'cancelled', 'no-show'] },
             staff_id: { type: 'integer', nullable: true },
+            notes: { type: 'string', nullable: true },
+            deposit_amount: { type: 'number', nullable: true, description: 'Monto de seña' },
+            deposit_preference_id: { type: 'string', nullable: true },
+            recurring_group: { type: 'string', nullable: true, description: 'UUID que agrupa turnos recurrentes' },
+            recurring_rule: { type: 'string', nullable: true, description: 'Regla de recurrencia (JSON)' },
           },
         },
       },
@@ -530,8 +539,14 @@ const options = {
           tags: ['Landing Pública'],
           summary: 'Crear turno (booking público)',
           parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
-          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { clientName: { type: 'string' }, clientPhone: { type: 'string' }, serviceId: { type: 'integer' }, appointmentDate: { type: 'string', format: 'date-time' }, staffId: { type: 'integer' } }, required: ['clientName', 'clientPhone', 'serviceId', 'appointmentDate'] } } } },
-          responses: { 201: { description: 'Turno creado' } },
+          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { clientName: { type: 'string' }, clientPhone: { type: 'string' }, clientEmail: { type: 'string', format: 'email' }, serviceId: { type: 'integer' }, appointmentDate: { type: 'string', format: 'date-time' }, staffId: { type: 'integer' }, notes: { type: 'string' }, recurring: { type: 'object', properties: { frequency: { type: 'string', enum: ['weekly', 'biweekly', 'monthly'] }, count: { type: 'integer', maximum: 12, default: 1 } } } }, required: ['clientName', 'clientPhone', 'serviceId', 'appointmentDate'] } } } },
+          responses: {
+            '201': { description: 'Turno(s) creado(s). Incluye management_link, checkout_url si requiere seña, recurring_count si es recurrente.' },
+            '400': { description: 'Error de validación o fecha en pasado' },
+            '404': { description: 'Peluquería o servicio no encontrado' },
+            '403': { description: 'Plan sin cupo o trial expirado' },
+            '409': { description: 'Horario ya reservado' },
+          },
         },
       },
       '/p/{slug}/landing': {
@@ -548,6 +563,66 @@ const options = {
           parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { landing_description: { type: 'string' }, landing_hero_image: { type: 'string' }, landing_gallery: { type: 'array' }, landing_team: { type: 'array' }, landing_social_links: { type: 'object' }, landing_custom_css: { type: 'string' }, landing_enabled: { type: 'boolean' }, landing_layout: { type: 'array' } } } } } },
           responses: { 200: { description: 'Landing actualizada' } },
+        },
+      },
+
+      '/p/{slug}/appointments/manage/{token}': {
+        get: {
+          tags: ['Landing Pública'],
+          summary: 'Obtener turno por token (portal cliente)',
+          parameters: [
+            { name: 'slug', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'token', in: 'path', required: true, schema: { type: 'string' }, description: 'Token único enviado al cliente' },
+          ],
+          responses: { 200: { description: 'Datos del turno' }, 404: { description: 'Token inválido' } },
+        },
+      },
+      '/p/{slug}/appointments/manage/{token}/cancel': {
+        put: {
+          tags: ['Landing Pública'],
+          summary: 'Cancelar turno por token (portal cliente)',
+          parameters: [
+            { name: 'slug', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'token', in: 'path', required: true, schema: { type: 'string' }, description: 'Token único enviado al cliente' },
+          ],
+          responses: { 200: { description: 'Turno cancelado' }, 404: { description: 'Token inválido' } },
+        },
+      },
+      '/p/{slug}/appointments/manage/{token}/reschedule': {
+        put: {
+          tags: ['Landing Pública'],
+          summary: 'Reprogramar turno por token (portal cliente)',
+          parameters: [
+            { name: 'slug', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'token', in: 'path', required: true, schema: { type: 'string' }, description: 'Token único enviado al cliente' },
+          ],
+          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { newDate: { type: 'string', format: 'date-time' } }, required: ['newDate'] } } } },
+          responses: { 200: { description: 'Turno reprogramado' }, 400: { description: 'Fecha inválida' }, 404: { description: 'Token inválido' } },
+        },
+      },
+
+      // ===== PUSH NOTIFICATIONS =====
+      '/api/push/vapid-public-key': {
+        get: {
+          tags: ['Notificaciones Push'],
+          summary: 'Obtener clave VAPID pública',
+          responses: { 200: { description: 'Clave VAPID pública' } },
+        },
+      },
+      '/api/push/subscribe': {
+        post: {
+          tags: ['Notificaciones Push'],
+          summary: 'Suscribirse a notificaciones push',
+          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { subscription: { type: 'object' }, tenantId: { type: 'integer' } }, required: ['subscription', 'tenantId'] } } } },
+          responses: { 201: { description: 'Suscripción creada' } },
+        },
+      },
+      '/api/push/unsubscribe': {
+        post: {
+          tags: ['Notificaciones Push'],
+          summary: 'Desuscribirse de notificaciones push',
+          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { endpoint: { type: 'string' } }, required: ['endpoint'] } } } },
+          responses: { 200: { description: 'Suscripción eliminada' } },
         },
       },
 

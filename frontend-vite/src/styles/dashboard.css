@@ -493,6 +493,22 @@
       transform: translateY(-1px);
     }
 
+    .dash-btn-noshow {
+      background: rgba(168, 85, 247, 0.2);
+      color: #d8b4fe;
+      border: 1px solid #a855f7;
+    }
+
+    .dash-btn-noshow:hover {
+      background: rgba(168, 85, 247, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .dash-status-noshow {
+      background: rgba(168, 85, 247, 0.2);
+      color: #d8b4fe;
+    }
+
     .dash-btn-whatsapp {
       background: rgba(37, 211, 102, 0.2);
       color: #4ade80;

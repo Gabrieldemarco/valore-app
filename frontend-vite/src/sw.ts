@@ -6,6 +6,24 @@ import { ExpirationPlugin } from 'workbox-expiration';
 
 declare const self: ServiceWorkerGlobalScope;
 
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      (async () => {
+        try {
+          const response = await fetch(event.request);
+          const cache = await caches.open('navigations');
+          cache.put(event.request, response.clone());
+          return response;
+        } catch {
+          const cached = await caches.match(event.request);
+          return cached || fetch(event.request);
+        }
+      })()
+    );
+  }
+});
+
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -21,7 +39,7 @@ registerRoute(
 );
 
 registerRoute(
-  /\.(?:png|jpg|jpeg|svg|gif|webp|woff2)$/,
+  /\.(?:png|jpg|jpeg|svg|gif|webp|woff2|ico)$/,
   new CacheFirst({
     cacheName: 'static-assets',
     plugins: [
@@ -67,5 +85,15 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter(name => name !== 'navigations' && name !== 'api-cache' && name !== 'static-assets')
+          .map(name => caches.delete(name))
+      );
+      await self.clients.claim();
+    })()
+  );
 });

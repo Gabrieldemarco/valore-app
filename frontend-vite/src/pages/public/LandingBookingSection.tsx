@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
 
 interface ServiceItem {
@@ -82,6 +84,7 @@ export default function LandingBookingSection({
   recurringEnabled, recurringFrequency, recurringCount,
   onSetRecurringEnabled, onSetRecurringFrequency, onSetRecurringCount,
 }: LandingBookingSectionProps) {
+  const { t } = useTranslation();
   const selStaff = selectedStaff ? staff.find(s => s.id === selectedStaff) : null;
   const todayObj = new Date();
 
@@ -96,8 +99,8 @@ export default function LandingBookingSection({
 
   return (
     <section id="reservar" className="booking-section">
-      <h2 className="section-title">Reservá tu turno</h2>
-      <p className="section-subtitle">Completá los pasos para agendar</p>
+      <h2 className="section-title">{t('booking.title')}</h2>
+      <p className="section-subtitle">{t('booking.subtitle')}</p>
 
       <div className="booking-container">
         {/* ── Stepper ── */}
@@ -106,38 +109,38 @@ export default function LandingBookingSection({
             <>
               <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => onSetStep(3)}>
                 <div className="step-number">1</div>
-                <div className="step-label">Fecha</div>
+                <div className="step-label">{t('booking.stepFecha')}</div>
               </div>
               <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? onSetStep(4) : undefined}>
                 <div className="step-number">2</div>
-                <div className="step-label">Horario</div>
+                <div className="step-label">{t('booking.stepHorario')}</div>
               </div>
               <div className={`step ${step >= 5 ? 'active' : ''}`}>
                 <div className="step-number">3</div>
-                <div className="step-label">Tus datos</div>
+                <div className="step-label">{t('booking.stepTusDatos')}</div>
               </div>
             </>
           ) : (
             <>
               <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} onClick={() => onSetStep(1)}>
                 <div className="step-number">1</div>
-                <div className="step-label">Peluquero</div>
+                <div className="step-label">{t('booking.stepPeluquero')}</div>
               </div>
               <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} onClick={() => step > 1 ? onSetStep(2) : undefined}>
                 <div className="step-number">2</div>
-                <div className="step-label">Servicio</div>
+                <div className="step-label">{t('booking.stepServicio')}</div>
               </div>
               <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'completed' : ''}`} onClick={() => step > 2 ? onSetStep(3) : undefined}>
                 <div className="step-number">3</div>
-                <div className="step-label">Fecha</div>
+                <div className="step-label">{t('booking.stepFecha')}</div>
               </div>
               <div className={`step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'completed' : ''}`} onClick={() => step > 3 ? onSetStep(4) : undefined}>
                 <div className="step-number">4</div>
-                <div className="step-label">Horario</div>
+                <div className="step-label">{t('booking.stepHorario')}</div>
               </div>
               <div className={`step ${step >= 5 ? 'active' : ''}`}>
                 <div className="step-number">5</div>
-                <div className="step-label">Tus datos</div>
+                <div className="step-label">{t('booking.stepTusDatos')}</div>
               </div>
             </>
           )}
@@ -148,10 +151,10 @@ export default function LandingBookingSection({
           {step === 1 && !isQuickBook && (
             <div className="step-content">
               <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>
-                Elegí tu peluquero
+                {t('booking.selectStaff')}
               </label>
               {staff.length === 0 ? (
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay peluqueros disponibles</p>
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{t('booking.noStaff')}</p>
               ) : (
                 <div className="team-grid">
                   {staff.map(s => (
@@ -183,14 +186,14 @@ export default function LandingBookingSection({
           {isQuickBook && !quickBookError && step < 3 && (
             <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
               <div className="spinner" style={{ margin: '0 auto' }} />
-              <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>Preparando reserva rápida...</p>
+              <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>{t('booking.quickBookLoading')}</p>
             </div>
           )}
           {isQuickBook && quickBookError && (
             <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
-              <p style={{ color: '#fca5a5' }}>Servicio no disponible para reserva rápida</p>
+              <p style={{ color: '#fca5a5' }}>{t('booking.quickBookError')}</p>
               <button type="button" className="btn btn-secondary" onClick={() => { window.location.href = `/p/${tenantSlug}`; }}>
-                Ir a reserva normal
+                {t('booking.quickBookNormal')}
               </button>
             </div>
           )}
@@ -199,7 +202,7 @@ export default function LandingBookingSection({
           {step === 2 && !isQuickBook && (
             <div className="step-content">
               <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>
-                Elegí un servicio
+                {t('booking.selectService')}
               </label>
               <div className="booking-services">
                 {services.map(s => (
@@ -212,8 +215,8 @@ export default function LandingBookingSection({
                     <div className="booking-service-info">
                       <div className="booking-service-name">{s.name}</div>
                       <div className="booking-service-meta">
-                        <span className="booking-service-duration">{s.duration} min</span>
-                        <span className="booking-service-price">${s.price}</span>
+                        <span className="booking-service-duration">{s.duration} {t('landingServices.minutes')}</span>
+                        <span className="booking-service-price">{t('landingServices.pricePrefix')}{s.price}</span>
                       </div>
                     </div>
                   </div>
@@ -225,7 +228,7 @@ export default function LandingBookingSection({
           {/* ── Step 3: Elegí fecha ── */}
           {step === 3 && (
             <div className="step-content form-group" style={{ textAlign: 'center' }}>
-              <label style={{ textAlign: 'center', marginBottom: 16, fontSize: '1rem' }}>Elegí una fecha disponible</label>
+              <label style={{ textAlign: 'center', marginBottom: 16, fontSize: '1rem' }}>{t('booking.selectDate')}</label>
               <div className="custom-calendar" style={{ margin: '0 auto' }}>
                 <div className="cal-header">
                   <button type="button" className="cal-nav" onClick={() => {
@@ -267,7 +270,7 @@ export default function LandingBookingSection({
                 </div>
                 <div className="cal-footer">
                   <button type="button" className="cal-today-btn" onClick={() => { onSetCalMonth(todayObj.getMonth()); onSetCalYear(todayObj.getFullYear()); }}>
-                    Hoy
+                    {t('booking.today')}
                   </button>
                 </div>
               </div>
@@ -277,20 +280,20 @@ export default function LandingBookingSection({
           {/* ── Step 4: Elegí horario ── */}
           {step === 4 && (
             <div className="step-content form-group">
-              <label>Elegí un horario</label>
+              <label>{t('booking.selectTime')}</label>
               {slotsTimeout ? (
                 <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-                  <p>La consulta está demorando más de lo normal.{' '}
+                  <p>{t('booking.slotsTimeout')}{' '}
                     <button className="btn btn-link" onClick={onFetchSlots} style={{ padding: 0, margin: 0, background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>
-                      Reintentar
+                      {t('booking.retry')}
                     </button>
                   </p>
                 </div>
               ) : slots.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>🕐</div>
-                  <p>No hay horarios disponibles para esta fecha</p>
+                  <p>{t('booking.noSlots')}</p>
                 </div>
               ) : (
                 <div className="slots-grid" style={{ marginTop: 6 }}>
@@ -329,7 +332,7 @@ export default function LandingBookingSection({
                       <div className="booking-summary-icon">✂️</div>
                       <div className="booking-summary-details">
                         <div className="booking-summary-title">{sv.name}</div>
-                        <div className="booking-summary-sub">{sv.duration} min &middot; ${sv.price}</div>
+                        <div className="booking-summary-sub">{sv.duration} {t('landingServices.minutes')} &middot; {t('landingServices.pricePrefix')}{sv.price}</div>
                       </div>
                       <div className="booking-summary-right">
                         <div>{selectedDate}</div>
@@ -341,47 +344,47 @@ export default function LandingBookingSection({
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Nombre</label>
-                  <input type="text" value={clientName} onChange={e => onSetClientName(e.target.value)} required placeholder="Tu nombre" />
+                  <label>{t('booking.nameLabel')}</label>
+                  <input type="text" value={clientName} onChange={e => onSetClientName(e.target.value)} required placeholder={t('booking.namePlaceholder')} />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono</label>
-                  <input type="tel" value={clientPhone} onChange={e => onSetClientPhone(e.target.value)} required placeholder="099 123 456" />
+                  <label>{t('booking.phoneLabel')}</label>
+                  <input type="tel" value={clientPhone} onChange={e => onSetClientPhone(e.target.value)} required placeholder={t('booking.phonePlaceholder')} />
                 </div>
               </div>
               <div className="form-group">
-                <label>Email (opcional)</label>
-                <input type="email" value={clientEmail} onChange={e => onSetClientEmail(e.target.value)} placeholder="mail@ejemplo.com" />
+                <label>{t('booking.emailLabel')}</label>
+                <input type="email" value={clientEmail} onChange={e => onSetClientEmail(e.target.value)} placeholder={t('booking.emailPlaceholder')} />
               </div>
               <div className="form-group">
-                <label>Notas (opcional)</label>
-                <textarea value={clientNotes} onChange={e => onSetClientNotes(e.target.value)} placeholder="Algún comentario..." rows={3} />
+                <label>{t('booking.notesLabel')}</label>
+                <textarea value={clientNotes} onChange={e => onSetClientNotes(e.target.value)} placeholder={t('booking.notesPlaceholder')} rows={3} />
               </div>
               <div className="form-group" style={{ marginTop: 8 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                   <input type="checkbox" checked={recurringEnabled} onChange={e => onSetRecurringEnabled(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  Repetir turno
+                  {t('booking.recurringLabel')}
                 </label>
                 {recurringEnabled && (
                   <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
                     <select value={recurringFrequency} onChange={e => onSetRecurringFrequency(e.target.value)}
                       style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'inherit' }}>
-                      <option value="weekly">Todas las semanas</option>
-                      <option value="biweekly">Cada 2 semanas</option>
-                      <option value="monthly">Todos los meses</option>
+                      <option value="weekly">{t('booking.recurringWeekly')}</option>
+                      <option value="biweekly">{t('booking.recurringBiweekly')}</option>
+                      <option value="monthly">{t('booking.recurringMonthly')}</option>
                     </select>
                     <select value={recurringCount} onChange={e => onSetRecurringCount(parseInt(e.target.value))}
                       style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'inherit' }}>
                       {[2, 3, 4, 5, 6, 8, 10, 12].map(n => (
-                        <option key={n} value={n}>{n} turnos</option>
+                        <option key={n} value={n}>{n} {t('booking.recurringCount')}</option>
                       ))}
                     </select>
                   </div>
                 )}
               </div>
               <div className="booking-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => onSetStep(4)}>Volver</button>
-                <button type="submit" className="btn btn-primary btn-lg">Confirmar turno</button>
+                <button type="button" className="btn btn-secondary" onClick={() => onSetStep(4)}>{t('booking.backButton')}</button>
+                <button type="submit" className="btn btn-primary btn-lg">{t('booking.submitButton')}</button>
               </div>
             </div>
           )}
@@ -395,7 +398,7 @@ export default function LandingBookingSection({
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '8px 20px' }}
                 onClick={resetBooking}
               >
-                Cancelar
+                {t('booking.cancelButton')}
               </button>
             </div>
           )}
@@ -405,9 +408,9 @@ export default function LandingBookingSection({
             <div className="step-content booking-success">
               <div className="success-checkmark">✓</div>
               <div className="success-title">{msg}</div>
-              <div className="success-sub">Te enviamos un recordatorio antes del turno.</div>
+              <div className="success-sub">{t('booking.successReminder')}</div>
               <button type="button" className="btn btn-primary btn-lg" onClick={resetBooking}>
-                Reservar otro turno
+                {t('booking.bookAnother')}
               </button>
             </div>
           )}

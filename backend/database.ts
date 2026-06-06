@@ -265,6 +265,15 @@ async function initDB() {
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_status TEXT;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMP;
       ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_end_date TIMESTAMP;
+
+      CREATE TABLE IF NOT EXISTS blocked_dates (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        reason TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(tenant_id, date)
+      );
     `);
 
     if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true') {

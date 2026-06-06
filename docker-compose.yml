@@ -17,6 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redisdata:/data
+
   app:
     build: .
     restart: unless-stopped
@@ -25,6 +38,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', r => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -45,9 +66,11 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
       APPOINTMENT_RATE_LIMIT_MAX: ${APPOINTMENT_RATE_LIMIT_MAX:-20}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     volumes:
       - uploads:/app/backend/uploads
 
 volumes:
   pgdata:
+  redisdata:
   uploads:

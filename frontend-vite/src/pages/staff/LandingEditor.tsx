@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -11,6 +12,7 @@ interface Service {
   name: string;
   duration: number;
   price: number;
+  deposit_amount?: number | null;
   image?: string;
   _deleted?: boolean;
 }
@@ -47,10 +49,11 @@ const SECTION_LABELS: Record<string, string> = {
 
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
 
+const CACHE_BUST = Date.now();
 function fixImageUrl(url: string | null | undefined): string {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads')) return window.location.origin + url;
+  if (url.startsWith('/uploads')) return window.location.origin + url + '?v=' + CACHE_BUST;
   return url;
 }
 
@@ -65,6 +68,7 @@ function getDefaultLayout(): LayoutBlock[] {
 }
 
 export default function LandingEditor() {
+  const { t } = useTranslation();
   const { staffToken } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<EditorTab>('general');
@@ -119,7 +123,7 @@ export default function LandingEditor() {
   }, []);
 
   const loadAllData = useCallback(async () => {
-    showStatus('Cargando datos...', true);
+    showStatus(t('staffLandingEditor.statusLoadingData'), true);
     try {
       const data = await api.get<{ tenant: Record<string, unknown>; services: Service[] }>('/api/tenant/me');
       setTenant(data.tenant);
@@ -139,12 +143,12 @@ export default function LandingEditor() {
       }
       const staffRes = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff').catch(() => ({ staff: [] }));
       setStaffList(staffRes.staff || []);
-      showStatus('Datos cargados', false);
+      showStatus(t('staffLandingEditor.statusDataLoaded'), false);
       setLoaded(true);
     } catch {
-      showStatus('Error al cargar datos', false);
+      showStatus(t('staffLandingEditor.statusDataError'), false);
     }
-  }, [showStatus]);
+  }, [showStatus, t]);
 
   useEffect(() => { loadAllData(); }, [loadAllData]);
 
@@ -170,13 +174,13 @@ export default function LandingEditor() {
 
   const saveChanges = useCallback(async (manual = false) => {
     if (!dirty && !manual) return;
-    showStatus('Guardando cambios...', true);
+    showStatus(t('staffLandingEditor.statusSaving'), true);
     try {
       const payload = collectPayload();
       const forbidden = ['javascript:', 'behavior:', 'expression('];
       const css = ((payload as Record<string, unknown>).landing_custom_css as string || '').toLowerCase();
       if (forbidden.some(f => css.includes(f))) {
-        showStatus('❌ CSS contiene código prohibido', false);
+        showStatus(t('staffLandingEditor.statusCSSForbidden'), false);
         return;
       }
       const res = await api.put<{ services?: Service[]; tenant?: Record<string, unknown> }>('/api/tenant/settings', payload);
@@ -188,12 +192,12 @@ export default function LandingEditor() {
         setLayout((res.tenant.landing_layout as LayoutBlock[]) || layout);
       }
       setDirty(false);
-      showStatus('✅ Guardado correctamente', false);
+      showStatus(t('staffLandingEditor.statusSaved'), false);
       updatePreview();
     } catch {
-      showStatus('❌ Error al guardar', false);
+      showStatus(t('staffLandingEditor.statusSaveError'), false);
     }
-  }, [dirty, collectPayload, layout, updatePreview, showStatus]);
+  }, [dirty, collectPayload, layout, updatePreview, showStatus, t]);
 
   const handleTenantField = useCallback((key: string, value: unknown) => {
     setTenant(prev => ({ ...prev, [key]: value }));
@@ -266,8 +270,8 @@ export default function LandingEditor() {
 
   const saveStaff = useCallback(async (index: number) => {
     const s = staffList[index];
-    if (!s.name || !s.email) { showStatus('❌ Nombre y Email requeridos', false); return; }
-    showStatus('Guardando peluquero...', true);
+    if (!s.name || !s.email) { showStatus(t('staffLandingEditor.statusStaffValidation'), false); return; }
+    showStatus(t('staffLandingEditor.statusSavingStaff'), true);
     try {
       const url = s.id ? `/api/tenant/staff/${s.id}` : '/api/tenant/staff';
       const method = s.id ? 'PUT' : 'POST';
@@ -281,16 +285,16 @@ export default function LandingEditor() {
       };
       const res = await (method === 'PUT' ? api.put<{ staff: StaffMember }>(url, payload) : api.post<{ staff: StaffMember; tempPassword?: string }>(url, payload));
       if (!s.id && 'tempPassword' in res) {
-        alert(`Peluquero creado exitosamente. Clave temporal: ${(res as { tempPassword: string }).tempPassword}\nPor favor dale esta clave al peluquero.`);
+        alert(t('staffLandingEditor.staffCreatedAlert', { password: (res as { tempPassword: string }).tempPassword }));
       }
       setStaffList(prev => {
         const next = [...prev];
         next[index] = { ...next[index], id: (res as { staff: StaffMember }).staff?.id || s.id };
         return next;
       });
-      showStatus('✅ Peluquero guardado', false);
-    } catch { showStatus('❌ Error al guardar peluquero', false); }
-  }, [staffList, showStatus]);
+      showStatus(t('staffLandingEditor.statusStaffSaved'), false);
+    } catch { showStatus(t('staffLandingEditor.statusStaffSaveError'), false); }
+  }, [staffList, showStatus, t]);
 
   const addStaffUI = useCallback(() => {
     setStaffList(prev => [...prev, { name: '', email: '', specialties: [], active: true }]);
@@ -318,12 +322,12 @@ export default function LandingEditor() {
   }, []);
 
   const saveCustomBlockModal = useCallback(() => {
-    if (!modalLabel && !modalContent) { alert('Poné al menos un nombre o el código HTML.'); return; }
+    if (!modalLabel && !modalContent) { alert(t('staffLandingEditor.customBlockValidationAlert')); return; }
     const id = 'custom-' + Date.now();
-    setLayout(prev => [...prev, { id, type: 'custom', label: modalLabel || 'Sin nombre', enabled: true, title: modalTitle, content: modalContent }]);
+    setLayout(prev => [...prev, { id, type: 'custom', label: modalLabel || t('common.no'), enabled: true, title: modalTitle, content: modalContent }]);
     setModalOpen(false);
     debounceSave();
-  }, [modalLabel, modalTitle, modalContent, debounceSave]);
+  }, [modalLabel, modalTitle, modalContent, debounceSave, t]);
 
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     dragIndexRef.current = index;
@@ -360,10 +364,10 @@ export default function LandingEditor() {
 
   const handleImageUpload = useCallback(async (targetKey: string, file: File | undefined, serviceIndex?: number, staffIndex?: number) => {
     if (!file || file.size > 5 * 1024 * 1024) {
-      showStatus('❌ Imagen muy grande (max 5MB)', false);
+      showStatus(t('staffLandingEditor.statusImageTooLarge'), false);
       return;
     }
-    showStatus('Subiendo imagen...', true);
+    showStatus(t('staffLandingEditor.statusUploadingImage'), true);
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -379,12 +383,12 @@ export default function LandingEditor() {
             setTenant(prev => ({ ...prev, [targetKey]: url }));
           }
           debounceSave();
-          showStatus('✅ Imagen subida', false);
-        } catch { showStatus('❌ Error al subir imagen', false); }
+          showStatus(t('staffLandingEditor.statusImageUploaded'), false);
+        } catch { showStatus(t('staffLandingEditor.statusImageUploadError'), false); }
       };
       reader.readAsDataURL(file);
-    } catch { showStatus('❌ Error general', false); }
-  }, [debounceSave, showStatus]);
+    } catch { showStatus(t('staffLandingEditor.statusGeneralError'), false); }
+  }, [debounceSave, showStatus, t]);
 
   const applyPresetTheme = useCallback((primary: string, secondary: string, stylePreset: string) => {
     setTenant(prev => ({ ...prev, brand_primary_color: primary, brand_secondary_color: secondary }));
@@ -433,19 +437,19 @@ body { display: flex !important; flex-direction: column !important; }
     setTenant(prev => ({ ...prev, landing_custom_css: customCss }));
     debounceSave();
     setTimeout(updatePreview, 500);
-    showStatus(`🎨 Tema ${stylePreset.toUpperCase()} aplicado`, false);
-  }, [debounceSave, updatePreview, showStatus]);
+    showStatus(t('staffLandingEditor.statusThemeApplied', { name: stylePreset.toUpperCase() }), false);
+  }, [debounceSave, updatePreview, showStatus, t]);
 
   const tabs: { key: EditorTab; label: string }[] = [
-    { key: 'general', label: '🏢 General' },
-    { key: 'branding', label: '🎨 Branding' },
-    { key: 'services', label: '🛎️ Servicios' },
-    { key: 'hours', label: '🕒 Horarios' },
-    { key: 'gallery', label: '📷 Galería' },
-    { key: 'team', label: '👥 Equipo' },
-    { key: 'social', label: '🔗 Redes' },
-    { key: 'css', label: '⚙️ CSS' },
-    { key: 'layout', label: '🧩 Layout' },
+    { key: 'general', label: t('staffLandingEditor.tabGeneral') },
+    { key: 'branding', label: t('staffLandingEditor.tabBranding') },
+    { key: 'services', label: t('staffLandingEditor.tabServices') },
+    { key: 'hours', label: t('staffLandingEditor.tabHours') },
+    { key: 'gallery', label: t('staffLandingEditor.tabGallery') },
+    { key: 'team', label: t('staffLandingEditor.tabTeam') },
+    { key: 'social', label: t('staffLandingEditor.tabSocial') },
+    { key: 'css', label: t('staffLandingEditor.tabCSS') },
+    { key: 'layout', label: t('staffLandingEditor.tabLayout') },
   ];
 
   const trialDaysLeft = (() => {
@@ -523,8 +527,8 @@ body { display: flex !important; flex-direction: column !important; }
       {/* Header */}
       <header className="app-header">
         <div className="flex-row-gap">
-          <span style={{ fontSize: '1.5rem' }}>🎨</span>
-          <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Editor de Landing</h1>
+          <span style={{ fontSize: '1.5rem' }}>{t('staffLandingEditor.headerIcon')}</span>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>{t('staffLandingEditor.headerTitle')}</h1>
         </div>
         <div className="flex-row-gap-lg">
           {trialDaysLeft !== null && (
@@ -535,13 +539,13 @@ body { display: flex !important; flex-direction: column !important; }
               border: trialDaysLeft > 5 ? '1px solid rgba(197,168,128,0.3)' : trialDaysLeft > 0 ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(239,68,68,0.4)',
               color: trialDaysLeft > 5 ? 'var(--primary)' : trialDaysLeft > 0 ? '#f59e0b' : '#fca5a5',
             }}>
-              {trialDaysLeft > 5 ? `✨ Período de Prueba: ${trialDaysLeft} días restantes`
-                : trialDaysLeft > 0 ? `⚠️ ¡Quedan ${trialDaysLeft} días de prueba!`
-                : '🚨 Prueba Expirada'}
+              {trialDaysLeft > 5 ? t('staffLandingEditor.trialMany', { days: trialDaysLeft })
+                : trialDaysLeft > 0 ? t('staffLandingEditor.trialFew', { days: trialDaysLeft })
+                : t('staffLandingEditor.trialExpired')}
             </div>
           )}
-          <Link to="/staff/dashboard" className="btn btn-secondary">← Dashboard</Link>
-          <button onClick={() => saveChanges(true)} disabled={saving} className="btn btn-primary">💾 Guardar Cambios</button>
+          <Link to="/staff/dashboard" className="btn btn-secondary">{t('staffLandingEditor.dashboardLink')}</Link>
+          <button onClick={() => saveChanges(true)} disabled={saving} className="btn btn-primary">{t('staffLandingEditor.saveButton')}</button>
         </div>
       </header>
 
@@ -561,24 +565,24 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: General */}
             {activeTab === 'general' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Información Básica</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.generalTitle')}</h3>
                 <div className="form-group">
-                  <label>Nombre del Negocio</label>
+                  <label>{t('staffLandingEditor.businessNameLabel')}</label>
                   <input type="text" className="glass-input" value={(tenant.business_name as string) || ''}
                     onChange={e => handleTenantField('business_name', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Descripción Corta</label>
+                  <label>{t('staffLandingEditor.descriptionLabel')}</label>
                   <textarea className="glass-input" rows={3} value={(tenant.landing_description as string) || ''}
                     onChange={e => handleTenantField('landing_description', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Dirección</label>
+                  <label>{t('staffLandingEditor.addressLabel')}</label>
                   <input type="text" className="glass-input" value={(tenant.business_address as string) || ''}
                     onChange={e => handleTenantField('business_address', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono de Contacto</label>
+                  <label>{t('staffLandingEditor.phoneLabel')}</label>
                   <input type="tel" className="glass-input" value={(tenant.business_phone as string) || ''}
                     onChange={e => handleTenantField('business_phone', e.target.value)} />
                 </div>
@@ -586,7 +590,7 @@ body { display: flex !important; flex-direction: column !important; }
                   <label>
                     <input type="checkbox" checked={(tenant.landing_enabled as boolean) || false}
                       onChange={e => handleTenantField('landing_enabled', e.target.checked)} />{' '}
-                    Página Habilitada
+                    {t('staffLandingEditor.landingEnabledLabel')}
                   </label>
                 </div>
               </div>
@@ -595,46 +599,46 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Branding */}
             {activeTab === 'branding' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Colores y Logo</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.brandingTitle')}</h3>
                 <div className="form-group">
-                  <label>Color Principal</label>
+                  <label>{t('staffLandingEditor.primaryColorLabel')}</label>
                   <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
                     value={(tenant.brand_primary_color as string) || '#c5a880'}
                     onChange={e => handleTenantField('brand_primary_color', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Color Secundario</label>
+                  <label>{t('staffLandingEditor.secondaryColorLabel')}</label>
                   <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
                     value={(tenant.brand_secondary_color as string) || '#d5be9b'}
                     onChange={e => handleTenantField('brand_secondary_color', e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: 15 }}>
-                  <label style={{ fontWeight: 600, display: 'block', marginBottom: 10, color: 'var(--text-main)' }}>🎨 Temas Rápidos (Estilos de Diseño)</label>
+                  <label style={{ fontWeight: 600, display: 'block', marginBottom: 10, color: 'var(--text-main)' }}>{t('staffLandingEditor.quickThemesTitle')}</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                     <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #8B5CF6, #D946EF)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#8B5CF6', '#D946EF', 'velvet')}>💜 Velvet</button>
+                      onClick={() => applyPresetTheme('#8B5CF6', '#D946EF', 'velvet')}>{t('staffLandingEditor.themeVelvet')}</button>
                     <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#D97706', '#F59E0B', 'barber')}>🧡 Barber</button>
+                      onClick={() => applyPresetTheme('#D97706', '#F59E0B', 'barber')}>{t('staffLandingEditor.themeBarber')}</button>
                     <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #10B981, #34D399)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#10B981', '#34D399', 'zen')}>💚 Zen</button>
+                      onClick={() => applyPresetTheme('#10B981', '#34D399', 'zen')}>{t('staffLandingEditor.themeZen')}</button>
                   </div>
-                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 8, fontSize: 11 }}>Al elegir un tema se ajustarán automáticamente los colores, tipografía y estilo visual de tu landing page.</small>
+                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 8, fontSize: 11 }}>{t('staffLandingEditor.quickThemeHint')}</small>
                 </div>
                 <div className="form-group">
-                  <label>URL Logo</label>
+                  <label>{t('staffLandingEditor.logoUrlLabel')}</label>
                   <input type="url" className="glass-input" placeholder="https://..."
                     value={(tenant.brand_logo_url as string) || ''}
                     onChange={e => handleTenantField('brand_logo_url', e.target.value)} />
-                  <small style={{ color: 'var(--text-muted)' }}>O subí una imagen desde tu PC</small>
+                  <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.logoUploadHint')}</small>
                   <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
                     onChange={e => handleImageUpload('brand_logo_url', e.target.files?.[0])} />
                 </div>
                 <div className="form-group">
-                  <label>Imagen de Portada (Hero)</label>
+                  <label>{t('staffLandingEditor.heroImageLabel')}</label>
                   <input type="url" className="glass-input" placeholder="https://..."
                     value={(tenant.landing_hero_image as string) || ''}
                     onChange={e => handleTenantField('landing_hero_image', e.target.value)} />
-                  <small style={{ color: 'var(--text-muted)' }}>Imagen principal de la landing page</small>
+                  <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.heroImageHint')}</small>
                   <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
                     onChange={e => handleImageUpload('landing_hero_image', e.target.files?.[0])} />
                 </div>
@@ -644,20 +648,22 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Servicios */}
             {activeTab === 'services' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Gestión de Servicios</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.servicesTitle')}</h3>
                 <div id="servicesList">
                   {services.map((s, i) => (
                     <div key={i} className={`service-item${s._deleted ? ' deleted' : ''}`}>
                       <div className="service-fields">
-                        <input type="text" className="glass-input" placeholder="Nombre" value={s.name}
+                        <input type="text" className="glass-input" placeholder={t('staffLandingEditor.serviceNamePlaceholder')} value={s.name}
                           onChange={e => updateService(i, 'name', e.target.value)} />
                         <div style={{ display: 'flex', gap: 5 }}>
-                          <input type="number" className="glass-input" placeholder="Duración (min)" value={s.duration}
+                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDurationPlaceholder')} value={s.duration}
                             onChange={e => updateService(i, 'duration', e.target.value)} />
-                          <input type="number" className="glass-input" placeholder="Precio ($)" value={s.price}
+                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.servicePricePlaceholder')} value={s.price}
                             onChange={e => updateService(i, 'price', e.target.value)} />
+                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDepositPlaceholder')} value={s.deposit_amount ?? ''}
+                            onChange={e => updateService(i, 'deposit_amount', e.target.value)} style={{ maxWidth: 100 }} />
                         </div>
-                        <input type="url" className="glass-input" placeholder="URL Imagen" value={s.image || ''}
+                        <input type="url" className="glass-input" placeholder={t('staffLandingEditor.serviceImagePlaceholder')} value={s.image || ''}
                           onChange={e => updateService(i, 'image', e.target.value)} />
                         {s.image && (
                           <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -673,17 +679,17 @@ body { display: flex !important; flex-direction: column !important; }
                     </div>
                   ))}
                 </div>
-                <button className="btn btn-primary" onClick={addService}>+ Nuevo Servicio</button>
+                <button className="btn btn-primary" onClick={addService}>{t('staffLandingEditor.serviceNewButton')}</button>
               </div>
             )}
 
             {/* Tab: Horarios */}
             {activeTab === 'hours' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Horarios de Atención</h3>
-                <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>Seleccioná los días que abrís y el rango horario.</p>
+                <h3 className="text-gradient">{t('staffLandingEditor.hoursTitle')}</h3>
+                <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>{t('staffLandingEditor.hoursHint')}</p>
                 <div className="form-group">
-                  <label>Días Laborables</label>
+                  <label>{t('staffLandingEditor.workDaysLabel')}</label>
                   <div className="hours-grid">
                     {DAY_LABELS.map((day, i) => (
                       <label key={i} className="day-check" style={{ cursor: 'pointer' }}>
@@ -697,12 +703,12 @@ body { display: flex !important; flex-direction: column !important; }
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>Hora Apertura</label>
+                    <label>{t('staffLandingEditor.openingHourLabel')}</label>
                     <input type="number" className="glass-input" min={0} max={23} value={hours.startHour}
                       onChange={e => { setHours(p => ({ ...p, startHour: Number(e.target.value) })); debounceSave(); }} />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>Hora Cierre</label>
+                    <label>{t('staffLandingEditor.closingHourLabel')}</label>
                     <input type="number" className="glass-input" min={0} max={23} value={hours.endHour}
                       onChange={e => { setHours(p => ({ ...p, endHour: Number(e.target.value) })); debounceSave(); }} />
                   </div>
@@ -713,9 +719,9 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Galería */}
             {activeTab === 'gallery' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Galería de Imágenes</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.galleryTitle')}</h3>
                 <div className="form-group">
-                  <input type="url" id="newGalleryUrl" className="glass-input" placeholder="Pegar URL de imagen..." />
+                  <input type="url" id="newGalleryUrl" className="glass-input" placeholder={t('staffLandingEditor.galleryUrlPlaceholder')} />
                   <div style={{ display: 'flex', gap: 5, marginTop: 5 }}>
                     <input type="file" id="newGalleryFile" accept="image/*" className="glass-input"
                       style={{ flex: 1, padding: 10 }}
@@ -727,11 +733,11 @@ body { display: flex !important; flex-direction: column !important; }
                           try {
                             const res = await api.post<{ url?: string }>('/api/upload-image', { image: ev.target?.result, filename: file.name });
                             if (res.url) { setGallery(prev => [...prev, res.url!]); debounceSave(); }
-                          } catch { showStatus('❌ Error al subir', false); }
+                          } catch { showStatus(t('staffLandingEditor.statusGeneralError'), false); }
                         };
                         reader.readAsDataURL(file);
                       }} />
-                    <button className="btn btn-secondary" onClick={addGalleryUrl}>Agregar URL</button>
+                    <button className="btn btn-secondary" onClick={addGalleryUrl}>{t('staffLandingEditor.galleryAddUrlButton')}</button>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10 }}>
@@ -748,9 +754,9 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Equipo */}
             {activeTab === 'team' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Equipo (Peluqueros)</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.teamTitle')}</h3>
                 <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>
-                  Agrega o edita los peluqueros. Cada uno tendrá su propia agenda y disponibilidad.
+                  {t('staffLandingEditor.teamHint')}
                 </p>
                 <div id="staffListContainer">
                   {staffList.map((s, i) => {
@@ -762,16 +768,16 @@ body { display: flex !important; flex-direction: column !important; }
                       <div key={i} className="service-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 15 }}>
                         <div style={{ display: 'flex', gap: 15, width: '100%' }}>
                           <div className="service-fields" style={{ flex: 1 }}>
-                            <input type="text" className="glass-input" placeholder="Nombre" value={s.name}
+                            <input type="text" className="glass-input" placeholder={t('staffLandingEditor.staffNamePlaceholder')} value={s.name}
                               onChange={e => updateStaff(i, 'name', e.target.value)} />
-                            <input type="email" className="glass-input" placeholder="Email (ej: juan@pelu.com)"
+                            <input type="email" className="glass-input" placeholder={t('staffLandingEditor.staffEmailPlaceholder')}
                               value={s.email}
                               onChange={e => updateStaff(i, 'email', e.target.value)}
                               readOnly={!!s.id} />
-                            <input type="text" className="glass-input" placeholder="Especialidades (Corte, Color... separadas por coma)"
+                            <input type="text" className="glass-input" placeholder={t('staffLandingEditor.staffSpecialtiesPlaceholder')}
                               value={(s.specialties || []).join(', ')}
                               onChange={e => updateStaff(i, 'specialties', e.target.value.split(',').map(x => x.trim()))} />
-                            <input type="text" className="glass-input" placeholder="Breve Presentación / Bio (ej: Experto en degradados)"
+                            <input type="text" className="glass-input" placeholder={t('staffLandingEditor.staffBioPlaceholder')}
                               value={s.bio || ''}
                               onChange={e => updateStaff(i, 'bio', e.target.value)} />
                             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -781,7 +787,7 @@ body { display: flex !important; flex-direction: column !important; }
                                 <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255,255,255,0.2)', fontSize: 20 }}>👤</div>
                               )}
                               <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Foto de Perfil</label>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffPhotoLabel')}</label>
                                 <input type="file" accept="image/*" className="glass-input" style={{ fontSize: 11, padding: 5 }}
                                   onChange={e => handleImageUpload('photo_url', e.target.files?.[0], undefined, i)} />
                               </div>
@@ -789,11 +795,11 @@ body { display: flex !important; flex-direction: column !important; }
                             <label style={{ fontSize: '0.8rem', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
                               <input type="checkbox" checked={s.active !== false}
                                 onChange={e => updateStaff(i, 'active', e.target.checked)} />{' '}
-                              Activo (se muestra en landing y recibe turnos)
+                              {t('staffLandingEditor.staffActiveLabel')}
                             </label>
                           </div>
                           <div className="service-actions" style={{ alignSelf: 'flex-start' }}>
-                            <button className="btn btn-primary" onClick={() => saveStaff(i)}>💾 Guardar</button>
+                            <button className="btn btn-primary" onClick={() => saveStaff(i)}>{t('staffLandingEditor.staffSaveButton')}</button>
                           </div>
                         </div>
                         <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: 12, marginTop: 5 }}>
@@ -803,12 +809,12 @@ body { display: flex !important; flex-direction: column !important; }
                                 updateStaff(i, 'individual_hours', e.target.checked ? { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] } : null);
                                 setStaffList(prev => [...prev]);
                               }} />
-                            ⚙️ Configurar horarios personalizados
+                            {t('staffLandingEditor.staffCustomHoursLabel')}
                           </label>
                           {hasCustomHours && (
                             <div style={{ marginTop: 12, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
                               <div className="form-group" style={{ marginBottom: 12 }}>
-                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Días Laborales del Peluquero</label>
+                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>{t('staffLandingEditor.staffWorkDaysLabel')}</label>
                                 <div style={{ display: 'flex', gap: 12 }}>
                                   {DAY_LABELS.map((day, dIdx) => (
                                     <label key={dIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
@@ -827,7 +833,7 @@ body { display: flex !important; flex-direction: column !important; }
                               </div>
                               <div style={{ display: 'flex', gap: '1rem' }}>
                                 <div className="form-group" style={{ flex: 1, margin: 0 }}>
-                                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hora Entrada</label>
+                                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffStartHourLabel')}</label>
                                   <input type="number" className="glass-input" min={0} max={23} value={startH}
                                     onChange={e => {
                                       updateStaff(i, 'individual_hours', { ...s.individual_hours!, startHour: parseInt(e.target.value) });
@@ -835,7 +841,7 @@ body { display: flex !important; flex-direction: column !important; }
                                     }} />
                                 </div>
                                 <div className="form-group" style={{ flex: 1, margin: 0 }}>
-                                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hora Salida</label>
+                                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffEndHourLabel')}</label>
                                   <input type="number" className="glass-input" min={0} max={23} value={endH}
                                     onChange={e => {
                                       updateStaff(i, 'individual_hours', { ...s.individual_hours!, endHour: parseInt(e.target.value) });
@@ -850,23 +856,23 @@ body { display: flex !important; flex-direction: column !important; }
                     );
                   })}
                 </div>
-                <button className="btn btn-primary" onClick={addStaffUI}>+ Nuevo Peluquero</button>
+                <button className="btn btn-primary" onClick={addStaffUI}>{t('staffLandingEditor.staffNewButton')}</button>
               </div>
             )}
 
             {/* Tab: Redes */}
             {activeTab === 'social' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">Redes Sociales</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.socialTitle')}</h3>
                 <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>
-                  Agrega los links completos (con https://) de tus redes sociales.
+                  {t('staffLandingEditor.socialHint')}
                 </p>
                 {[
-                  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/tu_cuenta' },
-                  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/tu_pagina' },
-                  { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/123456789' },
-                  { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@tu_cuenta' },
-                  { key: 'twitter', label: 'Twitter/X', placeholder: 'https://twitter.com/tu_cuenta' },
+                  { key: 'instagram', label: t('staffLandingEditor.socialInstagram'), placeholder: 'https://instagram.com/tu_cuenta' },
+                  { key: 'facebook', label: t('staffLandingEditor.socialFacebook'), placeholder: 'https://facebook.com/tu_pagina' },
+                  { key: 'whatsapp', label: t('staffLandingEditor.socialWhatsApp'), placeholder: 'https://wa.me/123456789' },
+                  { key: 'tiktok', label: t('staffLandingEditor.socialTikTok'), placeholder: 'https://tiktok.com/@tu_cuenta' },
+                  { key: 'twitter', label: t('staffLandingEditor.socialTwitter'), placeholder: 'https://twitter.com/tu_cuenta' },
                 ].map(sm => (
                   <div key={sm.key} className="form-group">
                     <label>{sm.label}</label>
@@ -881,12 +887,12 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: CSS */}
             {activeTab === 'css' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">CSS Personalizado (Avanzado)</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.cssTitle')}</h3>
                 <div className="form-group">
-                  <textarea className="glass-input" rows={10} placeholder="/* Tu CSS aquí */"
+                  <textarea className="glass-input" rows={10} placeholder={t('staffLandingEditor.cssPlaceholder')}
                     value={(tenant.landing_custom_css as string) || ''}
                     onChange={e => handleTenantField('landing_custom_css', e.target.value)} />
-                  <small style={{ color: 'var(--danger)' }}>⚠️ Cuidado: CSS inválido puede romper tu sitio.</small>
+                  <small style={{ color: 'var(--danger)' }}>{t('staffLandingEditor.cssWarning')}</small>
                 </div>
               </div>
             )}
@@ -894,9 +900,9 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Layout */}
             {activeTab === 'layout' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">🧩 Diseño de la Página</h3>
+                <h3 className="text-gradient">{t('staffLandingEditor.layoutTitle')}</h3>
                 <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>
-                  Arrastrá las secciones para reordenarlas. Activá o desactivá las que no querés mostrar.
+                  {t('staffLandingEditor.layoutHint')}
                 </p>
                 <div id="layoutSorter" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(layout.length ? layout : getDefaultLayout()).map((item, index) => {
@@ -922,12 +928,12 @@ body { display: flex !important; flex-direction: column !important; }
                   })}
                 </div>
                 <hr style={{ borderColor: 'var(--glass-border)', margin: '16px 0' }} />
-                <h3 style={{ fontSize: '1rem', marginBottom: 8 }}>➕ Bloques Personalizados</h3>
+                <h3 style={{ fontSize: '1rem', marginBottom: 8 }}>{t('staffLandingEditor.customBlocksTitle')}</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                  Podés insertar HTML propio (iframe de Instagram, Google Maps, etc.)
+                  {t('staffLandingEditor.customBlocksHint')}
                 </p>
                 <button className="btn btn-secondary" onClick={addCustomBlock} style={{ fontSize: '0.85rem' }}>
-                  + Agregar bloque
+                  {t('staffLandingEditor.customBlockAddButton')}
                 </button>
               </div>
             )}
@@ -938,8 +944,8 @@ body { display: flex !important; flex-direction: column !important; }
         {/* Preview Pane */}
         <section className="preview-pane">
           <div className="preview-toolbar">
-            <span>👁️ Vista Previa en Vivo</span>
-            <span style={{ opacity: 0.7 }}>Actualizado</span>
+            <span>{t('staffLandingEditor.previewLabel')}</span>
+            <span style={{ opacity: 0.7 }}>{t('staffLandingEditor.previewUpdated')}</span>
           </div>
           <iframe ref={iframeRef} title="Preview" style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} />
         </section>
@@ -948,26 +954,26 @@ body { display: flex !important; flex-direction: column !important; }
       {/* Modal for custom block */}
       <div className={`modal-overlay${modalOpen ? ' open' : ''}`}>
         <div className="glass-panel" style={{ width: '90%', maxWidth: 600, padding: '2rem', borderRadius: 16, maxHeight: '90vh', overflowY: 'auto' }}>
-          <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>➕ Nuevo Bloque Personalizado</h3>
+          <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>{t('staffLandingEditor.customBlockModalTitle')}</h3>
           <div className="form-group">
-            <label>Nombre del bloque</label>
-            <input type="text" className="glass-input" placeholder="Ej: Instagram, Mapa, Video" value={modalLabel}
+            <label>{t('staffLandingEditor.customBlockNameLabel')}</label>
+            <input type="text" className="glass-input" placeholder={t('staffLandingEditor.customBlockNamePlaceholder')} value={modalLabel}
               onChange={e => setModalLabel(e.target.value)} />
           </div>
           <div className="form-group">
-            <label>Título (opcional)</label>
-            <input type="text" className="glass-input" placeholder="Ej: Encontranos en Instagram" value={modalTitle}
+            <label>{t('staffLandingEditor.customBlockTitleLabel')}</label>
+            <input type="text" className="glass-input" placeholder={t('staffLandingEditor.customBlockTitlePlaceholder')} value={modalTitle}
               onChange={e => setModalTitle(e.target.value)} />
           </div>
           <div className="form-group">
-            <label>Código HTML / iframe</label>
-            <textarea className="glass-input" rows={6} placeholder="<iframe src=&quot;...&quot;></iframe>" value={modalContent}
+            <label>{t('staffLandingEditor.customBlockContentLabel')}</label>
+            <textarea className="glass-input" rows={6} placeholder={t('staffLandingEditor.customBlockContentPlaceholder')} value={modalContent}
               onChange={e => setModalContent(e.target.value)} />
-            <small style={{ color: 'var(--text-muted)' }}>Pegá el iframe de Google Maps, Instagram, YouTube, etc.</small>
+            <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.customBlockContentHint')}</small>
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1rem' }}>
-            <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={saveCustomBlockModal}>Agregar bloque</button>
+            <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('staffLandingEditor.customBlockCancel')}</button>
+            <button className="btn btn-primary" onClick={saveCustomBlockModal}>{t('staffLandingEditor.customBlockAdd')}</button>
           </div>
         </div>
       </div>

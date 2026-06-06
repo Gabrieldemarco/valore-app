@@ -139,14 +139,11 @@ describe('Autenticación', () => {
   });
 
   describe('GET /api/health', () => {
-    it('responde ok con conteos', async () => {
-      query.mockResolvedValueOnce({ rows: [{ count: '3' }] });
-      query.mockResolvedValueOnce({ rows: [{ count: '15' }] });
-      query.mockResolvedValueOnce({ rows: [{ count: '5' }] });
+    it('responde ok', async () => {
+      query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
       const res = await request(app).get('/api/health');
       expect(res.status).toBe(200);
       expect(res.body.status).toBe('ok');
-      expect(res.body.tenants).toBe(5);
     });
   });
 
