@@ -78,7 +78,7 @@ export default function(loginLimiter, passwordResetLimiter) {
       const token = jwt.sign(
         { id: staff.id, name: staff.name, email: staff.email, role: staff.role, tenant_id: staff.tenant_id },
         config.JWT_SECRET,
-        { expiresIn: '8h', algorithm: config.JWT_ALGORITHM }
+        { expiresIn: '24h', algorithm: config.JWT_ALGORITHM }
       );
       res.json({ token, name: staff.name, email: staff.email, role: staff.role });
     } catch (err: any) {
