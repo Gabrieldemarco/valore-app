@@ -11,6 +11,7 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import SalonQR from '../../components/SalonQR';
+import { exportInvoicePdf, exportAppointmentsPdf } from '../../utils/invoicePdf';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
 
@@ -45,6 +46,8 @@ interface Invoice {
   amount: number;
   status: string;
   due_date: string;
+  issue_date?: string;
+  invoice_number?: string;
   description?: string;
 }
 
@@ -715,6 +718,7 @@ export default function StaffDashboard() {
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
+          <button className="dash-tab" onClick={() => exportAppointmentsPdf(appointments, settings)}>{t('staffDashboard.exportPDF')}</button>
         </div>
 
         {activeTab !== 'staff' && activeTab !== 'services' && activeTab !== 'clients' && staffList.length > 0 && (
@@ -987,6 +991,7 @@ export default function StaffDashboard() {
                           {inv.status === 'pending' && (
                             <button className="dash-btn dash-btn-success" onClick={() => handlePayInvoice(inv.id)}>{t('staffDashboard.invoicePayButton')}</button>
                           )}
+                          <button className="dash-btn" style={{ marginLeft: inv.status === 'pending' ? 4 : 0, padding: '6px 10px', fontSize: 12 }} onClick={() => exportInvoicePdf(inv, settings)}>{t('staffDashboard.invoiceDownloadPdf')}</button>
                         </td>
                       </tr>
                     ))}
