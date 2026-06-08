@@ -35,7 +35,7 @@
     "error": "Não foi possível carregar os salões.",
     "initialsFallback": "AP",
     "navSalones": "Salões",
-    "navSumate": "Junte-se à Veloré",
+    "navSumate": "Junte-se à Velsoie",
     "navStudioAccess": "Studio Access",
     "salonCollection": "Salon Collection",
     "salonCollectionSub": "Cor, estilo e estética premium",
@@ -74,7 +74,7 @@
     "step2Desc": "Selecione o corte, tratamento ou penteado que desejar, junto com seu estilista e horário favorito.",
     "step3Title": "3. Confirme em Segundos",
     "step3Desc": "Seu agendamento é confirmado de imediato e você receberá uma notificação de confirmação instantânea.",
-    "footerCopyright": "© 2026 Veloré. Todos os direitos reservados.",
+    "footerCopyright": "© 2026 Velsoie. Todos os direitos reservados.",
     "footerCTA": "Comece a receber reservas online hoje mesmo. Acesso completo durante 15 dias.",
     "termsLink": "Termos e Condições",
     "privacyLink": "Política de Privacidade",
@@ -243,7 +243,7 @@
     "phonePlaceholder": "+55 11...",
     "addressLabel": "Endereço (Opcional)",
     "addressPlaceholder": "Av. Sempre Viva 123",
-    "acceptTerms": "Aceito os {terms}, a {privacy} e a {cancellation} da Veloré.",
+    "acceptTerms": "Aceito os {terms}, a {privacy} e a {cancellation} da Velsoie.",
     "createButton": "Criar Conta",
     "hasAccount": "Já tem conta?",
     "loginLink": "Faça login aqui",
@@ -661,13 +661,13 @@
     "shareButton": "Compartilhar",
     "copyLinkButton": "Copiar link",
     "shareText": "Agende seu horário neste salão",
-    "shareTitle": "Veloré"
+    "shareTitle": "Velsoie"
   },
   "installApp": {
     "iosText": "📲 Instale o app no seu iPhone: toque em Compartilhar ⎋ e depois em \"Adicionar à tela de início\"",
-    "promptText": "📲 Instale a Veloré para uma experiência mais rápida",
+    "promptText": "📲 Instale a Velsoie para uma experiência mais rápida",
     "installButton": "Instalar app",
-    "defaultText": "📲 Instale a Veloré no seu celular — use o menu do navegador: Instalar app ou Adicionar à tela de início"
+    "defaultText": "📲 Instale a Velsoie no seu celular — use o menu do navegador: Instalar app ou Adicionar à tela de início"
   },
   "pushNotifications": {
     "title": "Notificações push",

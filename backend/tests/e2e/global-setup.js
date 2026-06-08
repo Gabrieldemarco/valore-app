@@ -9,7 +9,7 @@ async function globalSetup() {
   process.env.DATABASE_URL = TEST_DB_URL;
   process.env.NODE_ENV = 'e2e';
   process.env.JWT_SECRET = 'test-secret-for-e2e';
-  process.env.SMTP_USER = 'test@velore.com';
+  process.env.SMTP_USER = 'test@velsoie.com';
   process.env.FRONTEND_URL = 'http://localhost:3000';
 
   console.log('\n=== E2E Global Setup ===');

@@ -215,7 +215,7 @@ export default function Landing() {
   }, [lightboxIdx]);
 
   useEffect(() => {
-    if (tenant?.business_name) document.title = `${tenant.business_name} | Veloré`;
+    if (tenant?.business_name) document.title = `${tenant.business_name} | Velsoie`;
   }, [tenant]);
 
   useEffect(() => {

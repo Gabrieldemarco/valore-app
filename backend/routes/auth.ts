@@ -164,7 +164,7 @@ export default function(loginLimiter, passwordResetLimiter) {
       const transporter = createEmailTransporter();
 
       await transporter.sendMail({
-        from: `"Veloré" <${process.env.SMTP_USER}>`,
+        from: `"Velsoie" <${process.env.SMTP_USER}>`,
         to: staff.email,
         subject: 'Recuperá tu contraseña',
         html: `
@@ -174,7 +174,7 @@ export default function(loginLimiter, passwordResetLimiter) {
           <a href="${resetLink}" style="background:#667eea; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Restablecer contraseña</a>
           <p>Si no solicitaste esto, podés ignorar este mensaje.</p>
           <br>
-          <p>Saludos,<br>Equipo Veloré</p>
+          <p>Saludos,<br>Equipo Velsoie</p>
         `,
       });
 
@@ -211,7 +211,7 @@ export default function(loginLimiter, passwordResetLimiter) {
       try {
         const transporter = createEmailTransporter();
         await transporter.sendMail({
-          from: `"Veloré" <${process.env.SMTP_USER}>`,
+          from: `"Velsoie" <${process.env.SMTP_USER}>`,
           to: staff.email,
           subject: 'Contraseña restablecida',
           html: `<p>Hola ${staff.name}, tu contraseña ha sido cambiada exitosamente.</p><p>Si no fuiste tú, contactanos inmediatamente.</p>`,

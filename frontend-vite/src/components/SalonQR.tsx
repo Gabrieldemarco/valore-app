@@ -30,7 +30,7 @@ export default function SalonQR({ slug, services, onClose }: Props) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Veloré',
+          title: 'Velsoie',
           text: `Reservá tu turno en esta peluquería${selectedService ? ` - ${selectedService.name}` : ''}`,
           url,
           files: [new File([blob], `valore-${slug}.png`, { type: 'image/png' })],

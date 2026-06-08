@@ -10,7 +10,7 @@ test.describe('Páginas estáticas', () => {
 
   test('landing.html se sirve en /landing', async ({ page }) => {
     await page.goto('/landing?tenant=test-pelu');
-    await expect(page).toHaveTitle(/Veloré/);
+    await expect(page).toHaveTitle(/Velsoie/);
   });
 
   test('404 personalizada para ruta inexistente', async ({ page }) => {

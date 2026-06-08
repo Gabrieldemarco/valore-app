@@ -35,7 +35,7 @@
     "error": "We couldn't load the salons.",
     "initialsFallback": "AP",
     "navSalones": "Salons",
-    "navSumate": "Join Veloré",
+    "navSumate": "Join Velsoie",
     "navStudioAccess": "Studio Access",
     "salonCollection": "Salon Collection",
     "salonCollectionSub": "Color, style and premium aesthetics",
@@ -74,7 +74,7 @@
     "step2Desc": "Select the cut, treatment or style you want, along with your stylist and preferred time.",
     "step3Title": "3. Confirm in Seconds",
     "step3Desc": "Your appointment is scheduled immediately and you'll receive an instant confirmation notification.",
-    "footerCopyright": "© 2026 Veloré. All rights reserved.",
+    "footerCopyright": "© 2026 Velsoie. All rights reserved.",
     "footerCTA": "Start receiving online bookings today. Full access for 15 days.",
     "termsLink": "Terms and Conditions",
     "privacyLink": "Privacy Policy",
@@ -243,7 +243,7 @@
     "phonePlaceholder": "+54 9 11...",
     "addressLabel": "Address (Optional)",
     "addressPlaceholder": "123 Main Street",
-    "acceptTerms": "I accept the {terms}, {privacy} and {cancellation} of Veloré.",
+    "acceptTerms": "I accept the {terms}, {privacy} and {cancellation} of Velsoie.",
     "createButton": "Create Account",
     "hasAccount": "Already have an account?",
     "loginLink": "Sign in here",
@@ -661,13 +661,13 @@
     "shareButton": "Share",
     "copyLinkButton": "Copy link",
     "shareText": "Book your appointment at this salon",
-    "shareTitle": "Veloré"
+    "shareTitle": "Velsoie"
   },
   "installApp": {
     "iosText": "📲 Install the app on your iPhone: tap Share ⎋ and then \"Add to Home Screen\"",
-    "promptText": "📲 Install Veloré for a faster experience",
+    "promptText": "📲 Install Velsoie for a faster experience",
     "installButton": "Install app",
-    "defaultText": "📲 Install Veloré on your phone — use the browser menu: Install app or Add to Home Screen"
+    "defaultText": "📲 Install Velsoie on your phone — use the browser menu: Install app or Add to Home Screen"
   },
   "pushNotifications": {
     "title": "Push notifications",

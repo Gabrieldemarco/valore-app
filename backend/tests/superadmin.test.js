@@ -34,7 +34,7 @@ const { query, queryOne } = require('../database');
 const billing = require('../services/billing');
 
 const superAdminToken = jwt.sign(
-  { id: 1, email: 'admin@velore.com', name: 'Super Admin', role: 'super_admin' },
+  { id: 1, email: 'admin@velsoie.com', name: 'Super Admin', role: 'super_admin' },
   process.env.JWT_SECRET,
   { expiresIn: '1h' }
 );
@@ -50,10 +50,10 @@ describe('SuperAdmin Routes', () => {
   describe('POST /api/super-admin/login', () => {
     it('loguea con credenciales válidas', async () => {
       const hash = await bcrypt.hash('secret123', 10);
-      queryOne.mockResolvedValueOnce({ id: 1, email: 'admin@velore.com', password: hash, name: 'Admin' });
+      queryOne.mockResolvedValueOnce({ id: 1, email: 'admin@velsoie.com', password: hash, name: 'Admin' });
       const res = await request(app)
         .post('/api/super-admin/login')
-        .send({ email: 'admin@velore.com', password: 'secret123' });
+        .send({ email: 'admin@velsoie.com', password: 'secret123' });
       expect(res.status).toBe(200);
       expect(res.body.token).toBeDefined();
       expect(res.body.role).toBe('super_admin');

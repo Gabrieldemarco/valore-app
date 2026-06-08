@@ -3,7 +3,7 @@ import logger from './logger';
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
-const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:support@velore.com.uy';
+const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:support@velsoie.com.uy';
 
 if (vapidPublicKey && vapidPrivateKey) {
   webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
@@ -48,7 +48,7 @@ export async function sendPushToTenant(tenantId: number, payload: { title: strin
       const notificationPayload = {
         ...payload,
         icon: '/icons/icon-192.svg',
-        tag: 'velore-notification',
+        tag: 'velsoie-notification',
       };
       const sub = { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } };
       const result = await sendPushNotification(sub, notificationPayload);

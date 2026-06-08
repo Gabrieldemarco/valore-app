@@ -6,41 +6,41 @@ import logger from './logger';
 const register = new promClient.Registry();
 register.setDefaultLabels({ service: 'backend', env: config.NODE_ENV });
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
-collectDefaultMetrics({ register, prefix: 'velore_' });
+collectDefaultMetrics({ register, prefix: 'velsoie_' });
 
 export const httpRequestDurationSeconds = new promClient.Histogram({
-  name: 'velore_http_request_duration_seconds',
+  name: 'velsoie_http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
 });
 
 export const httpRequestTotal = new promClient.Counter({
-  name: 'velore_http_requests_total',
+  name: 'velsoie_http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
 });
 
 export const httpRequestErrorTotal = new promClient.Counter({
-  name: 'velore_http_request_errors_total',
+  name: 'velsoie_http_request_errors_total',
   help: 'Total number of HTTP errors (status >= 500)',
   labelNames: ['method', 'route', 'status_code'],
 });
 
 export const dbPoolTotalConnections = new promClient.Gauge({
-  name: 'velore_db_pool_total_connections',
+  name: 'velsoie_db_pool_total_connections',
   help: 'Total number of database pool connections',
   labelNames: ['env'],
 });
 
 export const dbPoolIdleConnections = new promClient.Gauge({
-  name: 'velore_db_pool_idle_connections',
+  name: 'velsoie_db_pool_idle_connections',
   help: 'Idle database pool connections',
   labelNames: ['env'],
 });
 
 export const dbPoolWaitingCount = new promClient.Gauge({
-  name: 'velore_db_pool_waiting_count',
+  name: 'velsoie_db_pool_waiting_count',
   help: 'Number of requests waiting for a database connection',
   labelNames: ['env'],
 });

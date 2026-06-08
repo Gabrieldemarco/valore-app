@@ -19,7 +19,7 @@ export default function InstallAppBanner() {
   if (promptEvent) {
     return (
       <div className="install-banner">
-        <span className="install-banner-text">📲 Instalá Veloré para una experiencia más rápida</span>
+        <span className="install-banner-text">📲 Instalá Velsoie para una experiencia más rápida</span>
         <div className="install-banner-actions">
           <button className="install-banner-btn" onClick={install}>Instalar app</button>
           <button className="install-banner-close" onClick={dismiss} aria-label="Cerrar">✕</button>
@@ -30,7 +30,7 @@ export default function InstallAppBanner() {
 
   return (
     <div className="install-banner">
-      <span className="install-banner-text">📲 Instalá Veloré en tu celular — usá el menú del navegador: <strong>Instalar app</strong> o <strong>Agregar a pantalla de inicio</strong></span>
+      <span className="install-banner-text">📲 Instalá Velsoie en tu celular — usá el menú del navegador: <strong>Instalar app</strong> o <strong>Agregar a pantalla de inicio</strong></span>
       <button className="install-banner-close" onClick={dismiss} aria-label="Cerrar">✕</button>
     </div>
   );

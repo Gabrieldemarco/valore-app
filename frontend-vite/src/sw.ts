@@ -52,11 +52,11 @@ self.addEventListener('push', (event) => {
   if (!event.data) return;
   try {
     const data = event.data.json();
-    self.registration.showNotification(data.title || 'Veloré', {
+    self.registration.showNotification(data.title || 'Velsoie', {
       body: data.body || '',
       icon: data.icon || '/icons/icon-192.svg',
       badge: '/favicon.svg',
-      tag: data.tag || 'velore-notification',
+      tag: data.tag || 'velsoie-notification',
       data: { url: data.url || '/' },
     });
   } catch { /* ignore malformed push */ }

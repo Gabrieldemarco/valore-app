@@ -121,7 +121,7 @@ export default function PublicIndex() {
         <div className="header-content">
           <a href="/" className="logo">
             <span className="logo-monogram">V</span>
-            <span className="logo-text">Veloré</span>
+            <span className="logo-text">Velsoie</span>
           </a>
           <nav className="nav-links">
             <a href="#salons" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>{t('publicIndex.navSalones')}</a>
@@ -135,14 +135,14 @@ export default function PublicIndex() {
       <section className="hero">
         <div className="hero-unisex-collage">
           <div className="collage-card card-1" onClick={() => selectGenderFromHero('mujer')}>
-            <img src="/uploads/velore_hero_model.png" alt="Veloré female style" loading="lazy" />
+            <img src="/uploads/velsoie_hero_model.png" alt="Velsoie female style" loading="lazy" />
             <div className="collage-label">
               <span className="collage-label-title">{t('publicIndex.salonCollection')}</span>
               <span className="collage-label-sub">{t('publicIndex.salonCollectionSub')}</span>
             </div>
           </div>
           <div className="collage-card card-2" onClick={() => selectGenderFromHero('hombre')}>
-            <img src="/uploads/velore_gentleman_hero.png" alt="Veloré male style" loading="lazy" />
+            <img src="/uploads/velsoie_gentleman_hero.png" alt="Velsoie male style" loading="lazy" />
             <div className="collage-label">
               <span className="collage-label-title">{t('publicIndex.groomingCollection')}</span>
               <span className="collage-label-sub">{t('publicIndex.groomingCollectionSub')}</span>

@@ -34,7 +34,7 @@ if (REDIS_URL) {
 }
 
 export function getCacheKey(key: string): string {
-  return `velore:${key}`;
+  return `velsoie:${key}`;
 }
 
 export async function cacheGet(key: string): Promise<any | null> {
@@ -65,7 +65,7 @@ export async function cacheDel(pattern: string): Promise<void> {
 export async function cacheFlush(): Promise<void> {
   if (!enabled || !client) return;
   try {
-    const keys = await client.keys('velore:*');
+    const keys = await client.keys('velsoie:*');
     if (keys.length > 0) await client.del(...keys);
   } catch { /* ignore */ }
 }

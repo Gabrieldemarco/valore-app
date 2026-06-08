@@ -1,4 +1,4 @@
-# Deploy Checklist — Veloré
+# Deploy Checklist — Velsoie
 
 ## Estado de implementación
 

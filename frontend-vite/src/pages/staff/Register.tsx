@@ -73,7 +73,7 @@ export default function StaffRegister() {
           <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, marginBottom: 20 }}>
             <input type="checkbox" id="acceptTerms" required style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--primary)', width: 'auto', height: 'auto' }} />
             <label htmlFor="acceptTerms" style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none', fontWeight: 400, marginBottom: 0 }}>
-              Acepto los <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Términos y Condiciones</Link>, la <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Privacidad</Link> y la <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Cancelaciones</Link> de Veloré.
+              Acepto los <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Términos y Condiciones</Link>, la <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Privacidad</Link> y la <Link to="/terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Cancelaciones</Link> de Velsoie.
             </label>
           </div>
 

@@ -487,10 +487,10 @@ cron.schedule('0 9 * * *', async () => {
     for (const tenant of tenants) {
       const daysLeft = Math.ceil((new Date(tenant.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       await transporter.sendMail({
-        from: `"Veloré" <${process.env.SMTP_USER}>`,
+        from: `"Velsoie" <${process.env.SMTP_USER}>`,
         to: tenant.notification_email,
         subject: 'Tu prueba gratuita está por terminar',
-        html: `<p>Hola ${tenant.business_name},</p><p>Tu período de prueba de 15 días finaliza en ${daysLeft} días. Para continuar usando todos los beneficios, contrata un plan.</p><p>Saludos,<br>Equipo Veloré</p>`,
+        html: `<p>Hola ${tenant.business_name},</p><p>Tu período de prueba de 15 días finaliza en ${daysLeft} días. Para continuar usando todos los beneficios, contrata un plan.</p><p>Saludos,<br>Equipo Velsoie</p>`,
       });
       console.log(`📧 Recordatorio enviado a ${tenant.notification_email} (${daysLeft} días restantes)`);
     }

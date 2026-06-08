@@ -1,7 +1,7 @@
 // ecosystem.config.js - PM2 Process Manager
 module.exports = {
   apps: [{
-    name: 'velore-backend',
+    name: 'velsoie-backend',
     script: 'server.js',
     instances: 1,          // 1 para SQLite/PG sin pool issues; usar 'max' para cluster con PG pool
     exec_mode: 'fork',     // 'cluster' si usas múltiples instancias

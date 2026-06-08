@@ -6,7 +6,7 @@ test.describe('Landing page pública', () => {
   test('carga y muestra contenido del negocio', async ({ page }) => {
     await page.goto('/landing?tenant=test-pelu');
     // El título se actualiza dinámicamente con el nombre del negocio
-    await expect(page).toHaveTitle(/Veloré/);
+    await expect(page).toHaveTitle(/Velsoie/);
 
     // Esperar a que se cargue el nombre del negocio (vía API)
     await page.waitForFunction(() => {

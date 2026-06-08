@@ -295,7 +295,7 @@
     root.style.setProperty('--bg-gradient-end', bgGradEnd);
 
     el.customCss.textContent = tenantData.landing_custom_css || '';
-    document.title = (tenantData.business_name || 'Reservar Turno') + ' | Veloré';
+    document.title = (tenantData.business_name || 'Reservar Turno') + ' | Velsoie';
   }
 
   // ─── HERO ────────────────────────────────────────

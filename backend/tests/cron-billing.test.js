@@ -12,7 +12,7 @@ jest.mock('fs', () => {
   return { ...actual, existsSync: jest.fn(), readdirSync: jest.fn(), mkdirSync: jest.fn(), unlinkSync: jest.fn() };
 });
 
-process.env.SMTP_USER = 'test@velore.com';
+process.env.SMTP_USER = 'test@velsoie.com';
 process.env.FRONTEND_URL = 'http://localhost:3000';
 
 const { query, queryOne } = require('../database');

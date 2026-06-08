@@ -11,7 +11,7 @@ jest.mock('nodemailer', () => ({
   })),
 }));
 
-process.env.SMTP_USER = 'test@velore.com';
+process.env.SMTP_USER = 'test@velsoie.com';
 process.env.SMTP_PASS = 'secret';
 
 const { sendClientConfirmation, notifyStaff } = require('../services/notifications');
@@ -42,7 +42,7 @@ describe('sendClientConfirmation', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    process.env.SMTP_USER = 'test@velore.com';
+    process.env.SMTP_USER = 'test@velsoie.com';
     process.env.SMTP_PASS = 'secret';
   });
 
@@ -81,7 +81,7 @@ describe('notifyStaff', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    process.env.SMTP_USER = 'test@velore.com';
+    process.env.SMTP_USER = 'test@velsoie.com';
     process.env.SMTP_PASS = 'secret';
   });
 

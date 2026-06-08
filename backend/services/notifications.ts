@@ -169,7 +169,7 @@ async function notifyStaff(appointment, tenant) {
 
 // ========== ENVIAR CREDENCIALES A NUEVO STAFF ==========
 async function sendStaffCredentials(staff: { name: string; email: string }, tempPassword: string, tenant: { business_name: string }) {
-  const loginUrl = `${process.env.BASE_URL || 'https://app.velore.com.uy'}/staff/login`;
+  const loginUrl = `${process.env.BASE_URL || 'https://app.velsoie.com.uy'}/staff/login`;
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
       <h2 style="color:#10b981">👋 Bienvenido a ${tenant.business_name}</h2>

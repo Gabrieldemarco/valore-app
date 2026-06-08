@@ -14,7 +14,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'velore_lang',
+      lookupLocalStorage: 'velsoie_lang',
     },
     interpolation: { escapeValue: false },
   });

@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://velore.uy/sitemap.xml
+Sitemap: https://velsoie.uy/sitemap.xml

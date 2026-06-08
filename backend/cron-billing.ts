@@ -49,7 +49,7 @@ async function suspendExpiredFreeTrials() {
                 if (tenant.notification_email) {
                     const daysOverdue = Math.ceil((Date.now() - new Date(tenant.trial_end_date).getTime()) / (1000 * 60 * 60 * 24));
                     await transporter.sendMail({
-                        from: `"Veloré" <${process.env.SMTP_USER}>`,
+                        from: `"Velsoie" <${process.env.SMTP_USER}>`,
                         to: tenant.notification_email,
                         subject: '⚠️ Tu cuenta ha sido suspendida',
                         html: `
@@ -59,7 +59,7 @@ async function suspendExpiredFreeTrials() {
                                 <p>Tu período de prueba gratuito finalizó hace <strong>${daysOverdue} días</strong>.</p>
                                 <p>Tu cuenta ha sido suspendida. Para continuar usando nuestros servicios, contrata un plan desde tu panel de administración.</p>
                                 <br>
-                                <p>Equipo Veloré</p>
+                                <p>Equipo Velsoie</p>
                             </div>
                         `,
                     });
@@ -170,7 +170,7 @@ async function generateMonthlyInvoices() {
                         const dashboardUrl = `${baseUrl}/admin/dashboard?tenant=${tenant.slug}`;
 
                         await transporter.sendMail({
-                            from: `"Veloré Facturación" <${process.env.SMTP_USER}>`,
+                            from: `"Velsoie Facturación" <${process.env.SMTP_USER}>`,
                             to: recipient,
                             subject: `📄 Nueva factura: ${invoiceNumber} - ${planInfo.name}`,
                             html: `
@@ -190,7 +190,7 @@ async function generateMonthlyInvoices() {
                                     <p style="text-align: center; margin: 25px 0;">
                                         <a href="${dashboardUrl}" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Ir al Panel de Administración →</a>
                                     </p>
-                                    <p style="font-size: 12px; color: #94a3b8;">Este es un mensaje automático generado por Veloré.</p>
+                                    <p style="font-size: 12px; color: #94a3b8;">Este es un mensaje automático generado por Velsoie.</p>
                                 </div>
                             `,
                         });
@@ -264,7 +264,7 @@ async function sendPaymentReminders() {
             const dashboardUrl = `${baseUrl}/admin/dashboard?tenant=${inv.slug}`;
 
             await transporter.sendMail({
-                from: `"Veloré Facturación" <${process.env.SMTP_USER}>`,
+                from: `"Velsoie Facturación" <${process.env.SMTP_USER}>`,
                 to: recipient,
                 subject: `⏰ Recordatorio: Factura ${inv.invoice_number} vence en ${daysLeft} días`,
                 html: `
@@ -336,7 +336,7 @@ async function suspendOverdueTenants() {
 
                 if (tenant.notification_email) {
                     await transporter.sendMail({
-                        from: `"Veloré" <${process.env.SMTP_USER}>`,
+                        from: `"Velsoie" <${process.env.SMTP_USER}>`,
                         to: tenant.notification_email,
                         subject: `⚠️ Servicio suspendido - Facturas vencidas`,
                         html: `

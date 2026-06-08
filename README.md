@@ -1,4 +1,4 @@
-# Veloré — SaaS de Turnos Multi-Tenant
+# Velsoie — SaaS de Turnos Multi-Tenant
 
 Sistema de gestión de turnos multi-tenant con landing page pública, dashboard para staff, panel super admin, notificaciones WhatsApp (Twilio) y pagos integrados (MercadoPago).
 
@@ -148,7 +148,7 @@ Corre en `http://localhost:5173` con hot reload y proxy a backend.
 - El backend expone `/api/health` con estado, uptime, uso de memoria y conteo básico de entidades.
 - El backend aplica cabeceras de seguridad con Helmet (`CSP`, `X-Content-Type-Options`, `X-Frame-Options`, `Cross-Origin-Resource-Policy`, `DNS prefetch control`, `Referrer-Policy`).
 - En producción, `ALLOWED_ORIGINS` no debe contener `*`; usa dominios específicos para CORS.
-- Si `METRICS_ENABLED=true`, también expone `/metrics` con métricas Prometheus (`velore_http_request_duration_seconds`, métricas default de Node.js, etc.).
+- Si `METRICS_ENABLED=true`, también expone `/metrics` con métricas Prometheus (`velsoie_http_request_duration_seconds`, métricas default de Node.js, etc.).
 - En producción es obligatorio proteger `/metrics` y Swagger con autenticación básica utilizando `METRICS_BASIC_AUTH_USER`, `METRICS_BASIC_AUTH_PASS`, `SWAGGER_BASIC_AUTH_USER` y `SWAGGER_BASIC_AUTH_PASS`. Si no hay auth configurada, el backend deshabilita automáticamente esos endpoints en producción.
 - El API docs UI está disponible en la ruta configurada por `SWAGGER_UI_ROUTE` y el JSON raw en `SWAGGER_UI_JSON_ROUTE` cuando `SWAGGER_UI_ENABLED` está habilitado (default `true`).
 - Los scripts de backup usan `pg_dump` y `psql`, por lo que en entornos de CI/producción debe estar instalado el cliente de PostgreSQL.

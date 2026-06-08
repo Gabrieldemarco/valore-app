@@ -145,7 +145,7 @@ describe('PublicIndex', () => {
   it('has register and login links in header', () => {
     mockFetch.mockImplementation(() => new Promise(() => {}));
     renderPublicIndex();
-    expect(screen.getByText('Sumate a Veloré').closest('a')).toHaveAttribute('href', '/staff/register');
+    expect(screen.getByText('Sumate a Velsoie').closest('a')).toHaveAttribute('href', '/staff/register');
     expect(screen.getByText('Studio Access').closest('a')).toHaveAttribute('href', '/staff/login');
   });
 

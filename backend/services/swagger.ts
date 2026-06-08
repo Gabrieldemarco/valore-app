@@ -5,9 +5,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Veloré API',
+      title: 'Velsoie API',
       version: '1.0.0',
-      description: 'API del sistema de turnos multi-tenant Veloré',
+      description: 'API del sistema de turnos multi-tenant Velsoie',
     },
     servers: [
       { url: '/', description: 'Base URL' },

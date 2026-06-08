@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 
-const VAPID_KEY_CACHE = 'velore-vapid-key';
+const VAPID_KEY_CACHE = 'velsoie-vapid-key';
 
 async function getVapidKey(): Promise<string | null> {
   const cached = sessionStorage.getItem(VAPID_KEY_CACHE);
