@@ -80,13 +80,63 @@ export default function(apiLimiter) {
   // ========== LISTADO PÚBLICO DE TENANTS ==========
   router.get('/tenants', async (req, res) => {
     try {
-      const tenants = await query(
-        `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address, t.landing_hero_image, t.landing_description,
-                (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services
-         FROM tenants t WHERE t.status = 'active' AND t.landing_enabled = true ORDER BY t.created_at DESC`
-      );
+      const { lat, lng } = req.query;
+      let sql;
+      let params: any[] = [];
+
+      if (lat && lng) {
+        const latNum = parseFloat(lat as string);
+        const lngNum = parseFloat(lng as string);
+        if (!isNaN(latNum) && !isNaN(lngNum)) {
+          sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
+                        t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                        (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
+                        (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) AS distance
+                 FROM tenants t
+                 WHERE t.status = 'active' AND t.landing_enabled = true AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+                 ORDER BY distance ASC`;
+          params = [latNum, lngNum];
+        }
+      }
+
+      if (!sql) {
+        sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
+                      t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                      (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services
+               FROM tenants t WHERE t.status = 'active' AND t.landing_enabled = true ORDER BY t.created_at DESC`;
+      }
+
+      const tenants = await query(sql, params);
       res.json({ tenants: tenants.rows });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar peluquerías' }); }
+  });
+
+  // ========== TENANTS CERCA DE UNA UBICACIÓN ==========
+  router.get('/tenants/nearby', async (req, res) => {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lng = parseFloat(req.query.lng as string);
+      const radius = parseFloat(req.query.radius as string) || 50; // km
+
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ error: 'Parámetros lat y lng requeridos' });
+      }
+
+      const result = await query(
+        `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
+                t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
+                (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) AS distance
+         FROM tenants t
+         WHERE t.status = 'active' AND t.landing_enabled = true
+           AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+           AND (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) <= $3
+         ORDER BY distance ASC`,
+        [lat, lng, radius]
+      );
+
+      res.json({ tenants: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al buscar cercanos' }); }
   });
 
   // ========== UPLOAD DE IMÁGENES ==========

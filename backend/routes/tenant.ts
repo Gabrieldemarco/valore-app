@@ -437,7 +437,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_gallery, landing_team, landing_services_info,
       landing_social_links, landing_custom_css, landing_layout,
       brand_primary_color, brand_secondary_color, brand_logo_url,
-      opening_hours,
+      opening_hours, lat, lng,
     } = body;
 
     const sql = `UPDATE tenants SET
@@ -461,8 +461,10 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
              brand_secondary_color=COALESCE($18,brand_secondary_color),
              brand_logo_url=COALESCE($19,brand_logo_url),
              opening_hours=COALESCE($20::jsonb,opening_hours),
+             lat=COALESCE($21::double precision,lat),
+             lng=COALESCE($22::double precision,lng),
              updated_at=NOW()
-            WHERE id=$21 RETURNING *`;
+            WHERE id=$23 RETURNING *`;
 
     const params = [
       business_name, business_address, business_phone,
@@ -477,6 +479,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_layout ? JSON.stringify(landing_layout) : null,
       brand_primary_color, brand_secondary_color, brand_logo_url,
       opening_hours ? JSON.stringify(opening_hours) : null,
+      lat ?? null, lng ?? null,
       tenantId,
     ];
 

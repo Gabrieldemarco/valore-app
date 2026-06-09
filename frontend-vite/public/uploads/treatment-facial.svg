@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+  <defs>
+    <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#382e26" />
+      <stop offset="100%" stop-color="#d8b686" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" rx="52" fill="url(#grad4)" />
+  <circle cx="400" cy="335" r="210" fill="rgba(255,255,255,0.08)" />
+  <path d="M320 260 C340 220 460 220 480 260" stroke="rgba(255,255,255,0.7)" stroke-width="22" fill="none" stroke-linecap="round" />
+  <path d="M330 390 Q400 460 470 390" stroke="rgba(255,255,255,0.7)" stroke-width="24" fill="none" stroke-linecap="round" />
+  <path d="M360 430 Q400 410 440 430" stroke="rgba(255,255,255,0.3)" stroke-width="14" fill="none" stroke-linecap="round" />
+  <text x="50%" y="700" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="72" fill="#fff" letter-spacing="1.2">Cuidado Facial</text>
+</svg>

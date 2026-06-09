@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+  <defs>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#372b24" />
+      <stop offset="100%" stop-color="#c29463" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" rx="52" fill="url(#grad3)" />
+  <path d="M300 210 C360 150 440 150 500 210 C540 250 520 330 470 360 C420 390 370 380 340 330 C320 290 310 240 300 210 Z" fill="rgba(255,255,255,0.16)" />
+  <path d="M365 510 L330 760" stroke="rgba(255,255,255,0.8)" stroke-width="22" stroke-linecap="round" />
+  <path d="M435 510 L470 760" stroke="rgba(255,255,255,0.8)" stroke-width="22" stroke-linecap="round" />
+  <path d="M250 480 L510 480" stroke="rgba(255,255,255,0.28)" stroke-width="40" stroke-linecap="round" />
+  <text x="50%" y="700" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="72" fill="#fff" letter-spacing="1.2">Maquillaje</text>
+</svg>

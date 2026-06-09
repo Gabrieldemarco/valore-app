@@ -57,6 +57,7 @@ interface ServiceCategory {
   key: string;
   label: string;
   icon: React.ReactNode;
+  image: string | null;
   keywords: string[];
 }
 
@@ -64,7 +65,7 @@ const SVC_ICON: React.CSSProperties = { width: 36, height: 36, stroke: 'var(--pr
 
 const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
-    key: 'cejas', label: 'Cejas & Pestañas',
+    key: 'cejas', label: 'Cejas & Pestañas', image: '/uploads/treatment-cejas.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <path d="M6 18 Q12 10 22 12 Q32 10 38 18" strokeWidth="1.5" />
       <path d="M6 22 Q12 28 22 26 Q32 28 38 22" strokeWidth="0.8" opacity="0.6" />
@@ -76,7 +77,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['ceja', 'pestaña', 'henna', 'lifting', 'laminado', 'diseño de ceja']
   },
   {
-    key: 'uñas', label: 'Manicura & Pedicura',
+    key: 'uñas', label: 'Manicura & Pedicura', image: '/uploads/treatment-manicura.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <path d="M14 12 L14 40" strokeWidth="0.7" opacity="0.3" />
       <path d="M30 12 L30 40" strokeWidth="0.7" opacity="0.3" />
@@ -90,7 +91,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['manicura', 'pedicura', 'uña', 'nail', 'esmaltado', 'semipermanente', 'kapping', 'esculpida', 'acrílica', 'gel']
   },
   {
-    key: 'maquillaje', label: 'Maquillaje',
+    key: 'maquillaje', label: 'Maquillaje', image: '/uploads/treatment-maquillaje.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <path d="M14 36 L10 22 Q10 14 22 10 Q34 14 34 22 L30 36" />
       <path d="M16 28 L28 28" strokeWidth="0.7" opacity="0.4" />
@@ -101,7 +102,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['maquillaje', 'makeup', 'social', 'novia']
   },
   {
-    key: 'facial', label: 'Cuidado Facial',
+    key: 'facial', label: 'Cuidado Facial', image: '/uploads/treatment-facial.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <circle cx="22" cy="20" r="13" />
       <path d="M16 26 Q22 32 28 26" strokeWidth="0.9" opacity="0.5" />
@@ -114,7 +115,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['facial', 'limpieza facial', 'hidratación', 'skin care', 'dermaplaning']
   },
   {
-    key: 'depilacion', label: 'Depilación',
+    key: 'depilacion', label: 'Depilación', image: '/uploads/treatment-depilacion.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <path d="M8 20 Q14 6 22 14 Q30 22 36 8" strokeWidth="1.4" />
       <path d="M6 26 Q14 14 22 22 Q30 30 38 18" strokeWidth="0.8" opacity="0.35" />
@@ -126,7 +127,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['depilación', 'depilacion', 'cera', 'laser']
   },
   {
-    key: 'masajes', label: 'Masajes & Bienestar',
+    key: 'masajes', label: 'Masajes & Bienestar', image: '/uploads/treatment-masajes.svg',
     icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
       <path d="M18 8 L14 28" strokeWidth="0.7" opacity="0.35" />
       <path d="M26 8 L30 28" strokeWidth="0.7" opacity="0.35" />
@@ -161,8 +162,6 @@ export default function PublicIndex() {
 
   useEffect(() => {
     setLoading(true);
-    // Esperar a que GPS termine antes de hacer el fetch
-    if (gps.loading) return;
 
     const params = new URLSearchParams();
     if (gps.coords) {
@@ -178,7 +177,7 @@ export default function PublicIndex() {
       })
       .catch(() => setError(t('publicIndex.error')))
       .finally(() => setLoading(false));
-  }, [gps.loading, gps.coords]);
+  }, [gps.coords]);
 
   const filterSalons = useCallback(() => {
     let result = allSalons;
@@ -314,7 +313,10 @@ export default function PublicIndex() {
             {SERVICE_CATEGORIES.map(cat => (
               <div key={cat.key} className={`service-card${currentServiceFilter === cat.key ? ' active' : ''}`} onClick={() => handleServiceFilter(cat.key)}>
                 <div className="service-card-bg">
-                  {cat.icon}
+                  {cat.image && (
+                    <img src={cat.image} alt={cat.label} className="service-card-image" loading="lazy" />
+                  )}
+                  {!cat.image && cat.icon}
                 </div>
                 <div className="service-card-label">
                   <span className="service-card-title">{cat.label}</span>

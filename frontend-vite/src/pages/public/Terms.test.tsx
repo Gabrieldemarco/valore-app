@@ -6,30 +6,33 @@ import Terms from './Terms';
 describe('Terms', () => {
   it('renders all three tab buttons', () => {
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    expect(screen.getByText('Términos y Condiciones')).toBeInTheDocument();
-    expect(screen.getByText('Política de Privacidad')).toBeInTheDocument();
-    expect(screen.getByText('Política de Cancelación')).toBeInTheDocument();
+    const termsBtns = screen.getAllByText('Términos y Condiciones');
+    const privBtns = screen.getAllByText('Política de Privacidad');
+    const cancBtns = screen.getAllByText('Política de Cancelaciones');
+    expect(termsBtns.length).toBeGreaterThanOrEqual(1);
+    expect(privBtns.length).toBeGreaterThanOrEqual(1);
+    expect(cancBtns.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows terms content by default', () => {
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    expect(screen.getByText('Al utilizar nuestros servicios, acepta estos términos en su totalidad.')).toBeInTheDocument();
+    expect(screen.getByText('Bienvenido a Velsoie. Al acceder y utilizar nuestra plataforma, sitio web o servicios relacionados, aceptás los presentes Términos y Condiciones.')).toBeInTheDocument();
   });
 
   it('switches to privacy tab on click', () => {
     render(<MemoryRouter><Terms /></MemoryRouter>);
     fireEvent.click(screen.getByText('Política de Privacidad'));
-    expect(screen.getByText('Recopilamos información personal necesaria para la reserva y gestión de citas.')).toBeInTheDocument();
+    expect(screen.getByText('En Velsoie valoramos la privacidad y protección de los datos personales de nuestros usuarios.')).toBeInTheDocument();
   });
 
   it('switches to cancellation tab on click', () => {
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    fireEvent.click(screen.getByText('Política de Cancelación'));
-    expect(screen.getByText('Las cancelaciones deben realizarse con al menos 24 horas de anticipación.')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Política de Cancelaciones'));
+    expect(screen.getByText('Los usuarios podrán cancelar o reprogramar reservas desde la plataforma.')).toBeInTheDocument();
   });
 
   it('has a back link to home', () => {
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    expect(screen.getByText('Volver al inicio').closest('a')).toHaveAttribute('href', '/');
+    expect(screen.getByText('← Volver al inicio').closest('a')).toHaveAttribute('href', '/');
   });
 });

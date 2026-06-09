@@ -88,9 +88,17 @@ async function initDB() {
         subscription_status TEXT,
         trial_start_date TIMESTAMP,
         trial_end_date TIMESTAMP,
+        lat DOUBLE PRECISION,
+        lng DOUBLE PRECISION,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- migración: agregar lat/lng si no existen
+      BEGIN;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+      COMMIT;
 
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+  <defs>
+    <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3f2f25" />
+      <stop offset="100%" stop-color="#c09a70" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" rx="52" fill="url(#grad5)" />
+  <path d="M260 240 Q380 120 520 240 Q600 320 540 420 Q500 480 430 520 Q360 480 320 420 Q260 340 260 240 Z" fill="rgba(255,255,255,0.14)" />
+  <path d="M270 520 C360 580 440 600 530 540" stroke="rgba(255,255,255,0.6)" stroke-width="26" fill="none" stroke-linecap="round" />
+  <path d="M540 250 C560 310 520 380 470 410" stroke="rgba(255,255,255,0.25)" stroke-width="18" fill="none" stroke-linecap="round" />
+  <text x="50%" y="700" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="72" fill="#fff" letter-spacing="1.2">Depilación</text>
+</svg>

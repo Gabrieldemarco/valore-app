@@ -2,9 +2,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import PublicIndex from './PublicIndex';
-
-const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+import * as apiClient from '../../api/client';
 
 const mockSalons = {
   tenants: [
@@ -14,42 +12,54 @@ const mockSalons = {
   ],
 };
 
-function renderPublicIndex() {
+function renderPublicIndex(salonResponse?: object) {
+  const spy = vi.spyOn(apiClient.api, 'get');
+  if (salonResponse !== undefined) {
+    spy.mockImplementation((path: string) => {
+      if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
+      return Promise.resolve(salonResponse);
+    });
+  } else {
+    spy.mockImplementation((path: string) => {
+      if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
+      return new Promise(() => {}); // never resolve (loading state)
+    });
+  }
   return render(<MemoryRouter><PublicIndex /></MemoryRouter>);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockFetch.mockReset();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
 describe('PublicIndex', () => {
   it('shows loading state initially', () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
-    renderPublicIndex();
+    renderPublicIndex(); // no response = loading
     expect(screen.getByText('Cargando peluquerías...')).toBeInTheDocument();
   });
 
   it('shows error state on API failure', async () => {
-    mockFetch.mockRejectedValue(new Error('Network error'));
-    renderPublicIndex();
+    const spy = vi.spyOn(apiClient.api, 'get');
+    spy.mockImplementation((path: string) => {
+      if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
+      return Promise.reject(new Error('Network error'));
+    });
+    render(<MemoryRouter><PublicIndex /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText('No pudimos cargar las peluquerías.')).toBeInTheDocument();
     });
   });
 
   it('shows empty state when no salons match filter', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tenants: [] }) });
-    renderPublicIndex();
+    renderPublicIndex({ tenants: [] });
     await waitFor(() => {
       expect(screen.getByText(/No se encontraron peluquerías/)).toBeInTheDocument();
     }, { timeout: 3000 });
   });
 
   it('renders salon cards after loading', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
@@ -58,8 +68,7 @@ describe('PublicIndex', () => {
   });
 
   it('displays salon address and services', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Centro')).toBeInTheDocument();
     });
@@ -68,8 +77,7 @@ describe('PublicIndex', () => {
   });
 
   it('shows initials fallback when no image', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       const initials = document.querySelector('.salon-initials');
       expect(initials).toBeInTheDocument();
@@ -78,8 +86,7 @@ describe('PublicIndex', () => {
   });
 
   it('salon card links to correct URL', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
@@ -89,8 +96,7 @@ describe('PublicIndex', () => {
   });
 
   it('gender filter buttons are rendered and clickable', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Caballeros')).toBeInTheDocument();
     });
@@ -108,8 +114,7 @@ describe('PublicIndex', () => {
   });
 
   it('search filters salons by name', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
@@ -122,8 +127,7 @@ describe('PublicIndex', () => {
   });
 
   it('hero collage click sets gender filter', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSalons) });
-    renderPublicIndex();
+    renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
@@ -136,22 +140,21 @@ describe('PublicIndex', () => {
   });
 
   it('renders hero section with title and subtitle', () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
-    renderPublicIndex();
-    expect(screen.getAllByText(/salones/i)[0]).toBeInTheDocument();
-    expect(screen.getByText('Encontrá tu próximo turno en segundos.')).toBeInTheDocument();
+    renderPublicIndex(); // no response = loading
+    const titles = screen.getAllByText(/Estética Capilar/i);
+    expect(titles.length).toBeGreaterThanOrEqual(1);
+    const subs = screen.getAllByText(/firmas boutique/i);
+    expect(subs.length).toBeGreaterThanOrEqual(1);
   });
 
   it('has register and login links in header', () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
-    renderPublicIndex();
+    renderPublicIndex(); // no response = loading
     expect(screen.getByText('Sumate a Velsoie').closest('a')).toHaveAttribute('href', '/staff/register');
     expect(screen.getByText('Studio Access').closest('a')).toHaveAttribute('href', '/staff/login');
   });
 
   it('renders features section', () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
-    renderPublicIndex();
+    renderPublicIndex(); // no response = loading
     expect(screen.getByText('1. Buscá tu Peluquería')).toBeInTheDocument();
     expect(screen.getByText('2. Elegí el Servicio')).toBeInTheDocument();
     expect(screen.getByText('3. Confirmá en Segundos')).toBeInTheDocument();

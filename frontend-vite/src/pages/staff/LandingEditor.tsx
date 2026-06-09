@@ -581,6 +581,20 @@ body { display: flex !important; flex-direction: column !important; }
                   <input type="text" className="glass-input" value={(tenant.business_address as string) || ''}
                     onChange={e => handleTenantField('business_address', e.target.value)} />
                 </div>
+                <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Latitud</label>
+                    <input type="number" step="any" className="glass-input" value={(tenant.lat as number | undefined) ?? ''}
+                      onChange={e => handleTenantField('lat', e.target.value === '' ? null : parseFloat(e.target.value))}
+                      placeholder="-34.90" />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Longitud</label>
+                    <input type="number" step="any" className="glass-input" value={(tenant.lng as number | undefined) ?? ''}
+                      onChange={e => handleTenantField('lng', e.target.value === '' ? null : parseFloat(e.target.value))}
+                      placeholder="-56.18" />
+                  </div>
+                </div>
                 <div className="form-group">
                   <label>{t('staffLandingEditor.phoneLabel')}</label>
                   <input type="tel" className="glass-input" value={(tenant.business_phone as string) || ''}

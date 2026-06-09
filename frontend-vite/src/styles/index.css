@@ -386,16 +386,40 @@
 }
 
 .service-card-bg {
-  height: 140px;
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  background: radial-gradient(circle at 30% 40%, rgba(207, 168, 107, 0.06), transparent 70%);
+  background: radial-gradient(circle at 30% 40%, rgba(207, 168, 107, 0.08), transparent 70%);
+  overflow: hidden;
+}
+
+.service-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.92;
+}
+
+.service-card-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.16);
+  transition: opacity var(--transition-normal);
+}
+
+.service-card-bg:hover::before {
+  opacity: 0.26;
 }
 
 .service-card-bg svg {
-  opacity: 0.75;
+  opacity: 0.85;
+  position: relative;
+  z-index: 1;
 }
 
 .service-card-label {
