@@ -78,7 +78,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['facial', 'limpieza facial', 'hidratación', 'skin care', 'dermaplaning']
   },
   {
-    key: 'depilacion', label: 'Depilación', image: '/uploads/treatment-depilacion.svg',
+    key: 'depilacion', label: 'Depilación', image: '/uploads/category-depilacion.png',
     keywords: ['depilación', 'depilacion', 'cera', 'laser']
   },
   {
