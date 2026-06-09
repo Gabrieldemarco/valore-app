@@ -366,17 +366,14 @@
   cursor: pointer;
   position: relative;
   transition: all var(--transition-normal);
-  background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  aspect-ratio: 0.78;
 }
 
 .service-card:hover {
   border-color: var(--glass-border-hover);
   transform: translateY(-6px);
-  background: var(--glass-bg-hover);
   box-shadow: 0 20px 48px 0 rgba(0, 0, 0, 0.8);
 }
 
@@ -385,61 +382,18 @@
   box-shadow: 0 0 0 2px rgba(207, 168, 107, 0.15), 0 20px 48px 0 rgba(0, 0, 0, 0.8);
 }
 
-.service-card-bg {
-  height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: radial-gradient(circle at 30% 40%, rgba(207, 168, 107, 0.08), transparent 70%);
-  overflow: hidden;
-}
-
 .service-card-image {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0.92;
-}
-
-.service-card-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 10, 10, 0.16);
-  transition: opacity var(--transition-normal);
-}
-
-.service-card-bg:hover::before {
-  opacity: 0.26;
-}
-
-.service-card-bg svg {
-  opacity: 0.85;
-  position: relative;
-  z-index: 1;
-}
-
-.service-card-label {
-  padding: 14px 16px 16px;
-  text-align: center;
-  border-top: 1px solid var(--glass-border);
-}
-
-.service-card-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.8px;
-  color: var(--text-main);
-  line-height: 1.2;
+  display: block;
 }
 
 @media (max-width: 900px) {
   .service-cards-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .service-card {
+    aspect-ratio: 0.7;
   }
 }
 
@@ -447,15 +401,8 @@
   .service-cards-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .service-card-bg {
-    height: 100px;
-  }
-  .service-card-bg svg {
-    width: 28px;
-    height: 28px;
-  }
-  .service-card-title {
-    font-size: 14px;
+  .service-card {
+    aspect-ratio: 0.65;
   }
 }
 

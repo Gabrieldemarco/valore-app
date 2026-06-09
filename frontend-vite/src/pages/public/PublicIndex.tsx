@@ -56,87 +56,33 @@ function getGenderCategory(salon: Salon): 'hombre' | 'mujer' | 'unisex' {
 interface ServiceCategory {
   key: string;
   label: string;
-  icon: React.ReactNode;
-  image: string | null;
+  image: string;
   keywords: string[];
 }
-
-const SVC_ICON: React.CSSProperties = { width: 36, height: 36, stroke: 'var(--primary)', strokeWidth: 1.3, fill: 'none' };
 
 const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
     key: 'cejas', label: 'Cejas & Pestañas', image: '/uploads/treatment-cejas.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <path d="M6 18 Q12 10 22 12 Q32 10 38 18" strokeWidth="1.5" />
-      <path d="M6 22 Q12 28 22 26 Q32 28 38 22" strokeWidth="0.8" opacity="0.6" />
-      <path d="M10 26 L8 32" strokeWidth="0.7" opacity="0.5" />
-      <path d="M14 28 L12 34" strokeWidth="0.7" opacity="0.5" />
-      <path d="M30 28 L32 34" strokeWidth="0.7" opacity="0.5" />
-      <path d="M34 26 L36 32" strokeWidth="0.7" opacity="0.5" />
-    </svg>,
     keywords: ['ceja', 'pestaña', 'henna', 'lifting', 'laminado', 'diseño de ceja']
   },
   {
     key: 'uñas', label: 'Manicura & Pedicura', image: '/uploads/treatment-manicura.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <path d="M14 12 L14 40" strokeWidth="0.7" opacity="0.3" />
-      <path d="M30 12 L30 40" strokeWidth="0.7" opacity="0.3" />
-      <path d="M10 8 Q14 4 18 8 Q18 16 14 18 Q10 16 10 8 Z" />
-      <path d="M26 8 Q30 4 34 8 Q34 16 30 18 Q26 16 26 8 Z" />
-      <path d="M10 8 Q8 6 14 5" strokeWidth="0.5" opacity="0.4" />
-      <path d="M26 8 Q24 6 30 5" strokeWidth="0.5" opacity="0.4" />
-      <path d="M16 34 L20 28 L24 34" fill="none" strokeWidth="1.2" />
-      <circle cx="20" cy="26" r="2.5" fill="none" opacity="0.5" />
-    </svg>,
     keywords: ['manicura', 'pedicura', 'uña', 'nail', 'esmaltado', 'semipermanente', 'kapping', 'esculpida', 'acrílica', 'gel']
   },
   {
     key: 'maquillaje', label: 'Maquillaje', image: '/uploads/treatment-maquillaje.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <path d="M14 36 L10 22 Q10 14 22 10 Q34 14 34 22 L30 36" />
-      <path d="M16 28 L28 28" strokeWidth="0.7" opacity="0.4" />
-      <path d="M18 22 L26 22" strokeWidth="0.7" opacity="0.4" />
-      <path d="M14 20 Q22 16 30 20" strokeWidth="0.6" opacity="0.3" />
-      <path d="M11 14 L33 14" strokeWidth="1" strokeDasharray="2 3" opacity="0.25" />
-    </svg>,
     keywords: ['maquillaje', 'makeup', 'social', 'novia']
   },
   {
     key: 'facial', label: 'Cuidado Facial', image: '/uploads/treatment-facial.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <circle cx="22" cy="20" r="13" />
-      <path d="M16 26 Q22 32 28 26" strokeWidth="0.9" opacity="0.5" />
-      <path d="M17 14 Q19 16 22 14 Q25 16 27 14" opacity="0.4" />
-      <path d="M22 20 L22 24" strokeWidth="0.7" opacity="0.3" />
-      <path d="M28 34 L30 40" opacity="0.25" />
-      <path d="M34 28 L40 26" opacity="0.25" />
-      <circle cx="32" cy="32" r="1.5" fill="none" strokeWidth="0.5" opacity="0.2" />
-    </svg>,
     keywords: ['facial', 'limpieza facial', 'hidratación', 'skin care', 'dermaplaning']
   },
   {
     key: 'depilacion', label: 'Depilación', image: '/uploads/treatment-depilacion.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <path d="M8 20 Q14 6 22 14 Q30 22 36 8" strokeWidth="1.4" />
-      <path d="M6 26 Q14 14 22 22 Q30 30 38 18" strokeWidth="0.8" opacity="0.35" />
-      <line x1="6" y1="36" x2="38" y2="36" strokeWidth="0.6" opacity="0.2" />
-      <line x1="10" y1="34" x2="10" y2="38" strokeWidth="0.4" opacity="0.15" />
-      <line x1="22" y1="34" x2="22" y2="38" strokeWidth="0.4" opacity="0.15" />
-      <line x1="34" y1="34" x2="34" y2="38" strokeWidth="0.4" opacity="0.15" />
-    </svg>,
     keywords: ['depilación', 'depilacion', 'cera', 'laser']
   },
   {
     key: 'masajes', label: 'Masajes & Bienestar', image: '/uploads/treatment-masajes.svg',
-    icon: <svg style={SVC_ICON} viewBox="0 0 44 44">
-      <path d="M18 8 L14 28" strokeWidth="0.7" opacity="0.35" />
-      <path d="M26 8 L30 28" strokeWidth="0.7" opacity="0.35" />
-      <path d="M12 30 Q22 36 32 30" strokeWidth="1.2" />
-      <path d="M14 32 Q16 20 20 18 Q24 20 22 32" opacity="0.3" />
-      <circle cx="22" cy="12" r="3" opacity="0.4" />
-      <path d="M10 24 Q6 28 12 32" strokeWidth="0.6" opacity="0.25" />
-      <path d="M34 24 Q38 28 32 32" strokeWidth="0.6" opacity="0.25" />
-    </svg>,
     keywords: ['masaje', 'masajes', 'bienestar', 'relajación', 'relajante']
   },
 ];
@@ -313,15 +259,7 @@ export default function PublicIndex() {
           <div className="service-cards-grid">
             {SERVICE_CATEGORIES.map(cat => (
               <div key={cat.key} className={`service-card${currentServiceFilter === cat.key ? ' active' : ''}`} onClick={() => handleServiceFilter(cat.key)}>
-                <div className="service-card-bg">
-                  {cat.image && (
-                    <img src={cat.image} alt={cat.label} className="service-card-image" loading="lazy" />
-                  )}
-                  {!cat.image && cat.icon}
-                </div>
-                <div className="service-card-label">
-                  <span className="service-card-title">{cat.label}</span>
-                </div>
+                <img src={cat.image} alt={cat.label} className="service-card-image" loading="lazy" />
               </div>
             ))}
           </div>
