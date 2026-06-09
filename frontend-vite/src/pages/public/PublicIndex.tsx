@@ -105,11 +105,7 @@ export default function PublicIndex() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const gridRef = useRef<HTMLDivElement>(null);
-  const initialLoadDone = useRef(false);
-
   useEffect(() => {
-    if (!initialLoadDone.current) setLoading(true);
-
     const params = new URLSearchParams();
     if (gps.coords) {
       params.set('lat', gps.coords.lat.toString());
@@ -123,8 +119,8 @@ export default function PublicIndex() {
         setFiltered(salons);
       })
       .catch(() => setError(t('publicIndex.error')))
-      .finally(() => { setLoading(false); initialLoadDone.current = true; });
-  }, [gps.coords]);
+      .finally(() => setLoading(false));
+  }, []);
 
   const filterSalons = useCallback(() => {
     let result = allSalons;
