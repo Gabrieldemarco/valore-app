@@ -62,19 +62,19 @@ interface ServiceCategory {
 
 const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
-    key: 'cejas', label: 'Cejas & Pestañas', image: '/uploads/treatment-cejas.svg',
+    key: 'cejas', label: 'Cejas & Pestañas', image: '/uploads/category-cejas.png',
     keywords: ['ceja', 'pestaña', 'henna', 'lifting', 'laminado', 'diseño de ceja']
   },
   {
-    key: 'uñas', label: 'Manicura & Pedicura', image: '/uploads/treatment-manicura.svg',
+    key: 'uñas', label: 'Manicura & Pedicura', image: '/uploads/category-unas.png',
     keywords: ['manicura', 'pedicura', 'uña', 'nail', 'esmaltado', 'semipermanente', 'kapping', 'esculpida', 'acrílica', 'gel']
   },
   {
-    key: 'maquillaje', label: 'Maquillaje', image: '/uploads/treatment-maquillaje.svg',
+    key: 'maquillaje', label: 'Maquillaje', image: '/uploads/category-maquillaje.png',
     keywords: ['maquillaje', 'makeup', 'social', 'novia']
   },
   {
-    key: 'facial', label: 'Cuidado Facial', image: '/uploads/treatment-facial.svg',
+    key: 'facial', label: 'Cuidado Facial', image: '/uploads/category-facial.png',
     keywords: ['facial', 'limpieza facial', 'hidratación', 'skin care', 'dermaplaning']
   },
   {
