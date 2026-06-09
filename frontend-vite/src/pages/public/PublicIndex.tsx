@@ -82,7 +82,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['depilación', 'depilacion', 'cera', 'laser']
   },
   {
-    key: 'masajes', label: 'Masajes & Bienestar', image: '/uploads/treatment-masajes.svg',
+    key: 'masajes', label: 'Masajes & Bienestar', image: '/uploads/category-masajes.png',
     keywords: ['masaje', 'masajes', 'bienestar', 'relajación', 'relajante']
   },
 ];
