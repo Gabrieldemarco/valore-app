@@ -141,7 +141,7 @@ describe('PublicIndex', () => {
 
   it('renders hero section with title and subtitle', () => {
     renderPublicIndex(); // no response = loading
-    const titles = screen.getAllByText(/Estética Capilar/i);
+    const titles = screen.getAllByText(/Salones Destacados/i);
     expect(titles.length).toBeGreaterThanOrEqual(1);
     const subs = screen.getAllByText(/firmas boutique/i);
     expect(subs.length).toBeGreaterThanOrEqual(1);
