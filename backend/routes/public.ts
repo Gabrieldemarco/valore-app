@@ -385,6 +385,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         tenant: {
           slug: req.tenant.slug,
           business_name: req.tenant.business_name,
+          category: req.tenant.category,
           landing_description: req.tenant.landing_description,
           landing_hero_image: req.tenant.landing_hero_image,
           landing_gallery: req.tenant.landing_gallery,

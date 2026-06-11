@@ -80,7 +80,7 @@ export default function(apiLimiter) {
   // ========== LISTADO PÚBLICO DE TENANTS ==========
   router.get('/tenants', async (req, res) => {
     try {
-      const { lat, lng } = req.query;
+      const { lat, lng, category } = req.query;
       let sql;
       let params: any[] = [];
 
@@ -89,7 +89,7 @@ export default function(apiLimiter) {
         const lngNum = parseFloat(lng as string);
         if (!isNaN(latNum) && !isNaN(lngNum)) {
           sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
-                        t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                        t.landing_hero_image, t.landing_description, t.lat, t.lng, t.category,
                         (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
                         (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) AS distance
                  FROM tenants t
@@ -100,10 +100,15 @@ export default function(apiLimiter) {
       }
 
       if (!sql) {
+        let whereClause = "t.status = 'active' AND t.landing_enabled = true";
+        if (category) {
+          whereClause += ` AND t.category = $1`;
+          params = [category];
+        }
         sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
-                      t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                      t.landing_hero_image, t.landing_description, t.lat, t.lng, t.category,
                       (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services
-               FROM tenants t WHERE t.status = 'active' AND t.landing_enabled = true ORDER BY t.created_at DESC`;
+               FROM tenants t WHERE ${whereClause} ORDER BY t.created_at DESC`;
       }
 
       const tenants = await query(sql, params);
@@ -124,7 +129,7 @@ export default function(apiLimiter) {
 
       const result = await query(
         `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
-                t.landing_hero_image, t.landing_description, t.lat, t.lng,
+                t.landing_hero_image, t.landing_description, t.lat, t.lng, t.category,
                 (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
                 (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) AS distance
          FROM tenants t

@@ -19,6 +19,7 @@ interface Salon {
   lat?: number;
   lng?: number;
   distance?: number;
+  category?: string;
 }
 
 interface TenantsResponse {
@@ -136,13 +137,7 @@ export default function PublicIndex() {
       result = result.filter(s => getGenderCategory(s) === currentGenderFilter);
     }
     if (currentServiceFilter) {
-      const cat = SERVICE_CATEGORIES.find(c => c.key === currentServiceFilter);
-      if (cat) {
-        result = result.filter(s => {
-          const services = (s.services || []).map(sv => typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv).join(' ').toLowerCase();
-          return cat.keywords.some(kw => services.includes(kw));
-        });
-      }
+      result = result.filter(s => s.category === currentServiceFilter);
     }
     setFiltered(result);
   }, [allSalons, searchQuery, currentGenderFilter, currentServiceFilter]);
@@ -151,6 +146,7 @@ export default function PublicIndex() {
 
   const handleGenderFilter = useCallback((filter: string) => {
     setCurrentGenderFilter(filter);
+    setCurrentServiceFilter('');
   }, []);
 
   const handleServiceFilter = useCallback((key: string) => {
@@ -159,6 +155,7 @@ export default function PublicIndex() {
 
   const selectGenderFromHero = useCallback((filter: string) => {
     setCurrentGenderFilter(filter);
+    setCurrentServiceFilter('');
     document.getElementById('salons')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 

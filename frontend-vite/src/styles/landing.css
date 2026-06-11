@@ -91,6 +91,19 @@
   gap: 6px;
 }
 
+.landing-view .hero-category-badge {
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 100px;
+  background: rgba(207, 168, 107, 0.2);
+  border: 1px solid rgba(207, 168, 107, 0.4);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
 .landing-view section {
   padding: 80px 20px;
   max-width: 1200px;

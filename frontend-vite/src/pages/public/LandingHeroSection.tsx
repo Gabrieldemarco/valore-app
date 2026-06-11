@@ -8,7 +8,18 @@ interface LandingHeroSectionProps {
   heroImage: string | null;
   logoUrl: string | null;
   fixImageUrl: (url: string | null | undefined) => string;
+  category?: string;
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  peluqueria: 'Peluquería / Barbería',
+  cejas: 'Cejas & Pestañas',
+  uñas: 'Manicura & Pedicura',
+  maquillaje: 'Maquillaje',
+  facial: 'Cuidado Facial',
+  depilacion: 'Depilación',
+  masajes: 'Masajes & Bienestar',
+};
 
 export default function LandingHeroSection({
   businessName,
@@ -16,6 +27,7 @@ export default function LandingHeroSection({
   heroImage,
   logoUrl,
   fixImageUrl,
+  category,
 }: LandingHeroSectionProps) {
   const { t } = useTranslation();
   return (
@@ -36,6 +48,7 @@ export default function LandingHeroSection({
           />
         )}
         <h1>{businessName}</h1>
+        {category && <span className="hero-category-badge">{CATEGORY_LABELS[category] || category}</span>}
         {description && <p>{description}</p>}
         <a href="#reservar" className="btn btn-primary btn-lg">{t('landingHero.reserveButton')}</a>
         <div className="hero-trust">

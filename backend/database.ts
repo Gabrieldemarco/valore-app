@@ -98,6 +98,7 @@ async function initDB() {
       BEGIN;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'peluqueria';
       COMMIT;
 
       CREATE TABLE IF NOT EXISTS users (

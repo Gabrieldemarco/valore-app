@@ -13,6 +13,7 @@ import LandingBookingSection from './LandingBookingSection';
 interface TenantData {
   business_name: string;
   slug: string;
+  category?: string;
   landing_description: string | null;
   landing_hero_image: string | null;
   landing_gallery: unknown[] | null;
@@ -288,6 +289,7 @@ export default function Landing() {
             heroImage={tenant!.landing_hero_image}
             logoUrl={tenant!.brand_logo_url}
             fixImageUrl={fixImageUrl}
+            category={tenant!.category}
           />
         );
 

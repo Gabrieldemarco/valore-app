@@ -5,12 +5,12 @@ import { api } from '../../api/client';
 import '../../styles/auth.css';
 
 export default function StaffRegister() {
-  const [form, setForm] = useState({ businessName: '', email: '', password: '', phone: '', address: '' });
+  const [form, setForm] = useState({ businessName: '', email: '', password: '', phone: '', address: '', category: 'peluqueria' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -46,8 +46,21 @@ export default function StaffRegister() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Nombre de la Peluquería</label>
+            <label>Nombre del Negocio</label>
             <input name="businessName" value={form.businessName} onChange={handleChange} className="glass-input" required placeholder="Ej: Estilo Único" />
+          </div>
+
+          <div className="form-group">
+            <label>Categoría del Negocio</label>
+            <select name="category" value={form.category} onChange={handleChange} className="glass-input" required style={{ appearance: 'auto', cursor: 'pointer' }}>
+              <option value="peluqueria">Peluquería / Barbería</option>
+              <option value="cejas">Cejas &amp; Pestañas</option>
+              <option value="uñas">Manicura &amp; Pedicura</option>
+              <option value="maquillaje">Maquillaje</option>
+              <option value="facial">Cuidado Facial</option>
+              <option value="depilacion">Depilación</option>
+              <option value="masajes">Masajes &amp; Bienestar</option>
+            </select>
           </div>
 
           <div className="form-group">

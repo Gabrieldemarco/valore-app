@@ -667,18 +667,43 @@ body { display: flex !important; flex-direction: column !important; }
                   {services.map((s, i) => (
                     <div key={i} className={`service-item${s._deleted ? ' deleted' : ''}`}>
                       <div className="service-fields">
-                        <input type="text" className="glass-input" placeholder={t('staffLandingEditor.serviceNamePlaceholder')} value={s.name}
-                          onChange={e => updateService(i, 'name', e.target.value)} />
-                        <div style={{ display: 'flex', gap: 5 }}>
-                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDurationPlaceholder')} value={s.duration}
-                            onChange={e => updateService(i, 'duration', e.target.value)} />
-                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.servicePricePlaceholder')} value={s.price}
-                            onChange={e => updateService(i, 'price', e.target.value)} />
-                          <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDepositPlaceholder')} value={s.deposit_amount ?? ''}
-                            onChange={e => updateService(i, 'deposit_amount', e.target.value)} style={{ maxWidth: 100 }} />
+                        <div className="form-group" style={{ marginBottom: '8px' }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                            {t('staffLandingEditor.serviceNameLabel')}
+                          </label>
+                          <input type="text" className="glass-input" placeholder={t('staffLandingEditor.serviceNamePlaceholder')} value={s.name}
+                            onChange={e => updateService(i, 'name', e.target.value)} />
                         </div>
-                        <input type="url" className="glass-input" placeholder={t('staffLandingEditor.serviceImagePlaceholder')} value={s.image || ''}
-                          onChange={e => updateService(i, 'image', e.target.value)} />
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                              {t('staffLandingEditor.serviceDurationLabel')}
+                            </label>
+                            <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDurationPlaceholder')} value={s.duration}
+                              onChange={e => updateService(i, 'duration', e.target.value)} />
+                          </div>
+                          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                              {t('staffLandingEditor.servicePriceLabel')}
+                            </label>
+                            <input type="number" className="glass-input" placeholder={t('staffLandingEditor.servicePricePlaceholder')} value={s.price}
+                              onChange={e => updateService(i, 'price', e.target.value)} />
+                          </div>
+                          <div className="form-group" style={{ width: '100px', marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                              {t('staffLandingEditor.serviceDepositLabel')}
+                            </label>
+                            <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDepositPlaceholder')} value={s.deposit_amount ?? ''}
+                              onChange={e => updateService(i, 'deposit_amount', e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                            {t('staffLandingEditor.serviceImageLabel')}
+                          </label>
+                          <input type="url" className="glass-input" placeholder={t('staffLandingEditor.serviceImagePlaceholder')} value={s.image || ''}
+                            onChange={e => updateService(i, 'image', e.target.value)} />
+                        </div>
                         {s.image && (
                           <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 10 }}>
                             <img src={fixImageUrl(s.image)} alt="" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
