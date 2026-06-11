@@ -137,7 +137,7 @@ export default function PublicIndex() {
       result = result.filter(s => getGenderCategory(s) === currentGenderFilter);
     }
     if (currentServiceFilter) {
-      result = result.filter(s => s.category === currentServiceFilter);
+      result = result.filter(s => (s.category || 'peluqueria') === currentServiceFilter);
     }
     setFiltered(result);
   }, [allSalons, searchQuery, currentGenderFilter, currentServiceFilter]);
@@ -150,7 +150,11 @@ export default function PublicIndex() {
   }, []);
 
   const handleServiceFilter = useCallback((key: string) => {
-    setCurrentServiceFilter(prev => prev === key ? '' : key);
+    setCurrentServiceFilter(prev => {
+      const next = prev === key ? '' : key;
+      return next;
+    });
+    document.getElementById('salons')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const selectGenderFromHero = useCallback((filter: string) => {
