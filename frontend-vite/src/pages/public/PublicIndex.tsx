@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useGeo } from '../../hooks/useGeo';
-import { useGps } from '../../hooks/useGps';
 import '../../styles/index.css';
 
 interface Salon {
@@ -96,7 +95,6 @@ function getServiceCategories(salon: Salon): string[] {
 export default function PublicIndex() {
   const { t, i18n } = useTranslation();
   const geo = useGeo(i18n.language);
-  const gps = useGps();
   const countryName = geo.country;
   const [allSalons, setAllSalons] = useState<Salon[]>([]);
   const [filtered, setFiltered] = useState<Salon[]>([]);
@@ -107,13 +105,7 @@ export default function PublicIndex() {
   const [error, setError] = useState('');
   const gridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (gps.coords) {
-      params.set('lat', gps.coords.lat.toString());
-      params.set('lng', gps.coords.lng.toString());
-    }
-    const qs = params.toString();
-    api.get<TenantsResponse>(`/api/tenants${qs ? `?${qs}` : ''}`)
+    api.get<TenantsResponse>('/api/tenants')
       .then(data => {
         const salons = data.tenants || [];
         setAllSalons(salons);
