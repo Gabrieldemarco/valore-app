@@ -133,8 +133,13 @@ export default function PublicIndex() {
       if (cat) {
         result = result.filter(s => {
           if (s.category) return s.category === currentServiceFilter;
-          const services = (s.services || []).map(sv => typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv).join(' ').toLowerCase();
-          return cat.keywords.some(kw => services.includes(kw));
+          const text = [
+            s.business_name,
+            s.business_address,
+            s.landing_description,
+            ...(s.services || []).map(sv => typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv)
+          ].filter(Boolean).join(' ').toLowerCase();
+          return cat.keywords.some(kw => text.includes(kw));
         });
       }
     }

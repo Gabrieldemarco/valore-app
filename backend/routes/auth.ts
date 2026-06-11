@@ -121,11 +121,44 @@ export default function(loginLimiter, passwordResetLimiter) {
         [newTenantId, email, hashedPassword, businessName]
       );
 
-      const defaultServices = [
-        { name: 'Corte de Cabello', duration: 30, price: 0 },
-        { name: 'Lavado y Secado', duration: 20, price: 0 },
-        { name: 'Tinte / Color', duration: 120, price: 0 }
-      ];
+      const defaultServicesByCategory: Record<string, { name: string; duration: number; price: number }[]> = {
+        peluqueria: [
+          { name: 'Corte de Cabello', duration: 30, price: 0 },
+          { name: 'Lavado y Secado', duration: 20, price: 0 },
+          { name: 'Tinte / Color', duration: 120, price: 0 },
+        ],
+        cejas: [
+          { name: 'Diseño de Cejas', duration: 30, price: 0 },
+          { name: 'Henna', duration: 20, price: 0 },
+          { name: 'Lifting de Pestañas', duration: 45, price: 0 },
+        ],
+        uñas: [
+          { name: 'Manicura Clásica', duration: 40, price: 0 },
+          { name: 'Pedicura Clásica', duration: 40, price: 0 },
+          { name: 'Esmaltado Semipermanente', duration: 50, price: 0 },
+        ],
+        maquillaje: [
+          { name: 'Maquillaje Social', duration: 60, price: 0 },
+          { name: 'Maquillaje Novia', duration: 120, price: 0 },
+          { name: 'Peinado', duration: 45, price: 0 },
+        ],
+        facial: [
+          { name: 'Limpieza Facial Profunda', duration: 50, price: 0 },
+          { name: 'Hidratación Facial', duration: 40, price: 0 },
+          { name: 'Dermaplaning', duration: 30, price: 0 },
+        ],
+        depilacion: [
+          { name: 'Depilación Cejas', duration: 15, price: 0 },
+          { name: 'Depilación Axilas', duration: 15, price: 0 },
+          { name: 'Depilación Piernas', duration: 30, price: 0 },
+        ],
+        masajes: [
+          { name: 'Masaje Relajante', duration: 60, price: 0 },
+          { name: 'Masaje Descontracturante', duration: 60, price: 0 },
+          { name: 'Masaje Aromaterapia', duration: 60, price: 0 },
+        ],
+      };
+      const defaultServices = defaultServicesByCategory[category || 'peluqueria'] || defaultServicesByCategory['peluqueria'];
       for (const service of defaultServices) {
         await query(
           `INSERT INTO services (tenant_id, name, duration, price, active) VALUES ($1, $2, $3, $4, true)`,
