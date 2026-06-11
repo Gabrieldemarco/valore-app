@@ -1,8 +1,7 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { NetworkFirst, CacheFirst } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
+import { NetworkOnly } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -29,13 +28,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 registerRoute(
   /^https?:\/\/.*\/api\/.*/i,
-  new NetworkFirst({
-    cacheName: 'api-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 5 }),
-    ],
-    networkTimeoutSeconds: 5,
-  })
+  new NetworkOnly()
 );
 
 registerRoute(
