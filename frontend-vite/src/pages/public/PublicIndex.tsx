@@ -129,7 +129,14 @@ export default function PublicIndex() {
       result = result.filter(s => getGenderCategory(s) === currentGenderFilter);
     }
     if (currentServiceFilter) {
-      result = result.filter(s => (s.category || 'peluqueria') === currentServiceFilter);
+      const cat = SERVICE_CATEGORIES.find(c => c.key === currentServiceFilter);
+      if (cat) {
+        result = result.filter(s => {
+          if (s.category) return s.category === currentServiceFilter;
+          const services = (s.services || []).map(sv => typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv).join(' ').toLowerCase();
+          return cat.keywords.some(kw => services.includes(kw));
+        });
+      }
     }
     setFiltered(result);
   }, [allSalons, searchQuery, currentGenderFilter, currentServiceFilter]);
