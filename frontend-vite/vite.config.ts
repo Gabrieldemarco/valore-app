@@ -34,10 +34,18 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts: ['nexo-dev.com'],
     proxy: {
       '/api': 'http://localhost:3000',
-      '/p': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000',
+      '/p': {
+        target: 'http://localhost:3000',
+        bypass: (req) => {
+          const segments = (req.url || '').split('/').filter(Boolean);
+          if (segments.length >= 3) return null;
+          return req.url;
+        },
+      },
     },
   },
   test: {

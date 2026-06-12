@@ -19,9 +19,9 @@ const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 
 function Loading() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0c', color: '#94a3b8', fontFamily: 'Outfit, sans-serif' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#120c0c', color: '#94a3b8', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: '#c5a880', borderRadius: '50%', animation: 'ls 0.8s linear infinite', margin: '0 auto 16px' }}></div>
+        <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: '#c8827d', borderRadius: '50%', animation: 'ls 0.8s linear infinite', margin: '0 auto 16px' }}></div>
         Cargando...
         <style>{`@keyframes ls{to{transform:rotate(360deg)}}`}</style>
       </div>

@@ -617,13 +617,13 @@ body { display: flex !important; flex-direction: column !important; }
                 <div className="form-group">
                   <label>{t('staffLandingEditor.primaryColorLabel')}</label>
                   <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
-                    value={(tenant.brand_primary_color as string) || '#c5a880'}
+                    value={(tenant.brand_primary_color as string) || '#c8827d'}
                     onChange={e => handleTenantField('brand_primary_color', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>{t('staffLandingEditor.secondaryColorLabel')}</label>
                   <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
-                    value={(tenant.brand_secondary_color as string) || '#d5be9b'}
+                    value={(tenant.brand_secondary_color as string) || '#d69c98'}
                     onChange={e => handleTenantField('brand_secondary_color', e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: 15 }}>

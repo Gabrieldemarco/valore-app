@@ -1,30 +1,30 @@
-/* global-premium.css - Glassmorphism Dark Mode & Gold Luxury Design System */
+/* global-premium.css - Glassmorphism Dark Mode & Rose Gold Luxury Design System */
 /* Fonts loaded via <link> in HTML for better performance */
 
 :root {
-  /* Core Colors - Obsidian & Luxury Matte Black (NO GAMING NEONS) */
-  --bg-deep: #0a0a0c;
-  --bg-gradient-start: #0f0f12;
-  --bg-gradient-end: #070709;
+  /* Core Colors - Warm Obsidian & Rose Gold */
+  --bg-deep: #120c0c;
+  --bg-gradient-start: #141010;
+  --bg-gradient-end: #0f0808;
   
-  /* Accents - Warm Gold, Champagne & Warm Bronze (Low Saturation Quiet Luxury) */
-  --primary: #c5a880;
-  --primary-hover: #d5be9b;
+  /* Accents - Rose Gold & Blush Pink (Low Saturation Quiet Luxury) */
+  --primary: #c8827d;
+  --primary-hover: #d69c98;
   --secondary: #16161a;
-  --accent: #d5be9b;
+  --accent: #d69c98;
   --danger: #e11d48;
-  --warning: #c5a880;
+  --warning: #c8827d;
   
   /* Typography */
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;
   --text-dark: #0a0a0c;
   
-  /* Glass Effects with Subtle Champagne Tint */
+  /* Glass Effects with Subtle Rose Gold Tint */
   --glass-bg: rgba(22, 22, 26, 0.75);
   --glass-bg-hover: rgba(30, 30, 36, 0.9);
-  --glass-border: rgba(197, 168, 128, 0.12);
-  --glass-border-hover: rgba(197, 168, 128, 0.28);
+  --glass-border: rgba(200, 130, 125, 0.12);
+  --glass-border-hover: rgba(200, 130, 125, 0.28);
   --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.85);
   
   /* Transitions */

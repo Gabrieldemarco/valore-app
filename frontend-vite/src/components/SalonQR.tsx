@@ -55,7 +55,7 @@ export default function SalonQR({ slug, services, onClose }: Props) {
         </div>
         <div style={{ textAlign: 'center' }}>
           <div ref={canvasRef}>
-            <QRCodeCanvas value={url} size={200} bgColor="#0a0a0c" fgColor="#c5a880" level="M" />
+            <QRCodeCanvas value={url} size={200} bgColor="#120c0c" fgColor="#c8827d" level="M" />
           </div>
           <p style={{ color: '#a1a1aa', fontSize: 13, marginTop: 16, wordBreak: 'break-all' }}>{url}</p>
           {services.length > 0 && (

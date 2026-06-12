@@ -22,7 +22,7 @@ const mockTenantData = {
   tenant: {
     business_name: 'Mi Peluquería', slug: 'mi-pelu', landing_description: 'La mejor', business_address: 'Calle 123',
     business_phone: '+59899123456', landing_enabled: true, plan: 'free', trial_end_date: new Date(Date.now() + 86400000 * 15).toISOString(),
-    brand_primary_color: '#c5a880', brand_secondary_color: '#d5be9b', brand_logo_url: null, landing_hero_image: null,
+    brand_primary_color: '#c8827d', brand_secondary_color: '#d69c98', brand_logo_url: null, landing_hero_image: null,
     landing_gallery: [], landing_team: [], landing_social_links: {}, landing_custom_css: null, landing_layout: null,
     opening_hours: null,
   },
