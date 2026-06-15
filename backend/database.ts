@@ -7,9 +7,20 @@ const config = require('./config');
 import logger from './services/logger';
 
 const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+const dbSslRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+
+let sslConfig;
+if (isLocal) {
+  sslConfig = false;
+} else {
+  sslConfig = {
+    rejectUnauthorized: dbSslRejectUnauthorized
+  };
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  ssl: sslConfig,
   max: parseInt(process.env.DB_POOL_MAX) || 30,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000
@@ -55,7 +66,7 @@ const queryOne = async (text: string, params?: any[]) => {
 async function initDB() {
   const client = await pool.connect();
   try {
-    console.log('🔌 Conectando a DB...');
+    logger.info('🔌 Conectando a DB...');
 
     await client.query('SELECT 1'); // test conexión
 
@@ -288,10 +299,10 @@ async function initDB() {
     if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true') {
       await seedDefaults(client);
     } else {
-      console.log('ℹ️ Seed demo omitido en producción (SEED_DEMO=true para habilitarlo)');
+      logger.info('ℹ️ Seed demo omitido en producción (SEED_DEMO=true para habilitarlo)');
     }
 
-    console.log('✅ DB lista y estable');
+    logger.info('✅ DB lista y estable');
   } catch (err: any) {
     logger.error('❌ Error initDB:', err.message);
   } finally {
@@ -321,7 +332,7 @@ async function seedDefaults(client) {
         [tenantId, 'Admin', 'admin@pelu.com', hash]
       );
 
-      console.log('✅ Admin demo creado');
+      logger.info('✅ Admin demo creado');
     }
 
     // Seed precios de planes por defecto
@@ -333,7 +344,7 @@ async function seedDefaults(client) {
          ('enterprise', $2, 'UYU')`,
         [process.env.PLAN_PRO_PRICE || 990, process.env.PLAN_ENTERPRISE_PRICE || 2490]
       );
-      console.log('✅ Precios de planes creados');
+      logger.info('✅ Precios de planes creados');
     }
   } catch (e: any) {
     logger.error('Seed error:', e.message);

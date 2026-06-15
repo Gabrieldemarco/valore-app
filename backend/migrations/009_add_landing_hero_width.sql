@@ -1,0 +1,2 @@
+ALTER TABLE tenants 
+ADD COLUMN IF NOT EXISTS landing_hero_width INTEGER DEFAULT 100;

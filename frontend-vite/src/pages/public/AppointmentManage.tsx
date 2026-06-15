@@ -61,13 +61,14 @@ export default function AppointmentManage() {
         setRecurringAppointments(data.recurring_appointments);
       }
 
-    } catch (err: any) {
-      setError(err.message);
       const servicesRes = await fetch(`/p/${slug}/services`);
       if (servicesRes.ok) {
         const servicesData = await servicesRes.json();
         setServices(servicesData.services || []);
       }
+
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,10 @@ export default function AppointmentManage() {
     const service = services.find(s => s.name === appointment.service);
     if (!service) return;
     try {
-      const res = await fetch(`/p/${slug}/availability?date=${date}&serviceId=${service.id}`);
+      const endpoint = appointment.staff_id
+        ? `/p/${slug}/staff/${appointment.staff_id}/availability?date=${date}&serviceId=${service.id}`
+        : `/p/${slug}/availability?date=${date}&serviceId=${service.id}`;
+      const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
         setAvailableSlots(data.slots || []);

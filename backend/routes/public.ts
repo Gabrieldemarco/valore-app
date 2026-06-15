@@ -400,6 +400,13 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           opening_hours: req.tenant.opening_hours,
           trial_end_date: req.tenant.trial_end_date,
           landing_layout: req.tenant.landing_layout,
+          landing_background_color: req.tenant.landing_background_color,
+          landing_hero_height: req.tenant.landing_hero_height,
+          landing_hero_width: req.tenant.landing_hero_width,
+          landing_primary_text_color: req.tenant.landing_primary_text_color,
+          landing_secondary_text_color: req.tenant.landing_secondary_text_color,
+          landing_primary_font: req.tenant.landing_primary_font,
+          landing_secondary_font: req.tenant.landing_secondary_font,
         },
         services: services.rows,
       });

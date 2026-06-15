@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { Home, Sparkles, Image, Users, Calendar, RotateCcw, Trash2, X, User, GripVertical, Clock } from 'lucide-react';
 
 
 type EditorTab = 'general' | 'branding' | 'services' | 'hours' | 'gallery' | 'team' | 'social' | 'css' | 'layout';
@@ -40,14 +41,50 @@ interface LayoutBlock {
 const DAY_LABELS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
 const SECTION_LABELS: Record<string, string> = {
-  hero: '🏠 Hero (Portada)',
-  servicios: '✂️ Servicios',
-  galeria: '📷 Galería',
-  equipo: '👥 Equipo',
-  reservar: '📅 Reserva de Turnos',
+  hero: 'Hero (Portada)',
+  servicios: 'Servicios',
+  galeria: 'Galería',
+  equipo: 'Equipo',
+  reservar: 'Reserva de Turnos',
+  hours: 'Horarios de Atención',
 };
 
+function sectionIcon(id: string) {
+  switch (id) {
+    case 'hero': return <Home size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'servicios': return <Sparkles size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'galeria': return <Image size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'equipo': return <Users size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'reservar': return <Calendar size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'hours': return <Clock size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    default: return null;
+  }
+}
+
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
+
+const FONT_OPTIONS = [
+  { value: 'system', label: 'Sistema (predeterminada)' },
+  { value: 'Playfair Display', label: 'Playfair Display (serif)' },
+  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans (sans-serif)' },
+  { value: 'Inter', label: 'Inter (sans-serif)' },
+  { value: 'Poppins', label: 'Poppins (sans-serif)' },
+  { value: 'Roboto', label: 'Roboto (sans-serif)' },
+  { value: 'Lora', label: 'Lora (serif)' },
+  { value: 'Merriweather', label: 'Merriweather (serif)' },
+  { value: 'Montserrat', label: 'Montserrat (sans-serif)' },
+  { value: 'Open Sans', label: 'Open Sans (sans-serif)' },
+  { value: 'Raleway', label: 'Raleway (sans-serif)' },
+  { value: 'DM Sans', label: 'DM Sans (sans-serif)' },
+  { value: 'DM Serif Display', label: 'DM Serif Display (serif)' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond (serif)' },
+  { value: 'Josefin Sans', label: 'Josefin Sans (sans-serif)' },
+  { value: 'Quicksand', label: 'Quicksand (sans-serif)' },
+  { value: 'Bodoni Moda', label: 'Bodoni Moda (serif)' },
+  { value: 'Abril Fatface', label: 'Abril Fatface (display)' },
+  { value: 'Archivo Black', label: 'Archivo Black (display)' },
+  { value: 'Bebas Neue', label: 'Bebas Neue (display)' },
+];
 
 const CACHE_BUST = Date.now();
 function fixImageUrl(url: string | null | undefined): string {
@@ -64,6 +101,7 @@ function getDefaultLayout(): LayoutBlock[] {
     { id: 'galeria', type: 'gallery', enabled: true },
     { id: 'equipo', type: 'team', enabled: true },
     { id: 'reservar', type: 'booking', enabled: true },
+    { id: 'hours', type: 'hours', enabled: true },
   ];
 }
 
@@ -92,6 +130,7 @@ export default function LandingEditor() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -132,7 +171,11 @@ export default function LandingEditor() {
       setGallery((data.tenant.landing_gallery as string[]) || []);
       setTeam((data.tenant.landing_team as unknown[]) || []);
       setSocial((data.tenant.landing_social_links as Record<string, string>) || {});
-      setLayout((data.tenant.landing_layout as LayoutBlock[]) || getDefaultLayout());
+      const savedLayout = (data.tenant.landing_layout as LayoutBlock[]) || [];
+      const defaultLayout = getDefaultLayout();
+      const savedIds = new Set(savedLayout.map(b => b.id));
+      const merged = [...savedLayout, ...defaultLayout.filter(b => !savedIds.has(b.id))];
+      setLayout(merged);
       if (data.tenant.opening_hours) {
         try {
           const h = typeof data.tenant.opening_hours === 'string'
@@ -390,8 +433,70 @@ export default function LandingEditor() {
     } catch { showStatus(t('staffLandingEditor.statusGeneralError'), false); }
   }, [debounceSave, showStatus, t]);
 
+  const updateCustomBackgroundAndHero = useCallback((overrides?: Record<string, unknown>) => {
+    const bgColor = (overrides?.landing_background_color as string) || (tenant.landing_background_color as string) || '#0f0808';
+    const heroHeight = (overrides?.landing_hero_height as number) || (tenant.landing_hero_height as number) || 70;
+    const heroWidth = (overrides?.landing_hero_width as number) || (tenant.landing_hero_width as number) || 100;
+    const primaryTextColor = (overrides?.landing_primary_text_color as string) || (tenant.landing_primary_text_color as string) || '#1a1a1a';
+    const secondaryTextColor = (overrides?.landing_secondary_text_color as string) || (tenant.landing_secondary_text_color as string) || '#666666';
+    const primaryFont = (overrides?.landing_primary_font as string) || (tenant.landing_primary_font as string) || 'system';
+    const secondaryFont = (overrides?.landing_secondary_font as string) || (tenant.landing_secondary_font as string) || 'system';
+    const currentCss = (tenant.landing_custom_css as string) || '';
+
+    const fontImport = primaryFont !== 'system'
+      ? `@import url('https://fonts.googleapis.com/css2?family=${primaryFont.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap');\n`
+      : '';
+    const secondaryFontImport = secondaryFont !== 'system' && secondaryFont !== primaryFont
+      ? `@import url('https://fonts.googleapis.com/css2?family=${secondaryFont.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap');\n`
+      : '';
+    const primaryFontFamily = primaryFont !== 'system' ? `'${primaryFont}', serif` : 'inherit';
+    const secondaryFontFamily = secondaryFont !== 'system' ? `'${secondaryFont}', sans-serif` : 'inherit';
+
+    let updatedCss = currentCss.replace(/\/\* Velsoie Branding \*\/[\s\S]*?\/\* End Velsoie Branding \*\//g, '');
+
+    updatedCss += `/* Velsoie Branding */
+${fontImport}${secondaryFontImport}
+.landing-view { background: ${bgColor} !important; color: ${primaryTextColor} !important; }
+.landing-view .hero { height: auto !important; min-height: ${heroHeight}vh !important; width: ${heroWidth}% !important; margin: 0 auto !important; }
+.landing-view h1, .landing-view h2, .landing-view h3, .landing-view h4, .landing-view h5, .landing-view h6 { color: ${primaryTextColor} !important; font-family: ${primaryFontFamily} !important; }
+.landing-view .service-name, .landing-view .team-name { color: ${primaryTextColor} !important; }
+.landing-view .service-desc, .landing-view .team-bio { color: ${secondaryTextColor} !important; }
+.landing-view body, .landing-view p, .landing-view span, .landing-view div, .landing-view input, .landing-view textarea, .landing-view button { font-family: ${secondaryFontFamily} !important; }
+/* End Velsoie Branding */`;
+
+    setTenant(prev => ({
+      ...prev,
+      landing_custom_css: updatedCss,
+      landing_background_color: bgColor,
+      landing_hero_height: heroHeight,
+      landing_hero_width: heroWidth,
+      landing_primary_text_color: primaryTextColor,
+      landing_secondary_text_color: secondaryTextColor,
+      landing_primary_font: primaryFont,
+      landing_secondary_font: secondaryFont,
+    }));
+    showStatus(t('staffLandingEditor.statusSaving'), true);
+    const payload = collectPayload();
+    api.put('/api/tenant/settings', {
+      ...payload,
+      landing_background_color: bgColor,
+      landing_hero_height: heroHeight,
+      landing_hero_width: heroWidth,
+      landing_primary_text_color: primaryTextColor,
+      landing_secondary_text_color: secondaryTextColor,
+      landing_primary_font: primaryFont,
+      landing_secondary_font: secondaryFont,
+      landing_custom_css: updatedCss,
+    }).then(() => {
+      showStatus(t('staffLandingEditor.statusDataLoaded'), false);
+      updatePreview();
+    }).catch((error) => {
+      console.error('Error saving background, hero and text settings:', error);
+      showStatus(t('staffLandingEditor.statusSaveError'), false);
+    });
+  }, [tenant, collectPayload, updatePreview, showStatus, t]);
+
   const applyPresetTheme = useCallback((primary: string, secondary: string, stylePreset: string) => {
-    setTenant(prev => ({ ...prev, brand_primary_color: primary, brand_secondary_color: secondary }));
     let customCss = '';
     if (stylePreset === 'barber') {
       customCss = `/* 🧡 ESTILO BARBERIA CLASICA: Split Hero & Lista de Precios */
@@ -400,7 +505,9 @@ export default function LandingEditor() {
 h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: var(--font-heading) !important; letter-spacing: 1px; font-weight: 800; }
 .glass-panel, .service-card, .team-card, .btn, .glass-input, .slot-btn { border-radius: 4px !important; box-shadow: none !important; border: 1px solid rgba(217, 119, 6, 0.2) !important; }
 .team-photo, .service-image { border-radius: 4px !important; }
-body { display: flex !important; flex-direction: column !important; }
+.landing-view { display: flex !important; flex-direction: column !important; }
+.landing-view > section { order: 99 !important; }
+footer { order: 100 !important; }
 #hero { order: 1 !important; }
 #servicios { order: 2 !important; }
 #equipo { order: 3 !important; }
@@ -425,7 +532,9 @@ body { display: flex !important; flex-direction: column !important; }
 .glass-panel, .service-card, .team-card { border-radius: 28px !important; border: 1px solid rgba(16, 185, 129, 0.15) !important; }
 .btn, .glass-input, .slot-btn { border-radius: 50px !important; }
 .team-photo, .service-image { border-radius: 24px !important; }
-body { display: flex !important; flex-direction: column !important; }
+.landing-view { display: flex !important; flex-direction: column !important; }
+.landing-view > section { order: 99 !important; }
+footer { order: 100 !important; }
 #hero { order: 1 !important; }
 #reservar { order: 2 !important; }
 #servicios { order: 3 !important; }
@@ -433,12 +542,47 @@ body { display: flex !important; flex-direction: column !important; }
 #galeria { order: 5 !important; }
 .booking-section { padding: 50px 20px !important; }
 .booking-form { max-width: 750px !important; margin: 0 auto !important; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important; background: rgba(255, 255, 255, 0.04) !important; }`;
+    } else if (stylePreset === 'light') {
+      const bgColor = (tenant.landing_background_color as string) || '#ffffff';
+      const heroHeight = (tenant.landing_hero_height as number) || 70;
+      customCss = `/* ☀️ ESTILO CLARO: Fondo Blanco & Diseño Limpio */
+.landing-view { background: ${bgColor} !important; color: #1a1a1a !important; }
+.landing-view .hero { background: ${bgColor} !important; min-height: ${heroHeight}vh !important; }
+.landing-view .glass-panel { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important; }
+.landing-view .service-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: #1a1a1a !important; }
+.landing-view .team-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: #1a1a1a !important; }
+.landing-view .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: #ffffff !important; }
+.landing-view .glass-input { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: #1a1a1a !important; }
+.landing-view .slot-btn { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: #1a1a1a !important; }
+.landing-view .slot-btn.selected { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: #ffffff !important; }
+.landing-view h1, .landing-view h2, .landing-view h3, .landing-view h4, .landing-view h5, .landing-view h6 { color: #1a1a1a !important; }
+.landing-view .service-name, .landing-view .team-name { color: #1a1a1a !important; }
+.landing-view .service-desc, .landing-view .team-bio { color: #666666 !important; }
+.landing-view .booking-section { background: #f9f9f9 !important; }
+.landing-view .booking-form { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important; }
+.landing-view footer { background: #f9f9f9 !important; color: #1a1a1a !important; border-top: 1px solid rgba(0, 0, 0, 0.1) !important; }`;
+    } else {
+      const bgColor = (tenant.landing_background_color as string) || '#0f0808';
+      const heroHeight = (tenant.landing_hero_height as number) || 70;
+      customCss += `/* Custom Background & Hero Height */
+.landing-view { background: ${bgColor} !important; }
+.landing-view .hero { min-height: ${heroHeight}vh !important; }`;
     }
-    setTenant(prev => ({ ...prev, landing_custom_css: customCss }));
-    debounceSave();
-    setTimeout(updatePreview, 500);
-    showStatus(t('staffLandingEditor.statusThemeApplied', { name: stylePreset.toUpperCase() }), false);
-  }, [debounceSave, updatePreview, showStatus, t]);
+    setTenant(prev => ({ ...prev, brand_primary_color: primary, brand_secondary_color: secondary, landing_custom_css: customCss }));
+    showStatus(t('staffLandingEditor.statusSaving'), true);
+    const payload = collectPayload();
+    api.put('/api/tenant/settings', {
+      ...payload,
+      brand_primary_color: primary,
+      brand_secondary_color: secondary,
+      landing_custom_css: customCss,
+    }).then(() => {
+      showStatus(t('staffLandingEditor.statusThemeApplied', { name: stylePreset.toUpperCase() }), false);
+      updatePreview();
+    }).catch(() => {
+      showStatus(t('staffLandingEditor.statusSaveError'), false);
+    });
+  }, [collectPayload, updatePreview, showStatus, t]);
 
   const tabs: { key: EditorTab; label: string }[] = [
     { key: 'general', label: t('staffLandingEditor.tabGeneral') },
@@ -471,15 +615,15 @@ body { display: flex !important; flex-direction: column !important; }
         body { margin: 0; }
         .app-header { background: rgba(15,23,42,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 1rem 2rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        .editor-pane { width: 45%; min-width: 400px; background: var(--bg-deep); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; overflow-y: auto; }
-        .tabs-nav { padding: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; gap: 0.5rem; overflow-x: auto; background: rgba(0,0,0,0.2); }
-        .tab-btn { padding: 0.5rem 1rem; border: 1px solid transparent; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; }
+        .editor-pane { width: 45%; min-width: 400px; background: var(--bg-deep); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; overflow: hidden; }
+        .tabs-nav { padding: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; gap: 0.5rem; overflow-x: auto; background: rgba(0,0,0,0.2); flex-shrink: 0; }
+        .tab-btn { padding: 0.5rem 0.75rem; border: 1px solid transparent; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; flex: 1; min-width: 0; text-align: center; }
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
-        .editor-content { padding: 2rem; flex: 1; }
-        .preview-pane { flex: 1; background: #0f172a; display: flex; flex-direction: column; position: relative; }
+        .editor-content { padding: 2rem; flex: 1; overflow-y: auto; }
+        .preview-pane { flex: 1; background: var(--bg-deep); display: flex; flex-direction: column; position: relative; }
         .preview-toolbar { background: rgba(0,0,0,0.5); color: var(--text-main); padding: 0.5rem 1rem; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
-        iframe { width: 100%; height: 100%; border: none; background: white; }
+        iframe { width: 100%; height: 100%; border: none; background: var(--bg-deep); }
         .flex-row { display: flex; align-items: center; }
         .flex-row-gap { display: flex; align-items: center; gap: 10px; }
         .flex-row-gap-lg { display: flex; align-items: center; gap: 15px; }
@@ -520,8 +664,10 @@ body { display: flex !important; flex-direction: column !important; }
         .gallery-item { position: relative; aspect-ratio: 1; }
         .gallery-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
         .gallery-item .remove-btn { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; line-height: 20px; text-align: center; }
-        @media (max-width: 992px), (max-height: 650px) { .main-container { flex-direction: column; overflow-y: auto; } .editor-pane { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); overflow-y: visible; } .preview-pane { display: none !important; } .editor-content { padding: 1.5rem 1rem; } .status-bar { left: 20px; right: 20px; bottom: 10px; justify-content: center; font-size: 0.8rem; padding: 8px 16px; } }
-        @media (max-width: 576px) { .app-header { flex-direction: column; gap: 0.8rem; padding: 1rem; align-items: stretch; text-align: center; } .app-header div { justify-content: center; } }
+        @media (max-width: 992px), (max-height: 650px) { .main-container { flex-direction: column; overflow-y: auto; } .editor-pane { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); overflow-y: visible; } .preview-pane { display: none !important; } .preview-pane.mobile-visible { display: flex !important; position: fixed; inset: 0; z-index: 50; } .editor-content { padding: 1.5rem 1rem; } .status-bar { left: 20px; right: 20px; bottom: 10px; justify-content: center; font-size: 0.8rem; padding: 8px 16px; } .mobile-preview-btn { display: flex !important; } }
+        @media (max-width: 576px) { .app-header { flex-direction: column; gap: 0.8rem; padding: 1rem; align-items: stretch; text-align: center; } .app-header div { justify-content: center; } .tabs-nav { flex-wrap: wrap; } .tab-btn { flex: 1 1 calc(33.33% - 0.5rem); min-width: 80px; font-size: 0.8rem; padding: 0.4rem 0.25rem; } .form-row { flex-direction: column !important; } .service-item { flex-direction: column !important; } .service-actions { flex-direction: row !important; justify-content: flex-end; margin-top: 0.5rem; } .mobile-preview-btn { display: flex !important; } }
+        .mobile-preview-btn { display: none; position: fixed; bottom: 80px; right: 20px; z-index: 60; background: var(--primary); color: white; border: none; border-radius: 50%; width: 56px; height: 56px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; align-items: center; justify-content: center; transition: transform 0.2s; } .mobile-preview-btn:hover { transform: scale(1.1); } .mobile-preview-close { display: none; position: fixed; top: 20px; right: 20px; z-index: 61; background: rgba(0,0,0,0.8); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; align-items: center; justify-content: center; } .mobile-preview-close.mobile-visible { display: flex !important; }
+        select.glass-input { appearance: auto; background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 6px; font-size: 0.9rem; width: 100%; }
       `}</style>
 
       {/* Header */}
@@ -613,48 +759,194 @@ body { display: flex !important; flex-direction: column !important; }
             {/* Tab: Branding */}
             {activeTab === 'branding' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">{t('staffLandingEditor.brandingTitle')}</h3>
-                <div className="form-group">
-                  <label>{t('staffLandingEditor.primaryColorLabel')}</label>
-                  <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
-                    value={(tenant.brand_primary_color as string) || '#c8827d'}
-                    onChange={e => handleTenantField('brand_primary_color', e.target.value)} />
+                <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>{t('staffLandingEditor.brandingTitle')}</h3>
+
+                {/* Group: Colores de Marca */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('staffLandingEditor.brandingTitle')}</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.brand_primary_color as string) || '#c8827d', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+                        {t('staffLandingEditor.primaryColorLabel')}
+                      </label>
+                      <input type="color" className="glass-input" style={{ height: 44, padding: 2, cursor: 'pointer' }}
+                        value={(tenant.brand_primary_color as string) || '#c8827d'}
+                        onChange={e => handleTenantField('brand_primary_color', e.target.value)} />
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.brand_secondary_color as string) || '#d69c98', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+                        {t('staffLandingEditor.secondaryColorLabel')}
+                      </label>
+                      <input type="color" className="glass-input" style={{ height: 44, padding: 2, cursor: 'pointer' }}
+                        value={(tenant.brand_secondary_color as string) || '#d69c98'}
+                        onChange={e => handleTenantField('brand_secondary_color', e.target.value)} />
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>{t('staffLandingEditor.secondaryColorLabel')}</label>
-                  <input type="color" className="glass-input" style={{ height: 50, padding: 2 }}
-                    value={(tenant.brand_secondary_color as string) || '#d69c98'}
-                    onChange={e => handleTenantField('brand_secondary_color', e.target.value)} />
+
+                {/* Group: Fondo y Hero */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('staffLandingEditor.backgroundColorLabel')}</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_background_color as string) || '#0f0808', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+                        Color de Fondo
+                      </label>
+                      <input type="color" className="glass-input" style={{ height: 44, padding: 2, cursor: 'pointer' }}
+                        value={(tenant.landing_background_color as string) || '#0f0808'}
+                        onChange={e => {
+                          setTenant(prev => ({ ...prev, landing_background_color: e.target.value }));
+                          updateCustomBackgroundAndHero({ landing_background_color: e.target.value });
+                        }} />
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem' }}>{t('staffLandingEditor.heroHeightLabel')}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="range" min="30" max="100" style={{ flex: 1, accentColor: 'var(--primary)' }}
+                          value={(tenant.landing_hero_height as number) || 70}
+                          onChange={e => {
+                            const v = parseInt(e.target.value);
+                            setTenant(prev => ({ ...prev, landing_hero_height: v }));
+                            updateCustomBackgroundAndHero({ landing_hero_height: v });
+                          }} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: 30, textAlign: 'right' }}>{(tenant.landing_hero_height as number) || 70}%</span>
+                      </div>
+                        <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.heroHeightHint')}</small>
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem' }}>{t('staffLandingEditor.heroWidthLabel')}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="range" min="50" max="200" style={{ flex: 1, accentColor: 'var(--primary)' }}
+                          value={(tenant.landing_hero_width as number) || 100}
+                          onChange={e => {
+                            const v = parseInt(e.target.value);
+                            setTenant(prev => ({ ...prev, landing_hero_width: v }));
+                            updateCustomBackgroundAndHero({ landing_hero_width: v });
+                          }} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: 30, textAlign: 'right' }}>{(tenant.landing_hero_width as number) || 100}%</span>
+                      </div>
+                      <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.heroWidthHint')}</small>
+                    </div>
                 </div>
-                <div className="form-group" style={{ marginTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: 15 }}>
-                  <label style={{ fontWeight: 600, display: 'block', marginBottom: 10, color: 'var(--text-main)' }}>{t('staffLandingEditor.quickThemesTitle')}</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #8B5CF6, #D946EF)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#8B5CF6', '#D946EF', 'velvet')}>{t('staffLandingEditor.themeVelvet')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #D97706, #F59E0B)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#D97706', '#F59E0B', 'barber')}>{t('staffLandingEditor.themeBarber')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #10B981, #34D399)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 4 }}
-                      onClick={() => applyPresetTheme('#10B981', '#34D399', 'zen')}>{t('staffLandingEditor.themeZen')}</button>
+
+                {/* Group: Colores de Texto */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('staffLandingEditor.primaryTextColorLabel')}</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_primary_text_color as string) || '#1a1a1a', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+                        {t('staffLandingEditor.primaryTextColorLabel')}
+                      </label>
+                      <input type="color" className="glass-input" style={{ height: 44, padding: 2, cursor: 'pointer' }}
+                        value={(tenant.landing_primary_text_color as string) || '#1a1a1a'}
+                        onChange={e => {
+                          setTenant(prev => ({ ...prev, landing_primary_text_color: e.target.value }));
+                          updateCustomBackgroundAndHero({ landing_primary_text_color: e.target.value });
+                        }} />
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_secondary_text_color as string) || '#666666', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+                        {t('staffLandingEditor.secondaryTextColorLabel')}
+                      </label>
+                      <input type="color" className="glass-input" style={{ height: 44, padding: 2, cursor: 'pointer' }}
+                        value={(tenant.landing_secondary_text_color as string) || '#666666'}
+                        onChange={e => {
+                          setTenant(prev => ({ ...prev, landing_secondary_text_color: e.target.value }));
+                          updateCustomBackgroundAndHero({ landing_secondary_text_color: e.target.value });
+                        }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group: Tipografía */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Tipografía</h4>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.8rem' }}>Fuente Principal (títulos)</label>
+                      <select className="glass-input" style={{ padding: '10px 12px', cursor: 'pointer' }}
+                        value={(tenant.landing_primary_font as string) || 'system'}
+                        onChange={e => {
+                          setTenant(prev => ({ ...prev, landing_primary_font: e.target.value }));
+                          updateCustomBackgroundAndHero({ landing_primary_font: e.target.value });
+                        }}>
+                        {FONT_OPTIONS.map(f => (
+                          <option key={f.value} value={f.value} style={{ fontFamily: f.value === 'system' ? 'inherit' : f.value }}>{f.label}</option>
+                        ))}
+                      </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.8rem' }}>Fuente Secundaria (cuerpo)</label>
+                      <select className="glass-input" style={{ padding: '10px 12px', cursor: 'pointer' }}
+                        value={(tenant.landing_secondary_font as string) || 'system'}
+                        onChange={e => {
+                          setTenant(prev => ({ ...prev, landing_secondary_font: e.target.value }));
+                          updateCustomBackgroundAndHero({ landing_secondary_font: e.target.value });
+                        }}>
+                        {FONT_OPTIONS.map(f => (
+                          <option key={f.value} value={f.value} style={{ fontFamily: f.value === 'system' ? 'inherit' : f.value }}>{f.label}</option>
+                        ))}
+                      </select>
+                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 6 }}>
+                      Las fuentes se cargan desde Google Fonts automáticamente.
+                    </small>
+                  </div>
+                </div>
+
+                {/* Quick Themes */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('staffLandingEditor.quickThemesTitle')}</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8 }}>
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #c8827d, #d69c98)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8, transition: 'transform 0.15s' }}
+                      onClick={() => applyPresetTheme('#c8827d', '#d69c98', 'default')}>{t('staffLandingEditor.themeDefault')}</button>
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                      onClick={() => applyPresetTheme('#7C3AED', '#A78BFA', 'velvet')}>{t('staffLandingEditor.themeVelvet')}</button>
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #B45309, #D97706)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                      onClick={() => applyPresetTheme('#B45309', '#D97706', 'barber')}>{t('staffLandingEditor.themeBarber')}</button>
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #059669, #10B981)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                      onClick={() => applyPresetTheme('#059669', '#10B981', 'zen')}>{t('staffLandingEditor.themeZen')}</button>
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                      onClick={() => applyPresetTheme('#3B82F6', '#60A5FA', 'light')}>{t('staffLandingEditor.themeLight')}</button>
                   </div>
                   <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 8, fontSize: 11 }}>{t('staffLandingEditor.quickThemeHint')}</small>
                 </div>
-                <div className="form-group">
-                  <label>{t('staffLandingEditor.logoUrlLabel')}</label>
-                  <input type="url" className="glass-input" placeholder="https://..."
-                    value={(tenant.brand_logo_url as string) || ''}
-                    onChange={e => handleTenantField('brand_logo_url', e.target.value)} />
-                  <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.logoUploadHint')}</small>
-                  <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
-                    onChange={e => handleImageUpload('brand_logo_url', e.target.files?.[0])} />
-                </div>
-                <div className="form-group">
-                  <label>{t('staffLandingEditor.heroImageLabel')}</label>
-                  <input type="url" className="glass-input" placeholder="https://..."
-                    value={(tenant.landing_hero_image as string) || ''}
-                    onChange={e => handleTenantField('landing_hero_image', e.target.value)} />
-                  <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.heroImageHint')}</small>
-                  <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
-                    onChange={e => handleImageUpload('landing_hero_image', e.target.files?.[0])} />
+
+                {/* Group: Logo y Hero Image */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+                   <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Imágenes</h4>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.8rem' }}>{t('staffLandingEditor.logoUrlLabel')}</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {!!tenant.brand_logo_url && (
+                        <img src={fixImageUrl(tenant.brand_logo_url as string)} alt="logo" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      )}
+                      <input type="url" className="glass-input" style={{ flex: 1 }} placeholder="https://..."
+                        value={(tenant.brand_logo_url as string) || ''}
+                        onChange={e => handleTenantField('brand_logo_url', e.target.value)} />
+                    </div>
+                    <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.logoUploadHint')}</small>
+                    <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
+                      onChange={e => handleImageUpload('brand_logo_url', e.target.files?.[0])} />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.8rem' }}>{t('staffLandingEditor.heroImageLabel')}</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {!!tenant.landing_hero_image && (
+                        <img src={fixImageUrl(tenant.landing_hero_image as string)} alt="hero" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      )}
+                      <input type="url" className="glass-input" style={{ flex: 1 }} placeholder="https://..."
+                        value={(tenant.landing_hero_image as string) || ''}
+                        onChange={e => handleTenantField('landing_hero_image', e.target.value)} />
+                    </div>
+                    <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.heroImageHint')}</small>
+                    <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 5, padding: 10 }}
+                      onChange={e => handleImageUpload('landing_hero_image', e.target.files?.[0])} />
+                  </div>
                 </div>
               </div>
             )}
@@ -712,7 +1004,7 @@ body { display: flex !important; flex-direction: column !important; }
                       </div>
                       <div className="service-actions">
                         <button className="btn btn-danger" onClick={() => toggleDeleteService(i)}>
-                          {s._deleted ? '↩️' : '🗑️'}
+                          {s._deleted ? <RotateCcw size={16} /> : <Trash2 size={16} />}
                         </button>
                       </div>
                     </div>
@@ -783,7 +1075,7 @@ body { display: flex !important; flex-direction: column !important; }
                   {gallery.map((url, i) => (
                     <div key={i} className="gallery-item">
                       <img src={fixImageUrl(url)} alt="Gallery" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
-                      <button className="remove-btn" onClick={() => removeGallery(i)}>×</button>
+                      <button className="remove-btn" onClick={() => removeGallery(i)}><X size={14} /></button>
                     </div>
                   ))}
                 </div>
@@ -823,7 +1115,7 @@ body { display: flex !important; flex-direction: column !important; }
                               {s.photo_url ? (
                                 <img src={fixImageUrl(s.photo_url)} alt="" style={{ width: 50, height: 50, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
                               ) : (
-                                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255,255,255,0.2)', fontSize: 20 }}>👤</div>
+                                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255,255,255,0.2)' }}><User size={20} /></div>
                               )}
                               <div style={{ flex: 1 }}>
                                 <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffPhotoLabel')}</label>
@@ -954,13 +1246,13 @@ body { display: flex !important; flex-direction: column !important; }
                         onDragLeave={handleDragLeave}
                         onDrop={e => handleDrop(e, index)}
                         onDragEnd={() => { dragIndexRef.current = null; }}>
-                        <span className="drag-handle">⠿</span>
+                        <span className="drag-handle"><GripVertical size={16} /></span>
                         <label className="layout-label">
                           <input type="checkbox" checked={item.enabled !== false}
-                            onChange={e => toggleLayoutSection(index, e.target.checked)} /> {label}
+                            onChange={e => toggleLayoutSection(index, e.target.checked)} /> {sectionIcon(item.id)}{label}
                         </label>
                         {isCustom && (
-                          <button className="btn btn-danger btn-icon" onClick={() => removeCustomBlock(index)}>✕</button>
+                          <button className="btn btn-danger btn-icon" onClick={() => removeCustomBlock(index)}><X size={14} /></button>
                         )}
                       </div>
                     );
@@ -981,13 +1273,31 @@ body { display: flex !important; flex-direction: column !important; }
         </aside>
 
         {/* Preview Pane */}
-        <section className="preview-pane">
+        <section className={`preview-pane${showMobilePreview ? ' mobile-visible' : ''}`}>
           <div className="preview-toolbar">
             <span>{t('staffLandingEditor.previewLabel')}</span>
             <span style={{ opacity: 0.7 }}>{t('staffLandingEditor.previewUpdated')}</span>
           </div>
-          <iframe ref={iframeRef} title="Preview" style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} />
+          <iframe ref={iframeRef} title="Preview" style={{ width: '100%', height: '100%', border: 'none', background: 'var(--bg-deep)' }} />
         </section>
+
+        {/* Mobile Preview Toggle Button */}
+        <button 
+          className="mobile-preview-btn" 
+          onClick={() => setShowMobilePreview(!showMobilePreview)}
+          aria-label="Toggle preview"
+        >
+          <Image size={24} />
+        </button>
+
+        {/* Mobile Preview Close Button */}
+        <button 
+          className={`mobile-preview-close${showMobilePreview ? ' mobile-visible' : ''}`}
+          onClick={() => setShowMobilePreview(false)}
+          aria-label="Close preview"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Modal for custom block */}

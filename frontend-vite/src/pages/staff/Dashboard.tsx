@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api } from '../../api/client';
+import { api, clearApiCache } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -11,6 +11,7 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import SalonQR from '../../components/SalonQR';
+import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
 import { exportInvoicePdf, exportAppointmentsPdf } from '../../utils/invoicePdf';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
@@ -37,7 +38,8 @@ interface Appointment {
 interface PlanInfo {
   plan: string;
   status: string;
-  trial_end?: string;
+  trial_end_date?: string;
+  trialDaysLeft?: number | null;
   price?: number;
 }
 
@@ -117,6 +119,7 @@ export default function StaffDashboard() {
   const [selectedStaff, setSelectedStaff] = useState<number | ''>('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
   const [filterPhone, setFilterPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -130,6 +133,7 @@ export default function StaffDashboard() {
 
   const [staffModal, setStaffModal] = useState<{ open: boolean; editing: StaffMember | null }>({ open: false, editing: null });
   const [staffForm, setStaffForm] = useState({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5] as number[], useIndividualHours: false });
+  const [staffUploadingPhoto, setStaffUploadingPhoto] = useState(false);
   const [servicesModal, setServicesModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
   const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', image: '' });
   const [clientsList, setClientsList] = useState<ClientSummary[]>([]);
@@ -161,7 +165,24 @@ export default function StaffDashboard() {
       setLoading(true);
       const params = new URLSearchParams();
       if (filterStatus) params.set('status', filterStatus);
-      if (filterDate) params.set('date', filterDate);
+      if (filterMode === 'week') {
+        const d = new Date(filterDate);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        params.set('dateFrom', monday.toISOString().slice(0, 10));
+        params.set('dateTo', sunday.toISOString().slice(0, 10));
+      } else if (filterMode === 'month') {
+        const d = new Date(filterDate);
+        const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        params.set('dateFrom', firstDay.toISOString().slice(0, 10));
+        params.set('dateTo', lastDay.toISOString().slice(0, 10));
+      } else {
+        if (filterDate) params.set('date', filterDate);
+      }
       if (selectedStaff) params.set('staffId', String(selectedStaff));
       params.set('page', String(page));
       params.set('limit', '20');
@@ -170,7 +191,7 @@ export default function StaffDashboard() {
       setTotalPages(data.totalPages);
       setTotalAppointments(data.total);
     } catch { addToast(t('staffDashboard.toastLoadAppointmentsError'), 'error'); } finally { setLoading(false); }
-  }, [filterStatus, filterDate, selectedStaff, page]);
+  }, [filterStatus, filterDate, filterMode, selectedStaff, page]);
 
   useEffect(() => { loadAppointments(); }, [loadAppointments]);
 
@@ -401,7 +422,52 @@ export default function StaffDashboard() {
     setStaffModal({ open: true, editing: s });
   };
 
+  const handleStaffPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setStaffUploadingPhoto(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result as string;
+          const filename = `staff-${Date.now()}.${file.name.split('.').pop()}`;
+          const res = await api.post<{ success: boolean; url: string; message: string }>('/upload-image', { image: base64, filename });
+          if (res.success && res.url) {
+            setStaffForm(p => ({ ...p, photo_url: res.url }));
+            addToast(t('staffDashboard.toastStaffPhotoUploadSuccess'), 'success');
+          } else {
+            addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
+          }
+          setStaffUploadingPhoto(false);
+        } catch (err) {
+          console.error('Error uploading photo:', err);
+          addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
+          setStaffUploadingPhoto(false);
+        }
+      };
+      reader.onerror = () => {
+        addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
+        setStaffUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error reading file:', err);
+      addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
+      setStaffUploadingPhoto(false);
+    }
+  };
+
   const saveStaff = async () => {
+    if (!staffForm.name || !staffForm.name.trim()) {
+      addToast(t('staffDashboard.toastStaffNameRequired'), 'error');
+      return;
+    }
+    if (!staffModal.editing && (!staffForm.email || !staffForm.email.trim())) {
+      addToast(t('staffDashboard.toastStaffEmailRequired'), 'error');
+      return;
+    }
     try {
       const body: any = {
         name: staffForm.name,
@@ -425,10 +491,12 @@ export default function StaffDashboard() {
         addToast(t('staffDashboard.toastStaffCreated', { password: res.tempPassword }), 'success');
       }
       setStaffModal({ open: false, editing: null });
+      clearApiCache();
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
     } catch (e: any) {
-      const msg = e?.error || t('staffDashboard.toastStaffSaveError');
+      console.error('Error saving staff:', e);
+      const msg = e?.message || t('staffDashboard.toastStaffSaveError');
       addToast(msg, 'error');
     }
   };
@@ -438,9 +506,14 @@ export default function StaffDashboard() {
     try {
       await api.delete(`/api/tenant/staff/${id}`);
       addToast(t('staffDashboard.toastStaffDeleted'), 'success');
+      clearApiCache();
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
-    } catch { addToast(t('staffDashboard.toastStaffDeleteError'), 'error'); }
+    } catch (e: any) {
+      console.error('Error deleting staff:', e);
+      const errMsg = e?.message || t('staffDashboard.toastStaffDeleteError');
+      addToast(errMsg, 'error');
+    }
   };
 
   // ===== SERVICES CRUD =====
@@ -481,7 +554,7 @@ export default function StaffDashboard() {
       setServicesModal({ open: false, editing: null });
       loadServices();
     } catch (e: any) {
-      addToast(e?.error || t('staffDashboard.toastServiceSaveError'), 'error');
+      console.error('Error saving service:', e); addToast(e?.message || t('staffDashboard.toastServiceSaveError'), 'error');
     }
   };
 
@@ -518,9 +591,9 @@ export default function StaffDashboard() {
       <div className="dash-header">
         <h1 className="text-gradient">{t('staffDashboard.title')}</h1>
         <div className="dash-user-info">
-          {plan && plan.trial_end && plan.status !== 'active' && (
-            <span className={`dash-trial-badge${Math.max(0, Math.ceil((new Date(plan.trial_end).getTime() - Date.now()) / 86400000)) < 3 ? ' dash-trial-critical' : ''}`}>
-              {t('staffDashboard.trialBadge', { days: Math.max(0, Math.ceil((new Date(plan.trial_end).getTime() - Date.now()) / 86400000)) })}
+          {plan && plan.trial_end_date && plan.status !== 'active' && (
+            <span className={`dash-trial-badge${Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) < 3 ? ' dash-trial-critical' : ''}`}>
+              {t('staffDashboard.trialBadge', { days: Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) })}
             </span>
           )}
           <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>{t('staffDashboard.landingPageLink')}</Link>
@@ -675,7 +748,7 @@ export default function StaffDashboard() {
                 <div className="dash-stat-label">{t('staffDashboard.statToday')}</div>
                 <div className="dash-stat-value">{appointments.filter(a => a.date === filterDate).length}</div>
               </div>
-              <div className="dash-stat-icon">📅</div>
+              <div className="dash-stat-icon"><CalendarDays size={28} /></div>
             </div>
           </div>
           <div className="dash-stat-card glass-panel">
@@ -684,7 +757,7 @@ export default function StaffDashboard() {
                 <div className="dash-stat-label">{t('staffDashboard.statPending')}</div>
                 <div className="dash-stat-value">{appointments.filter(a => a.status === 'pending').length}</div>
               </div>
-              <div className="dash-stat-icon">⏳</div>
+              <div className="dash-stat-icon"><Clock size={28} /></div>
             </div>
           </div>
           <div className="dash-stat-card glass-panel">
@@ -693,7 +766,7 @@ export default function StaffDashboard() {
                 <div className="dash-stat-label">{t('staffDashboard.statCompleted')}</div>
                 <div className="dash-stat-value">{appointments.filter(a => a.status === 'completed').length}</div>
               </div>
-              <div className="dash-stat-icon">✅</div>
+              <div className="dash-stat-icon"><CheckCheck size={28} /></div>
             </div>
           </div>
           <div className="dash-stat-card glass-panel">
@@ -706,7 +779,7 @@ export default function StaffDashboard() {
                     : '0%'}
                 </div>
               </div>
-              <div className="dash-stat-icon">📉</div>
+              <div className="dash-stat-icon"><TrendingDown size={28} /></div>
             </div>
           </div>
         </div>
@@ -738,7 +811,20 @@ export default function StaffDashboard() {
             <div className="dash-filters glass-panel">
               <div className="dash-filter-group">
                 <label>{t('staffDashboard.filterDateLabel')}</label>
-                <input type="date" className="glass-input" value={filterDate} onChange={e => { setPage(1); setFilterDate(e.target.value); }} />
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.25)' }}>
+                    {(['day', 'week', 'month'] as const).map(m => (
+                      <button key={m} onClick={() => { setPage(1); setFilterMode(m); }}
+                        style={{
+                          padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                          background: filterMode === m ? 'var(--accent)' : 'transparent',
+                          color: filterMode === m ? '#fff' : 'var(--text-muted)',
+                          transition: 'all 0.15s'
+                        }}>{m === 'day' ? 'Día' : m === 'week' ? 'Semana' : 'Mes'}</button>
+                    ))}
+                  </div>
+                  <input type="date" className="glass-input" value={filterDate} onChange={e => { setPage(1); setFilterDate(e.target.value); }} style={{ flex: 1, minWidth: 0 }} />
+                </div>
               </div>
               <div className="dash-filter-group">
                 <label>{t('staffDashboard.filterStatusLabel')}</label>
@@ -942,11 +1028,11 @@ export default function StaffDashboard() {
 
         {activeTab === 'billing' && (
           <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-            {plan && (
+            {plan ? (
               <div className="glass-panel" style={{ marginBottom: 20, padding: 20, border: '1px solid rgba(197,168,128,0.35)' }}>
                 <h3 className="text-gradient" style={{ margin: '0 0 8px' }}>{t('staffDashboard.billingYourPlan')}</h3>
                 <p id="planStatusText" style={{ margin: '0 0 14px', color: 'var(--text-muted)' }}>
-                  {t('staffDashboard.billingPlanInfo', { plan: plan.plan, status: plan.status })}
+                  {plan.plan && plan.status ? t('staffDashboard.billingPlanInfo', { plan: plan.plan, status: plan.status }) : t('staffDashboard.billingPlanInfo', { plan: 'No disponible', status: 'No disponible' })}
                 </p>
                 {plan.status !== 'active' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
@@ -954,6 +1040,17 @@ export default function StaffDashboard() {
                     <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise')}>{t('staffDashboard.billingPlanEnterprise')}</button>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="glass-panel" style={{ marginBottom: 20, padding: 20, border: '1px solid rgba(197,168,128,0.35)' }}>
+                <h3 className="text-gradient" style={{ margin: '0 0 8px' }}>{t('staffDashboard.billingYourPlan')}</h3>
+                <p style={{ margin: '0 0 14px', color: 'var(--text-muted)' }}>
+                  {t('staffDashboard.billingPlanInfo', { plan: 'No disponible', status: 'No disponible' })}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
+                  <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro')}>{t('staffDashboard.billingPlanPro')}</button>
+                  <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise')}>{t('staffDashboard.billingPlanEnterprise')}</button>
+                </div>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 18 }}>
@@ -1116,8 +1213,7 @@ export default function StaffDashboard() {
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.staffModalEmailLabel')}</label>
-                <input type="email" className="glass-input" value={staffForm.email} onChange={e => setStaffForm(p => ({ ...p, email: e.target.value }))} placeholder={t('staffDashboard.staffModalEmailPlaceholder')} disabled={!!staffModal.editing} />
-                {!staffModal.editing && <small>{t('staffDashboard.staffModalEmailHint')}</small>}
+                <input type="email" className="glass-input" value={staffForm.email} onChange={e => setStaffForm(p => ({ ...p, email: e.target.value }))} placeholder={t('staffDashboard.staffModalEmailPlaceholder')} />
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.staffModalSpecialtiesLabel')}</label>
@@ -1125,7 +1221,14 @@ export default function StaffDashboard() {
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.staffModalPhotoLabel')}</label>
-                <input type="text" className="glass-input" value={staffForm.photo_url} onChange={e => setStaffForm(p => ({ ...p, photo_url: e.target.value }))} placeholder={t('staffDashboard.staffModalPhotoPlaceholder')} />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="text" className="glass-input" value={staffForm.photo_url} onChange={e => setStaffForm(p => ({ ...p, photo_url: e.target.value }))} placeholder={t('staffDashboard.staffModalPhotoPlaceholder')} style={{ flex: 1 }} />
+                  <input type="file" accept="image/*" onChange={handleStaffPhotoUpload} disabled={staffUploadingPhoto} style={{ display: 'none' }} id="staffPhotoInput" />
+                  <button type="button" className="dash-btn dash-btn-secondary" onClick={() => document.getElementById('staffPhotoInput')?.click()} disabled={staffUploadingPhoto}>
+                    {staffUploadingPhoto ? '⏳' : '📷'}
+                    {staffUploadingPhoto ? t('staffDashboard.uploading') : t('staffDashboard.upload')}
+                  </button>
+                </div>
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.staffModalBioLabel')}</label>
@@ -1247,7 +1350,7 @@ export default function StaffDashboard() {
                     </div>
                   </div>
                 )}
-                {selectedSuggested && <small style={{ color: 'var(--accent)', marginTop: 2, display: 'block' }}>✓ {t('staffDashboard.clientsHistoryTotal')} {selectedSuggested.total_appointments} {t('staffDashboard.clientsTableAppointments')}</small>}
+                {selectedSuggested && <small style={{ color: 'var(--accent)', marginTop: 2, display: 'block' }}>{t('staffDashboard.clientsHistoryTotal')} {selectedSuggested.total_appointments} {t('staffDashboard.clientsTableAppointments')}</small>}
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.newApptEmailLabel')}</label>

@@ -11,9 +11,10 @@ interface ServiceItem {
 interface LandingServicesSectionProps {
   services: ServiceItem[];
   fixImageUrl: (url: string | null | undefined) => string;
+  onSelectService?: (serviceId: number) => void;
 }
 
-export default function LandingServicesSection({ services, fixImageUrl }: LandingServicesSectionProps) {
+export default function LandingServicesSection({ services, fixImageUrl, onSelectService }: LandingServicesSectionProps) {
   const { t } = useTranslation();
   if (services.length === 0) return null;
 
@@ -23,7 +24,12 @@ export default function LandingServicesSection({ services, fixImageUrl }: Landin
       <p className="section-subtitle">{t('landingServices.subtitle')}</p>
       <div className="services-grid">
         {services.map(s => (
-          <div key={s.id} className="service-card">
+          <div 
+            key={s.id} 
+            className="service-card"
+            onClick={() => onSelectService?.(s.id)}
+            style={{ cursor: onSelectService ? 'pointer' : 'default' }}
+          >
             {s.image && (
               <div
                 className="service-image"

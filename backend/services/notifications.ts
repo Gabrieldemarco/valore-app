@@ -55,8 +55,8 @@ async function sendClientConfirmation(appointment, tenant) {
   try {
     // ✅ CORREGIDO: Usar SMTP_USER en lugar de EMAIL_USER
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 [SIMULADO] Email a:', appointment.client_email);
-      console.log('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
+      logger.info('📧 [SIMULADO] Email a:', appointment.client_email);
+      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
       return { success: true, simulated: true };
     }
 
@@ -69,7 +69,7 @@ async function sendClientConfirmation(appointment, tenant) {
       html
     });
 
-    console.log('✅ Email enviado:', info.messageId);
+    logger.info('✅ Email enviado:', info.messageId);
   } catch (error: any) {
     logger.error('❌ Error enviando email:', error.message);
   }
@@ -128,8 +128,8 @@ async function notifyStaff(appointment, tenant) {
 
   try {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 [SIMULADO] Alerta a staff:', recipients.join(', '));
-      console.log('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
+      logger.info('📧 [SIMULADO] Alerta a staff:', recipients.join(', '));
+      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
       return { success: true, simulated: true };
     }
 
@@ -143,7 +143,7 @@ async function notifyStaff(appointment, tenant) {
           subject: `📅 Nuevo turno: ${appointment.client_name}`,
           html
         });
-        console.log('✅ Alerta enviada a:', recipient, info.messageId);
+        logger.info('✅ Alerta enviada a:', recipient, info.messageId);
       } catch (err: any) {
         logger.error('❌ Error alertando a', recipient, err.message);
       }
@@ -186,8 +186,8 @@ async function sendStaffCredentials(staff: { name: string; email: string }, temp
 
   try {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 [SIMULADO] Credenciales enviadas a:', staff.email);
-      console.log('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
+      logger.info('📧 [SIMULADO] Credenciales enviadas a:', staff.email);
+      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
       return { success: true, simulated: true };
     }
     const transporter = createEmailTransporter();
@@ -197,7 +197,7 @@ async function sendStaffCredentials(staff: { name: string; email: string }, temp
       subject: `👋 Bienvenido a ${tenant.business_name} - Tus credenciales`,
       html
     });
-    console.log('✅ Credenciales enviadas a:', staff.email);
+    logger.info('✅ Credenciales enviadas a:', staff.email);
     return { success: true };
   } catch (error: any) {
     logger.error('❌ Error enviando credenciales a', staff.email, error.message);

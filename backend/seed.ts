@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
+import logger from './services/logger';
 
 const isLocal = (process.env.DATABASE_URL || '').includes('localhost') || (process.env.DATABASE_URL || '').includes('127.0.0.1');
 const pool = new Pool({
@@ -76,7 +77,7 @@ const DEFAULT_SERVICES: Record<string, { name: string; duration: number }[]> = {
 async function seed() {
   try {
     // Run migration
-    console.log('→ Ejecutando migración: category column...');
+    logger.info('→ Ejecutando migración: category column...');
     await query(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'peluqueria'`);
 
     for (const cat of CATEGORIES) {
@@ -88,7 +89,7 @@ async function seed() {
         // Check if already exists
         const exists = await query('SELECT id FROM tenants WHERE business_name = $1', [bizName]);
         if (exists.rows.length > 0) {
-          console.log(`  ∃ ${bizName} (${cat.key}) — ya existe, salteando`);
+          logger.info(`  ∃ ${bizName} (${cat.key}) — ya existe, salteando`);
           continue;
         }
 
@@ -118,13 +119,13 @@ async function seed() {
           );
         }
 
-        console.log(`  ✓ ${bizName} (${cat.key}) — creado`);
+        logger.info(`  ✓ ${bizName} (${cat.key}) — creado`);
       }
     }
 
-    console.log('\n✅ Seed completado exitosamente');
+    logger.info('\n✅ Seed completado exitosamente');
   } catch (err) {
-    console.error('❌ Error en seed:', err);
+    logger.error('❌ Error en seed:', err);
   } finally {
     await pool.end();
   }

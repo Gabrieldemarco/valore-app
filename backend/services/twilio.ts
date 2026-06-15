@@ -49,14 +49,14 @@ async function sendWhatsApp(to: string, body: string) {
   const from = twilioConfig?.from || process.env.TWILIO_WHATSAPP_FROM;
 
   if (!from) {
-    console.log('💬 [SIMULADO] WhatsApp a:', to);
-    console.log('⚠️ Configurar Twilio desde el panel de administración o en .env');
+    logger.info('💬 [SIMULADO] WhatsApp a:', to);
+    logger.info('⚠️ Configurar Twilio desde el panel de administración o en .env');
     return { success: true, simulated: true };
   }
 
   if (!twilioSid || !twilioToken) {
-    console.log('💬 [SIMULADO] WhatsApp a:', to);
-    console.log('⚠️ Configurar TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN en .env');
+    logger.info('💬 [SIMULADO] WhatsApp a:', to);
+    logger.info('⚠️ Configurar TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN en .env');
     return { success: true, simulated: true };
   }
 
@@ -69,7 +69,7 @@ async function sendWhatsApp(to: string, body: string) {
       body,
       to: ensureWhatsAppPrefix(to),
     });
-    console.log('✅ WhatsApp enviado, SID:', msg.sid);
+    logger.info('✅ WhatsApp enviado, SID:', msg.sid);
     return { success: true, sid: msg.sid };
   } catch (err: any) {
     logger.error('Error enviando WhatsApp', { error: err.message });

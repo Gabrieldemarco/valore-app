@@ -126,7 +126,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.get('/appointments', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
     try {
-      const { date, status, clientPhone, staffId } = (req.query as any);
+      const { date, dateFrom, dateTo, status, clientPhone, staffId } = (req.query as any);
       const page = parseInt(String(req.query.page ?? '1'), 10);
       const limit = parseInt(String(req.query.limit ?? '50'), 10);
       const pageNum = Math.max(1, page);
@@ -137,6 +137,8 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       const params = [req.user.tenant_id];
 
       if (date) { sql += ` AND a.appointment_date::date = $${params.length + 1}`; params.push(date); }
+      if (dateFrom) { sql += ` AND a.appointment_date::date >= $${params.length + 1}`; params.push(dateFrom); }
+      if (dateTo) { sql += ` AND a.appointment_date::date <= $${params.length + 1}`; params.push(dateTo); }
       if (status) { sql += ` AND a.status = $${params.length + 1}`; params.push(status); }
       if (clientPhone) { sql += ` AND a.client_phone LIKE $${params.length + 1}`; params.push(`%${clientPhone}%`); }
       if (staffId && staffId !== 'all') { sql += ` AND a.staff_id = $${params.length + 1}`; params.push(parseInt(staffId, 10)); }
@@ -208,7 +210,10 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
                 brand_primary_color, brand_secondary_color, brand_logo_url,
                 landing_description, landing_enabled, landing_hero_image,
                 landing_gallery, landing_team, landing_services_info,
-                landing_social_links, landing_custom_css, landing_layout, opening_hours, updated_at, plan, trial_end_date
+                landing_social_links, landing_custom_css, landing_layout, opening_hours, updated_at, plan, trial_end_date,
+                landing_background_color, landing_hero_height, landing_hero_width,
+                landing_primary_text_color, landing_secondary_text_color,
+                landing_primary_font, landing_secondary_font
           FROM tenants WHERE id = $1`,
         [req.user.tenant_id]
       );
@@ -438,6 +443,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_social_links, landing_custom_css, landing_layout,
       brand_primary_color, brand_secondary_color, brand_logo_url,
       opening_hours, lat, lng,
+      landing_background_color, landing_hero_height, landing_hero_width,
+      landing_primary_text_color, landing_secondary_text_color,
+      landing_primary_font, landing_secondary_font,
     } = body;
 
     const sql = `UPDATE tenants SET
@@ -463,8 +471,15 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
              opening_hours=COALESCE($20::jsonb,opening_hours),
              lat=COALESCE($21::double precision,lat),
              lng=COALESCE($22::double precision,lng),
+             landing_background_color=COALESCE($23,landing_background_color),
+             landing_hero_height=COALESCE($24::integer,landing_hero_height),
+             landing_hero_width=COALESCE($25::integer,landing_hero_width),
+             landing_primary_text_color=COALESCE($26,landing_primary_text_color),
+             landing_secondary_text_color=COALESCE($27,landing_secondary_text_color),
+             landing_primary_font=COALESCE($28,landing_primary_font),
+             landing_secondary_font=COALESCE($29,landing_secondary_font),
              updated_at=NOW()
-            WHERE id=$23 RETURNING *`;
+            WHERE id=$30 RETURNING *`;
 
     const params = [
       business_name, business_address, business_phone,
@@ -480,6 +495,13 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       brand_primary_color, brand_secondary_color, brand_logo_url,
       opening_hours ? JSON.stringify(opening_hours) : null,
       lat ?? null, lng ?? null,
+      landing_background_color,
+      landing_hero_height,
+      landing_hero_width,
+      landing_primary_text_color,
+      landing_secondary_text_color,
+      landing_primary_font,
+      landing_secondary_font,
       tenantId,
     ];
 
@@ -491,6 +513,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('notification_email').optional().isEmail().normalizeEmail(),
     body('brand_primary_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
     body('brand_secondary_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('landing_background_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('landing_hero_height').optional().isInt({ min: 30, max: 100 }).withMessage('Altura inválida'),
+    body('landing_hero_width').optional().isInt({ min: 50, max: 200 }).withMessage('Ancho inválido'),
+    body('landing_primary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('landing_secondary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
   ];
 
   router.put('/tenant/settings', authenticateStaff, checkTenantActive, checkTrialExpiration, settingsValidation, validate, async (req, res) => {
@@ -578,23 +605,33 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   const updateStaffValidation = [
     body('name').optional().trim().isLength({ min: 2, max: 100 }).escape(),
+    body('email').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
   ];
 
   router.put('/tenant/staff/:id', authenticateStaff, checkTenantActive, updateStaffValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, specialties, photo_url, bio, individual_hours, active } = req.body;
+      const { name, email, specialties, photo_url, bio, individual_hours, active } = req.body;
+
+      if (email) {
+        const existing = await queryOne(
+          'SELECT id FROM staff WHERE email = $1 AND id != $2',
+          [email, id]
+        );
+        if (existing) return res.status(400).json({ error: 'Email ya registrado en otra cuenta' });
+      }
 
       const result = await query(
         `UPDATE staff SET
            name = COALESCE($1, name),
-           specialties = COALESCE($2::TEXT[], specialties),
-           photo_url = COALESCE($3, photo_url),
-           bio = COALESCE($4, bio),
-           individual_hours = COALESCE($5::JSONB, individual_hours),
-           active = COALESCE($6::BOOLEAN, active)
-         WHERE id = $7 AND tenant_id = $8 RETURNING *`,
-        [name, specialties, photo_url, bio, individual_hours ? JSON.stringify(individual_hours) : null, active, id, req.user.tenant_id]
+           email = COALESCE($2, email),
+           specialties = COALESCE($3::TEXT[], specialties),
+           photo_url = COALESCE($4, photo_url),
+           bio = COALESCE($5, bio),
+           individual_hours = COALESCE($6::JSONB, individual_hours),
+           active = COALESCE($7::BOOLEAN, active)
+         WHERE id = $8 AND tenant_id = $9 RETURNING *`,
+        [name, email, specialties, photo_url, bio, individual_hours ? JSON.stringify(individual_hours) : null, active, id, req.user.tenant_id]
       );
 
       if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquero no encontrado' });
@@ -602,6 +639,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       res.json({ message: 'Peluquero actualizado', staff: result.rows[0] });
     } catch (err: any) {
       logger.error(err);
+      if (err.code === '23505') return res.status(400).json({ error: 'Email ya registrado en otra cuenta' });
       res.status(500).json({ error: 'Error al actualizar peluquero' });
     }
   });

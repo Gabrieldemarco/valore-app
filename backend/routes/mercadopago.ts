@@ -13,9 +13,10 @@ import { sendClientConfirmation, notifyStaff } from '../services/notifications';
 /**
  * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} createMercadoPagoPreference
  * @param {string} MP_CURRENCY
+ * @param {import('express').RequestHandler} webhookLimiter
  * @returns {import('express').Router}
  */
-export default function(createMercadoPagoPreference, MP_CURRENCY) {
+export default function(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter) {
   const router = Router();
 
   class WebhookError extends Error {
@@ -125,7 +126,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY) {
     }
   });
 
-  router.post('/payments/mercadopago/webhook', async (req, res) => {
+  router.post('/payments/mercadopago/webhook', webhookLimiter, async (req, res) => {
     try {
       const verification = verifyMercadoPagoWebhook(req);
       if (!verification.ok) {

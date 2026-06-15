@@ -48,10 +48,17 @@ export function asyncHandler(fn: (req: any, res: any, next: any) => Promise<any>
 }
 
 export function formatError(err: any): { status: number; body: any } {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   if (err instanceof AppError) {
+    const body: any = { error: err.message, code: err.code };
+    // Solo incluir details en desarrollo o si está explícitamente habilitado
+    if (!isProduction || process.env.INCLUDE_ERROR_DETAILS === 'true') {
+      body.details = err.details;
+    }
     return {
       status: err.statusCode,
-      body: { error: err.message, code: err.code, details: err.details },
+      body,
     };
   }
   return {

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { X, Share2, Download } from 'lucide-react';
 
 interface Props {
   slug: string;
@@ -51,11 +52,15 @@ export default function SalonQR({ slug, services, onClose }: Props) {
       <div className="glass-panel" style={{ maxWidth: 340, width: '100%', padding: 32 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 className="text-gradient" style={{ margin: 0, fontSize: 18 }}>Compartir peluquería</h3>
-          <button onClick={onClose} className="dash-close-btn" style={{ background: 'none', border: 'none', color: '#a1a1aa', fontSize: 20, cursor: 'pointer' }}>✕</button>
+          <button onClick={onClose} className="dash-close-btn" style={{ background: 'none', border: 'none', color: '#a1a1aa', fontSize: 20, cursor: 'pointer' }}><X size={20} /></button>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div ref={canvasRef}>
             <QRCodeCanvas value={url} size={200} bgColor="#120c0c" fgColor="#c8827d" level="M" />
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+            <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 12, padding: '8px 14px' }}><Download size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Descargar</button>
+            <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 12, padding: '8px 14px' }}><Share2 size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Compartir</button>
           </div>
           <p style={{ color: '#a1a1aa', fontSize: 13, marginTop: 16, wordBreak: 'break-all' }}>{url}</p>
           {services.length > 0 && (

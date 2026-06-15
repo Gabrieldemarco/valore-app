@@ -1,4 +1,5 @@
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { Loader } from 'lucide-react';
 
 export default function PushNotificationToggle() {
   const { supported, permission, subscribed, loading, error, subscribe, unsubscribe } = usePushNotifications();
@@ -40,7 +41,7 @@ export default function PushNotificationToggle() {
             whiteSpace: 'nowrap',
           }}
         >
-          {loading ? '…' : subscribed ? 'Desactivar' : 'Activar'}
+          {loading ? <Loader size={16} className="spin-icon" /> : subscribed ? 'Desactivar' : 'Activar'}
         </button>
       </div>
       {error && (

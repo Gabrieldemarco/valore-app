@@ -77,27 +77,27 @@ describe('LandingEditor', () => {
     setupFetch();
     renderEditor();
     await waitFor(() => {
-      expect(screen.getByText('🏢 General')).toBeInTheDocument();
+      expect(screen.getByText('General')).toBeInTheDocument();
     });
-    expect(screen.getByText('🎨 Branding')).toBeInTheDocument();
-    expect(screen.getByText('🛎️ Servicios')).toBeInTheDocument();
-    expect(screen.getByText('🕒 Horarios')).toBeInTheDocument();
-    expect(screen.getByText('📷 Galería')).toBeInTheDocument();
-    expect(screen.getByText('👥 Equipo')).toBeInTheDocument();
-    expect(screen.getByText('🔗 Redes')).toBeInTheDocument();
-    expect(screen.getByText('⚙️ CSS')).toBeInTheDocument();
-    expect(screen.getByText('🧩 Layout')).toBeInTheDocument();
+    expect(screen.getByText('Branding')).toBeInTheDocument();
+    expect(screen.getByText('Servicios')).toBeInTheDocument();
+    expect(screen.getByText('Horarios')).toBeInTheDocument();
+    expect(screen.getByText('Galería')).toBeInTheDocument();
+    expect(screen.getByText('Equipo')).toBeInTheDocument();
+    expect(screen.getByText('Redes')).toBeInTheDocument();
+    expect(screen.getByText('CSS')).toBeInTheDocument();
+    expect(screen.getByText('Layout')).toBeInTheDocument();
   });
 
   it('switches tabs on click', async () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('🎨 Branding'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Branding'));
     await waitFor(() => {
       const activeTab = document.querySelector('.tab-btn.active');
-      expect(activeTab).toHaveTextContent('🎨 Branding');
+      expect(activeTab).toHaveTextContent('Branding');
     });
   });
 
@@ -115,8 +115,8 @@ describe('LandingEditor', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('🛎️ Servicios'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Servicios'));
     await waitFor(() => {
       const nameInputs = document.querySelectorAll<HTMLInputElement>('input[placeholder="Nombre"]');
       const corte = Array.from(nameInputs).find(i => i.value === 'Corte');
@@ -128,8 +128,8 @@ describe('LandingEditor', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('🛎️ Servicios'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Servicios'));
     await waitFor(() => {
       expect(screen.getByText('+ Nuevo Servicio')).toBeInTheDocument();
     });
@@ -139,8 +139,8 @@ describe('LandingEditor', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('🕒 Horarios'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Horarios'));
     await waitFor(() => {
       expect(screen.getByText('Días Laborables')).toBeInTheDocument();
       expect(screen.getByText('Hora Apertura')).toBeInTheDocument();
@@ -152,8 +152,8 @@ describe('LandingEditor', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('🔗 Redes'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Redes'));
     await waitFor(() => {
       expect(screen.getByText('Instagram')).toBeInTheDocument();
       expect(screen.getByText('Facebook')).toBeInTheDocument();
@@ -165,8 +165,8 @@ describe('LandingEditor', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
-    await waitFor(() => expect(screen.getByText('🏢 General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('👥 Equipo'));
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Equipo'));
     await waitFor(() => {
       expect(screen.getByDisplayValue('Ana')).toBeInTheDocument();
     }, { timeout: 3000 });

@@ -16,7 +16,7 @@ import { PLANS, MP_CURRENCY } from './services/payment-config';
  * @returns {Promise<{success: boolean, suspended?: number, error?: string}>}
  */
 async function suspendExpiredFreeTrials() {
-    console.log('🔍 [CRON] Buscando tenants free con trial vencido...');
+    logger.info('🔍 [CRON] Buscando tenants free con trial vencido...');
     try {
         const result = await query(
             `SELECT id, slug, business_name, notification_email, trial_end_date
@@ -29,11 +29,11 @@ async function suspendExpiredFreeTrials() {
         const expiredTenants = result.rows || [];
 
         if (expiredTenants.length === 0) {
-            console.log('✅ No hay tenants free con trial vencido');
+            logger.info('✅ No hay tenants free con trial vencido');
             return { success: true, suspended: 0 };
         }
 
-        console.log(`⚠️ Se suspenderán ${expiredTenants.length} tenants con trial vencido`);
+        logger.info(`⚠️ Se suspenderán ${expiredTenants.length} tenants con trial vencido`);
         let suspendedCount = 0;
         const transporter = createEmailTransporter();
 
@@ -63,16 +63,16 @@ async function suspendExpiredFreeTrials() {
                             </div>
                         `,
                     });
-                    console.log(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
+                    logger.info(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
                 }
-                console.log(`🔒 Tenant ${tenant.business_name} (ID: ${tenant.id}) suspendido por trial expirado`);
+                logger.info(`🔒 Tenant ${tenant.business_name} (ID: ${tenant.id}) suspendido por trial expirado`);
                 suspendedCount++;
             } catch (err: any) {
                 logger.error(`❌ Error suspendiendo tenant ${tenant.business_name}:`, err.message);
             }
         }
 
-        console.log(`✅ Suspensión completada. Total suspendidos: ${suspendedCount}`);
+        logger.info(`✅ Suspensión completada. Total suspendidos: ${suspendedCount}`);
         return { success: true, suspended: suspendedCount };
     } catch (err: any) {
         logger.error('❌ Error en suspendExpiredFreeTrials:', err);
@@ -86,14 +86,14 @@ async function suspendExpiredFreeTrials() {
  * @returns {Promise<{success: boolean, period?: string, invoiced?: number, errors?: number, results?: Array, error?: string, message?: string}>}
  */
 async function generateMonthlyInvoices() {
-    console.log('🧾 [CRON] Iniciando generación de facturas mensuales...');
+    logger.info('🧾 [CRON] Iniciando generación de facturas mensuales...');
 
     try {
         const now = new Date();
         const currentMonth = now.getMonth() + 1; // 1-12
         const currentYear = now.getFullYear();
 
-        console.log(`📅 Período de facturación: ${currentMonth}/${currentYear}`);
+        logger.info(`📅 Período de facturación: ${currentMonth}/${currentYear}`);
 
         // Obtener tenants activos con planes pagos (excluyendo free y trial)
         const tenantsResult = await query(
@@ -107,7 +107,7 @@ async function generateMonthlyInvoices() {
         const tenants = tenantsResult.rows || [];
 
         if (tenants.length === 0) {
-            console.log('✅ No hay tenants elegibles para facturación');
+            logger.info('✅ No hay tenants elegibles para facturación');
             return { success: true, invoiced: 0, message: 'No hay tenants elegibles' };
         }
 
@@ -117,7 +117,7 @@ async function generateMonthlyInvoices() {
 
         for (const tenant of tenants) {
             try {
-                console.log(`\n🔍 Procesando: ${tenant.business_name} (${tenant.slug})`);
+                logger.info(`\n🔍 Procesando: ${tenant.business_name} (${tenant.slug})`);
 
                 // Verificar si ya tiene factura para este mes
                 const existingInvoice = await queryOne(
@@ -129,14 +129,14 @@ async function generateMonthlyInvoices() {
                 );
 
                 if (existingInvoice) {
-                    console.log(`⏭️ ${tenant.business_name}: Ya tiene factura para ${currentMonth}/${currentYear}`);
+                    logger.info(`⏭️ ${tenant.business_name}: Ya tiene factura para ${currentMonth}/${currentYear}`);
                     results.push({ tenant: tenant.business_name, status: 'skipped', reason: 'Ya facturado este mes' });
                     continue;
                 }
 
                 const planInfo = PLANS[tenant.plan];
                 if (!planInfo || planInfo.price <= 0) {
-                    console.log(`⚠️ ${tenant.business_name}: Plan sin precio definido (${tenant.plan})`);
+                    logger.info(`⚠️ ${tenant.business_name}: Plan sin precio definido (${tenant.plan})`);
                     results.push({ tenant: tenant.business_name, status: 'skipped', reason: 'Plan sin precio' });
                     continue;
                 }
@@ -159,7 +159,7 @@ async function generateMonthlyInvoices() {
                 );
 
                 const invoiceId = insertResult.rows[0].id;
-                console.log(`✅ ${tenant.business_name}: Factura #${invoiceNumber} creada (ID: ${invoiceId})`);
+                logger.info(`✅ ${tenant.business_name}: Factura #${invoiceNumber} creada (ID: ${invoiceId})`);
 
                 // Enviar email de notificación
                 const recipient = tenant.billing_email || tenant.notification_email;
@@ -194,7 +194,7 @@ async function generateMonthlyInvoices() {
                                 </div>
                             `,
                         });
-                        console.log(`📧 Email enviado a ${recipient}`);
+                        logger.info(`📧 Email enviado a ${recipient}`);
                     } catch (emailErr: any) {
                         logger.error(`❌ Error enviando email a ${tenant.business_name}:`, emailErr.message);
                     }
@@ -209,11 +209,11 @@ async function generateMonthlyInvoices() {
             }
         }
 
-        console.log('\n📊 === RESUMEN DE FACTURACIÓN ===');
-        console.log(`✅ Facturas creadas: ${invoicedCount}`);
-        console.log(`❌ Errores: ${errorCount}`);
-        console.log(`⏭️ Omitidos: ${results.filter(r => r.status === 'skipped').length}`);
-        console.log('===============================\n');
+        logger.info('\n📊 === RESUMEN DE FACTURACIÓN ===');
+        logger.info(`✅ Facturas creadas: ${invoicedCount}`);
+        logger.info(`❌ Errores: ${errorCount}`);
+        logger.info(`⏭️ Omitidos: ${results.filter(r => r.status === 'skipped').length}`);
+        logger.info('===============================\n');
 
         return { success: true, period: `${currentMonth}/${currentYear}`, invoiced: invoicedCount, errors: errorCount, results };
     } catch (err: any) {
@@ -228,7 +228,7 @@ async function generateMonthlyInvoices() {
  * @returns {Promise<{success: boolean, reminded?: number, error?: string}>}
  */
 async function sendPaymentReminders() {
-    console.log('🔔 [CRON] Enviando recordatorios de pago...');
+    logger.info('🔔 [CRON] Enviando recordatorios de pago...');
 
     try {
         const now = new Date();
@@ -247,11 +247,11 @@ async function sendPaymentReminders() {
         const pendingInvoices = pendingResult.rows || [];
 
         if (pendingInvoices.length === 0) {
-            console.log('✅ No hay facturas por vencer en los próximos días');
+            logger.info('✅ No hay facturas por vencer en los próximos días');
             return { success: true, reminded: 0 };
         }
 
-        console.log(`📧 Enviando ${pendingInvoices.length} recordatorios de pago...`);
+        logger.info(`📧 Enviando ${pendingInvoices.length} recordatorios de pago...`);
         let sentCount = 0;
         const transporter = createEmailTransporter();
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -285,10 +285,10 @@ async function sendPaymentReminders() {
                 `,
             });
             sentCount++;
-            console.log(`📧 Recordatorio enviado a ${recipient} (${inv.invoice_number})`);
+            logger.info(`📧 Recordatorio enviado a ${recipient} (${inv.invoice_number})`);
         }
 
-        console.log(`✅ Recordatorios enviados: ${sentCount}/${pendingInvoices.length}`);
+        logger.info(`✅ Recordatorios enviados: ${sentCount}/${pendingInvoices.length}`);
         return { success: true, reminded: sentCount };
     } catch (err: any) {
         logger.error('💥 Error en sendPaymentReminders:', err);
@@ -302,7 +302,7 @@ async function sendPaymentReminders() {
  * @returns {Promise<{success: boolean, suspended?: number, error?: string}>}
  */
 async function suspendOverdueTenants() {
-    console.log('🔒 [CRON] Verificando tenants con facturas vencidas...');
+    logger.info('🔒 [CRON] Verificando tenants con facturas vencidas...');
 
     try {
         const overdueDays = 7;
@@ -319,11 +319,11 @@ async function suspendOverdueTenants() {
         const overdueTenants = overdueResult.rows || [];
 
         if (overdueTenants.length === 0) {
-            console.log('✅ No hay tenants con facturas vencidas para suspender');
+            logger.info('✅ No hay tenants con facturas vencidas para suspender');
             return { success: true, suspended: 0 };
         }
 
-        console.log(`⚠️ Encontrados ${overdueTenants.length} tenants con facturas vencidas`);
+        logger.info(`⚠️ Encontrados ${overdueTenants.length} tenants con facturas vencidas`);
         let suspendedCount = 0;
         const transporter = createEmailTransporter();
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -352,16 +352,16 @@ async function suspendOverdueTenants() {
                             </div>
                         `,
                     });
-                    console.log(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
+                    logger.info(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
                 }
-                console.log(`🔒 ${tenant.business_name}: Cuenta suspendida (${daysOverdue} días vencidos)`);
+                logger.info(`🔒 ${tenant.business_name}: Cuenta suspendida (${daysOverdue} días vencidos)`);
                 suspendedCount++;
             } catch (err: any) {
                 logger.error(`❌ Error suspendiendo ${tenant.business_name}:`, err.message);
             }
         }
 
-        console.log(`✅ Tenants suspendidos: ${suspendedCount}/${overdueTenants.length}`);
+        logger.info(`✅ Tenants suspendidos: ${suspendedCount}/${overdueTenants.length}`);
         return { success: true, suspended: suspendedCount };
     } catch (err: any) {
         logger.error('💥 Error en suspendOverdueTenants:', err);

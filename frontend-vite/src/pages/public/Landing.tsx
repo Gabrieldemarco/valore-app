@@ -27,6 +27,13 @@ interface TenantData {
   business_phone: string | null;
   business_address: string | null;
   opening_hours: Record<string, unknown> | null;
+  landing_background_color: string | null;
+  landing_hero_height: number | null;
+  landing_hero_width: number | null;
+  landing_primary_text_color: string | null;
+  landing_secondary_text_color: string | null;
+  landing_primary_font: string | null;
+  landing_secondary_font: string | null;
 }
 
 interface LayoutBlock {
@@ -84,6 +91,7 @@ const DEFAULT_LAYOUT: LayoutBlock[] = [
   { id: 'galeria', type: 'gallery', enabled: true },
   { id: 'equipo', type: 'team', enabled: true },
   { id: 'reservar', type: 'booking', enabled: true },
+  { id: 'hours', type: 'hours', enabled: true },
 ];
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -195,13 +203,28 @@ export default function Landing() {
 
   // ── Side effects ──
   useEffect(() => {
+    const links: HTMLLinkElement[] = [];
+    const fontsToLoad: string[] = [];
+    if (tenant?.landing_primary_font && tenant.landing_primary_font !== 'system') fontsToLoad.push(tenant.landing_primary_font);
+    if (tenant?.landing_secondary_font && tenant.landing_secondary_font !== 'system' && tenant.landing_secondary_font !== tenant.landing_primary_font) fontsToLoad.push(tenant.landing_secondary_font);
+    for (const font of fontsToLoad) {
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap`;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+      links.push(link);
+    }
     if (tenant?.landing_custom_css) {
       const el = document.createElement('style');
       el.id = 'landing-custom-css';
       el.textContent = tenant.landing_custom_css;
       document.head.appendChild(el);
-      return () => { const s = document.getElementById('landing-custom-css'); if (s) s.remove(); };
+      return () => {
+        el.remove();
+        links.forEach(l => l.remove());
+      };
     }
+    return () => { links.forEach(l => l.remove()); };
   }, [tenant]);
 
   useEffect(() => {
@@ -272,7 +295,9 @@ export default function Landing() {
 
   const layout = useMemo(() => {
     const l = tenant?.landing_layout;
-    return Array.isArray(l) && l.length > 0 ? l : DEFAULT_LAYOUT;
+    const saved = Array.isArray(l) && l.length > 0 ? (l as LayoutBlock[]) : [];
+    const savedIds = new Set(saved.map(b => b.id));
+    return [...saved, ...DEFAULT_LAYOUT.filter(b => !savedIds.has(b.id))];
   }, [tenant?.landing_layout]);
 
   // ── Section renderer ──
@@ -282,24 +307,31 @@ export default function Landing() {
     switch (block.type) {
       case 'hero':
         return (
-          <LandingHeroSection
-            key={block.id}
-            businessName={tenant!.business_name}
-            description={tenant!.landing_description}
-            heroImage={tenant!.landing_hero_image}
-            logoUrl={tenant!.brand_logo_url}
-            fixImageUrl={fixImageUrl}
-            category={tenant!.category}
-          />
+          <section key={block.id} id="hero">
+            <LandingHeroSection
+              businessName={tenant!.business_name}
+              description={tenant!.landing_description}
+              heroImage={tenant!.landing_hero_image}
+              logoUrl={tenant!.brand_logo_url}
+              fixImageUrl={fixImageUrl}
+              category={tenant!.category}
+            />
+          </section>
         );
 
       case 'services':
         return (
-          <LandingServicesSection
-            key={block.id}
-            services={services}
-            fixImageUrl={fixImageUrl}
-          />
+          <section key={block.id} id="servicios">
+            <LandingServicesSection
+              services={services}
+              fixImageUrl={fixImageUrl}
+              onSelectService={(serviceId) => {
+                setSelectedService(serviceId);
+                setStep(2);
+                document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
+          </section>
         );
 
       case 'gallery':
@@ -319,21 +351,22 @@ export default function Landing() {
 
       case 'team':
         return team.length > 0 ? (
-          <LandingTeamSection
-            key={block.id}
-            team={team}
-            staff={staff}
-            gallery={[]}
-            fixImageUrl={fixImageUrl}
-            onSelectStaff={(id) => { setSelectedStaff(id); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); }}
-            onOpenLightbox={setLightboxIdx}
-          />
+          <section key={block.id} id="equipo">
+            <LandingTeamSection
+              team={team}
+              staff={staff}
+              gallery={[]}
+              fixImageUrl={fixImageUrl}
+              onSelectStaff={(id) => { setSelectedStaff(id); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); }}
+              onOpenLightbox={setLightboxIdx}
+            />
+          </section>
         ) : null;
 
       case 'booking':
         return (
-          <LandingBookingSection
-            key={block.id}
+          <section key={block.id} id="reservar">
+            <LandingBookingSection
             staff={staff}
             services={services}
             slots={slots}
@@ -380,6 +413,32 @@ export default function Landing() {
             onSetRecurringFrequency={setRecurringFrequency}
             onSetRecurringCount={setRecurringCount}
           />
+          </section>
+        );
+
+      case 'hours':
+        return (
+          <section key={block.id} id="horarios">
+            <h2 className="section-title">{t('landing.hoursTitle')}</h2>
+            <p className="section-subtitle">{t('landing.hoursSubtitle')}</p>
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+              {(() => {
+                const h = tenant?.opening_hours as Record<string, unknown> | null;
+                const startHour = (h?.startHour as number) ?? 9;
+                const endHour = (h?.endHour as number) ?? 19;
+                const workDays = (h?.workDays as number[]) ?? [1, 2, 3, 4, 5];
+                const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                return dayNames.map((name, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span style={{ fontWeight: 600 }}>{name}</span>
+                    <span style={{ color: workDays.includes(i) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                      {workDays.includes(i) ? `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00` : 'Cerrado'}
+                    </span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </section>
         );
 
       case 'custom':

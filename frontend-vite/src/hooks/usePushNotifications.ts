@@ -80,6 +80,7 @@ export function usePushNotifications() {
 
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg || !reg.active) {
+        if (!import.meta.env.PROD) { setLoading(false); return; }
         try {
           reg = await navigator.serviceWorker.register('/sw.js');
         } catch (swErr: any) {

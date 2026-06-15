@@ -1,9 +1,10 @@
 import '@testing-library/jest-dom';
 import { clearApiCache } from '../api/client';
 import { beforeEach, vi } from 'vitest';
+import '../i18n';
 
 vi.mock('i18next-browser-languagedetector', () => {
-  function MockDetector() {
+  function MockDetector(this: { type: string }) {
     this.type = 'languageDetector';
   }
   MockDetector.prototype.init = function () {};
@@ -12,8 +13,6 @@ vi.mock('i18next-browser-languagedetector', () => {
   MockDetector.type = 'languageDetector';
   return { default: MockDetector };
 });
-
-import i18n from '../i18n';
 
 beforeEach(() => {
   clearApiCache();

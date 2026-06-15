@@ -231,6 +231,14 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '30'),
+  message: { error: 'Demasiadas solicitudes de webhook' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 initDB().then(async () => {
   await loadPlanPricesFromDB(query);
 }).catch(err => logger.error('Error initDB', { error: err.message }));
@@ -242,7 +250,7 @@ app.use(i18nMiddleware);
 app.use('/p', require('./routes/public').default(generateAvailableSlots, appointmentLimiter, publicLimiter));
 app.use('/api', apiLimiter);
 app.use('/api', require('./routes/auth').default(loginLimiter, passwordResetLimiter));
-app.use('/api', require('./routes/mercadopago').default(createMercadoPagoPreference, MP_CURRENCY));
+app.use('/api', require('./routes/mercadopago').default(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter));
 app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS));
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
 app.use('/api', require('./routes/misc').default(apiLimiter));
@@ -440,37 +448,37 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 // ========== PROGRAMAR TAREAS CRON ==========
 cron.schedule('0 0 1 * *', async () => {
-  console.log('⏰ Ejecutando facturación automática programada...');
+  logger.info('⏰ Ejecutando facturación automática programada...');
   try {
     const result = await generateMonthlyInvoices();
-    console.log('🧾 Resultado facturación:', result);
+    logger.info('🧾 Resultado facturación:', result);
   } catch (err: any) {
     logger.error('❌ Error en facturación automática:', err);
   }
 });
 
 cron.schedule('0 8 * * *', async () => {
-  console.log('🔍 Ejecutando verificación de trials vencidos...');
+  logger.info('🔍 Ejecutando verificación de trials vencidos...');
   try {
     const result = await suspendExpiredFreeTrials();
-    console.log('🔒 Resultado suspensión de trials:', result);
+    logger.info('🔒 Resultado suspensión de trials:', result);
   } catch (err: any) {
     logger.error('❌ Error en suspensión de trials:', err);
   }
 });
 
 cron.schedule('30 8 * * *', async () => {
-  console.log('🔔 Ejecutando recordatorios de turnos del día...');
+  logger.info('🔔 Ejecutando recordatorios de turnos del día...');
   try {
     const result = await sendAppointmentReminders();
-    console.log('🔔 Resultado recordatorios:', result);
+    logger.info('🔔 Resultado recordatorios:', result);
   } catch (err: any) {
     logger.error('❌ Error en recordatorios de turnos:', err);
   }
 });
 
 cron.schedule('0 9 * * *', async () => {
-  console.log('🔔 Revisando tenants con trial por expirar...');
+  logger.info('🔔 Revisando tenants con trial por expirar...');
   try {
     const result = await query(
       `SELECT id, business_name, notification_email, trial_end_date
@@ -492,7 +500,7 @@ cron.schedule('0 9 * * *', async () => {
         subject: 'Tu prueba gratuita está por terminar',
         html: `<p>Hola ${tenant.business_name},</p><p>Tu período de prueba de 15 días finaliza en ${daysLeft} días. Para continuar usando todos los beneficios, contrata un plan.</p><p>Saludos,<br>Equipo Velsoie</p>`,
       });
-      console.log(`📧 Recordatorio enviado a ${tenant.notification_email} (${daysLeft} días restantes)`);
+      logger.info(`📧 Recordatorio enviado a ${tenant.notification_email} (${daysLeft} días restantes)`);
     }
   } catch (err: any) {
     logger.error('Error en recordatorio de trial:', err);
@@ -500,43 +508,43 @@ cron.schedule('0 9 * * *', async () => {
 });
 
 cron.schedule('0 10 * * *', async () => {
-  console.log('🔔 Ejecutando recordatorios de pago...');
+  logger.info('🔔 Ejecutando recordatorios de pago...');
   try {
     const result = await sendPaymentReminders();
-    console.log('📧 Resultado recordatorios:', result);
+    logger.info('📧 Resultado recordatorios:', result);
   } catch (err: any) {
     logger.error('❌ Error en recordatorios de pago:', err);
   }
 });
 
 cron.schedule('0 3 * * *', async () => {
-  console.log('💾 Ejecutando backup de base de datos...');
+  logger.info('💾 Ejecutando backup de base de datos...');
   try {
     const result = await backupDatabase();
-    console.log('💾 Resultado backup:', result);
+    logger.info('💾 Resultado backup:', result);
   } catch (err: any) {
     logger.error('❌ Error en backup automático:', err);
   }
 });
 
 cron.schedule('0 23 * * *', async () => {
-  console.log('🔒 Verificando tenants con facturas vencidas...');
+  logger.info('🔒 Verificando tenants con facturas vencidas...');
   try {
     const result = await suspendOverdueTenants();
-    console.log('🔒 Resultado suspensiones:', result);
+    logger.info('🔒 Resultado suspensiones:', result);
   } catch (err: any) {
     logger.error('❌ Error en suspensiones:', err);
   }
 });
 
-console.log('⏰ Tareas programadas:');
-console.log('  • Facturación: Día 1 de cada mes a las 00:00');
-console.log('  • Backup DB: Diario a las 03:00');
-console.log('  • Suspensión trials: Diario a las 08:00');
-console.log('  • Recordatorio turnos: Diario a las 08:30');
-console.log('  • Recordatorio trial: Diario a las 09:00');
-console.log('  • Recordatorio pagos: Diario a las 10:00');
-console.log('  • Suspensión vencidos: Diario a las 23:00');
+logger.info('⏰ Tareas programadas:');
+logger.info('  • Facturación: Día 1 de cada mes a las 00:00');
+logger.info('  • Backup DB: Diario a las 03:00');
+logger.info('  • Suspensión trials: Diario a las 08:00');
+logger.info('  • Recordatorio turnos: Diario a las 08:30');
+logger.info('  • Recordatorio trial: Diario a las 09:00');
+logger.info('  • Recordatorio pagos: Diario a las 10:00');
+logger.info('  • Suspensión vencidos: Diario a las 23:00');
 
 // ========== INICIAR SERVIDOR ==========
 const PORT = process.env.PORT || 3000;
@@ -560,11 +568,11 @@ export = app;
  * @param {string} signal
  */
 function gracefulShutdown(signal) {
-  console.log(`\n🛑 Recibido ${signal}, cerrando servidor...`);
+  logger.info(`\n🛑 Recibido ${signal}, cerrando servidor...`);
   server.close(() => {
-    console.log('✅ HTTP server cerrado');
+    logger.info('✅ HTTP server cerrado');
     pool.end().then(async () => {
-      console.log('✅ Pool de DB cerrado');
+      logger.info('✅ Pool de DB cerrado');
       await closeRedis();
       process.exit(0);
     }).catch(err => {

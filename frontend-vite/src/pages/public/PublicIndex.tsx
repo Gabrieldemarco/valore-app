@@ -87,11 +87,6 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
   },
 ];
 
-function getServiceCategories(salon: Salon): string[] {
-  const services = (salon.services || []).map(s => typeof s === 'object' ? (s as { name?: string })?.name || '' : s).join(' ').toLowerCase();
-  return SERVICE_CATEGORIES.filter(cat => cat.keywords.some(kw => services.includes(kw))).map(c => c.key);
-}
-
 export default function PublicIndex() {
   const { t, i18n } = useTranslation();
   const geo = useGeo(i18n.language);
@@ -103,7 +98,9 @@ export default function PublicIndex() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const gridRef = useRef<HTMLDivElement>(null);
+  const featuredGridRef = useRef<HTMLDivElement>(null);
+  const trendingGridRef = useRef<HTMLDivElement>(null);
+  const newGridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     api.get<TenantsResponse>('/api/tenants')
       .then(data => {
@@ -167,19 +164,34 @@ export default function PublicIndex() {
     document.getElementById('salons')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const scrollToSalon = useCallback((idx: number) => {
-    if (!gridRef.current) return;
-    const cards = gridRef.current.querySelectorAll<HTMLElement>('.salon-link');
+  const scrollToSalon = useCallback((idx: number, ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return;
+    const cards = ref.current.querySelectorAll<HTMLElement>('.salon-link');
     if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
   }, []);
 
-  const dotCount = useMemo(() => {
-    if (!gridRef.current) return Math.min(filtered.length, 10);
-    const cardWidth = gridRef.current.querySelector<HTMLElement>('.salon-link')?.offsetWidth || 350;
-    const containerWidth = gridRef.current.offsetWidth || 1200;
+  const getDotCount = useCallback((ref: React.RefObject<HTMLDivElement | null>, count: number) => {
+    if (!ref.current) return Math.min(count, 10);
+    const cardWidth = ref.current.querySelector<HTMLElement>('.salon-link')?.offsetWidth || 350;
+    const containerWidth = ref.current.offsetWidth || 1200;
     const visible = Math.max(1, Math.floor(containerWidth / cardWidth));
-    return Math.max(0, Math.ceil(filtered.length / visible));
-  }, [filtered.length]);
+    return Math.max(0, Math.ceil(count / visible));
+  }, []);
+
+  // Categorizar salones
+  const categorizedSalons = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) => (b.id || 0) - (a.id || 0)); // Ordenar por ID descendente (nuevos primero)
+    const total = sorted.length;
+    
+    // Distribuir salones en las tres categorías
+    const perCategory = Math.max(2, Math.ceil(total / 3)); // Mínimo 2 por categoría
+    
+    return {
+      featured: sorted.slice(0, perCategory),
+      trending: sorted.slice(perCategory, perCategory * 2),
+      new: sorted.slice(perCategory * 2, perCategory * 3),
+    };
+  }, [filtered]);
 
   return (
     <>
@@ -268,34 +280,15 @@ export default function PublicIndex() {
       </section>
 
       <main className="container salons-section" id="salons">
-        <div className="section-header">
-          <h2 className="section-title">{countryName ? t('publicIndex.sectionTitle', { country: countryName }) : t('publicIndex.sectionTitle')}</h2>
-          <p className="section-subtitle">{t('publicIndex.sectionSubtitle')}</p>
-        </div>
-
-        <div className="salons-slider-container">
-          {loading && (
-            <div className="loading">
-              <div className="spinner"></div>
-              {t('publicIndex.loadingSalons')}
+        {/* Salones Destacados */}
+        {!loading && !error && categorizedSalons.featured.length > 0 && (
+          <>
+            <div className="section-header">
+              <h2 className="section-title">{t('publicIndex.featuredTitle')}</h2>
+              <p className="section-subtitle">{t('publicIndex.featuredSubtitle')}</p>
             </div>
-          )}
-          {error && (
-            <div className="empty-state glass-panel">
-              <h3 className="text-gradient">{t('publicIndex.noConnection')}</h3>
-              <p>{error}</p>
-              <Link to="/staff/register" className="btn btn-accent">{t('publicIndex.registerSalon')}</Link>
-            </div>
-          )}
-          {!loading && !error && filtered.length === 0 && (
-            <div className="empty-state glass-panel" style={{ width: '100%' }}>
-              <h3 className="text-gradient">{t('publicIndex.noSalonsFound')}</h3>
-              <p>{t('publicIndex.noSalonsFoundHint')}</p>
-            </div>
-          )}
-          {!loading && !error && filtered.length > 0 && (
-            <div className="salons-grid" ref={gridRef}>
-              {filtered.map(salon => {
+            <div className="salons-grid" ref={featuredGridRef}>
+              {categorizedSalons.featured.map(salon => {
                 const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
                 const services = salon.services || [t('publicIndex.defaultService1'), t('publicIndex.defaultService2'), t('publicIndex.defaultService3')];
                 const gender = getGenderCategory(salon);
@@ -343,14 +336,159 @@ export default function PublicIndex() {
                 );
               })}
             </div>
-          )}
-        </div>
+            <div className="slider-pagination-dots">
+              {Array.from({ length: getDotCount(featuredGridRef, categorizedSalons.featured.length) }).map((_, idx) => (
+                <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx, featuredGridRef)}></span>
+              ))}
+            </div>
+          </>
+        )}
 
-        {!loading && !error && filtered.length > 0 && (
-          <div className="slider-pagination-dots" id="sliderDots">
-            {Array.from({ length: dotCount }).map((_, idx) => (
-              <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx)}></span>
-            ))}
+        {/* Tendencias */}
+        {!loading && !error && categorizedSalons.trending.length > 0 && (
+          <>
+            <div className="section-header" style={{ marginTop: 60 }}>
+              <h2 className="section-title">{t('publicIndex.trendingTitle')}</h2>
+              <p className="section-subtitle">{t('publicIndex.trendingSubtitle')}</p>
+            </div>
+            <div className="salons-grid" ref={trendingGridRef}>
+              {categorizedSalons.trending.map(salon => {
+                const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
+                const services = salon.services || [t('publicIndex.defaultService1'), t('publicIndex.defaultService2'), t('publicIndex.defaultService3')];
+                const gender = getGenderCategory(salon);
+                return (
+                  <Link to={`/p/${salon.slug}`} key={salon.id} className="salon-link">
+                    <div className="salon-card glass-panel">
+                      <div className="salon-image-wrapper">
+                        {imageUrl
+                          ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />
+                          : <div className="salon-image-fallback"><span className="salon-initials">{getInitials(salon.business_name)}</span></div>
+                        }
+                        <span className="salon-badge">
+                          {gender === 'hombre' ? t('publicIndex.badgeCaballeros') : gender === 'mujer' ? t('publicIndex.badgeDamas') : t('publicIndex.badgeUnisex')}
+                        </span>
+                      </div>
+                      <div className="salon-content">
+                        <h3 className="salon-name text-gradient">{salon.business_name}</h3>
+                        <div className="salon-location">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, stroke: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 6 }}>
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                          </svg>
+                          {salon.business_address || t('publicIndex.locationUnknown')}
+                          {salon.distance != null && (
+                            <span className="distance-badge">{salon.distance < 1 ? '< 1 km' : `${Math.round(salon.distance)} km`}</span>
+                          )}
+                        </div>
+                        <div className="salon-services">
+                          {services.slice(0, 3).map((s, i) => (
+                            <span key={i} className="service-tag">{typeof s === 'object' ? (s as { name?: string }).name : s}</span>
+                          ))}
+                        </div>
+                        <div className="salon-footer">
+                          <div className="salon-rating">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 13, height: 13, fill: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5 }}>
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                            {t('publicIndex.ratingValue')} <small>({t('publicIndex.ratingLabel')})</small>
+                          </div>
+                          <span className="btn btn-primary">{t('publicIndex.reserveButton')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="slider-pagination-dots">
+              {Array.from({ length: getDotCount(trendingGridRef, categorizedSalons.trending.length) }).map((_, idx) => (
+                <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx, trendingGridRef)}></span>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Nuevos Salones */}
+        {!loading && !error && categorizedSalons.new.length > 0 && (
+          <>
+            <div className="section-header" style={{ marginTop: 60 }}>
+              <h2 className="section-title">{t('publicIndex.newSalonsTitle')}</h2>
+              <p className="section-subtitle">{t('publicIndex.newSalonsSubtitle')}</p>
+            </div>
+            <div className="salons-grid" ref={newGridRef}>
+              {categorizedSalons.new.map(salon => {
+                const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
+                const services = salon.services || [t('publicIndex.defaultService1'), t('publicIndex.defaultService2'), t('publicIndex.defaultService3')];
+                const gender = getGenderCategory(salon);
+                return (
+                  <Link to={`/p/${salon.slug}`} key={salon.id} className="salon-link">
+                    <div className="salon-card glass-panel">
+                      <div className="salon-image-wrapper">
+                        {imageUrl
+                          ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />
+                          : <div className="salon-image-fallback"><span className="salon-initials">{getInitials(salon.business_name)}</span></div>
+                        }
+                        <span className="salon-badge">
+                          {gender === 'hombre' ? t('publicIndex.badgeCaballeros') : gender === 'mujer' ? t('publicIndex.badgeDamas') : t('publicIndex.badgeUnisex')}
+                        </span>
+                      </div>
+                      <div className="salon-content">
+                        <h3 className="salon-name text-gradient">{salon.business_name}</h3>
+                        <div className="salon-location">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, stroke: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 6 }}>
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                          </svg>
+                          {salon.business_address || t('publicIndex.locationUnknown')}
+                          {salon.distance != null && (
+                            <span className="distance-badge">{salon.distance < 1 ? '< 1 km' : `${Math.round(salon.distance)} km`}</span>
+                          )}
+                        </div>
+                        <div className="salon-services">
+                          {services.slice(0, 3).map((s, i) => (
+                            <span key={i} className="service-tag">{typeof s === 'object' ? (s as { name?: string }).name : s}</span>
+                          ))}
+                        </div>
+                        <div className="salon-footer">
+                          <div className="salon-rating">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 13, height: 13, fill: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5 }}>
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                            {t('publicIndex.ratingValue')} <small>({t('publicIndex.ratingLabel')})</small>
+                          </div>
+                          <span className="btn btn-primary">{t('publicIndex.reserveButton')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="slider-pagination-dots">
+              {Array.from({ length: getDotCount(newGridRef, categorizedSalons.new.length) }).map((_, idx) => (
+                <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx, newGridRef)}></span>
+              ))}
+            </div>
+          </>
+        )}
+
+        {loading && (
+          <div className="loading">
+            <div className="spinner"></div>
+            {t('publicIndex.loadingSalons')}
+          </div>
+        )}
+        {error && (
+          <div className="empty-state glass-panel">
+            <h3 className="text-gradient">{t('publicIndex.noConnection')}</h3>
+            <p>{error}</p>
+            <Link to="/staff/register" className="btn btn-accent">{t('publicIndex.registerSalon')}</Link>
+          </div>
+        )}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="empty-state glass-panel" style={{ width: '100%' }}>
+            <h3 className="text-gradient">{t('publicIndex.noSalonsFound')}</h3>
+            <p>{t('publicIndex.noSalonsFoundHint')}</p>
           </div>
         )}
       </main>

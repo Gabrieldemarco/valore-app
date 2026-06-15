@@ -42,8 +42,9 @@ export default defineConfig({
         target: 'http://localhost:3000',
         bypass: (req) => {
           const segments = (req.url || '').split('/').filter(Boolean);
-          if (segments.length >= 3) return null;
-          return req.url;
+          if (segments.length === 2) return null; // /p/:slug → SSR landing page
+          if (segments[2] === 'manage') return req.url; // /p/:slug/manage/* → React Router
+          return null; // all other /p/:slug/* (services, availability, staff, appointments, landing) → API
         },
       },
     },

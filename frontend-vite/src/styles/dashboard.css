@@ -32,7 +32,7 @@
 
     .dash-user-name {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .dash-trial-badge {
@@ -41,7 +41,7 @@
       color: #facc15;
       padding: 4px 12px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       white-space: nowrap;
     }
@@ -54,7 +54,7 @@
 
     .dash-btn {
       padding: 8px 16px;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
       border-radius: 8px;
     }
@@ -137,7 +137,7 @@
 
     .dash-stat-label {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
     }
 
@@ -153,7 +153,7 @@
     }
 
     .dash-stat-change {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--accent);
       font-weight: 600;
     }
@@ -235,12 +235,12 @@
       margin-bottom: 8px;
       font-weight: 600;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .dash-form-group small {
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: 13px;
       display: block;
       margin-top: 6px;
     }
@@ -257,7 +257,7 @@
     .dash-form-section h4 {
       color: var(--primary-hover);
       margin-bottom: 16px;
-      font-size: 16px;
+      font-size: 17px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -283,11 +283,20 @@
       margin-bottom: 8px;
       font-weight: 600;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .dash-filter-group select {
       background: rgba(0, 0, 0, 0.2);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 8px 12px;
+      transition: all 0.2s;
     }
 
     .dash-filter-group select option {
@@ -308,6 +317,7 @@
       border: none;
       background: transparent;
       cursor: pointer;
+      font-size: 14px;
       font-weight: 500;
       color: var(--text-muted);
       border-radius: 8px;
@@ -374,7 +384,7 @@
 
     .dash-appointment-date {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
       margin-top: 4px;
       text-transform: capitalize;
     }
@@ -382,7 +392,7 @@
     .dash-appointment-status {
       padding: 6px 16px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -430,7 +440,7 @@
     }
 
     .dash-info-group value {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       color: var(--text-main);
     }
@@ -632,6 +642,15 @@
         align-items: flex-start;
       }
 
+      .dash-header h1 {
+        font-size: 20px;
+      }
+
+      .dash-user-info {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+
       .dash-container {
         padding: 20px;
       }
@@ -650,6 +669,118 @@
 
       .dash-stats {
         grid-template-columns: 1fr;
+      }
+
+      .dash-tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .dash-tab {
+        font-size: 14px;
+        padding: 8px 12px;
+      }
+
+      .dash-modal-content {
+        max-width: 95%;
+        margin: 20px;
+      }
+
+      .dash-modal-header h3 {
+        font-size: 20px;
+      }
+
+      .fc .fc-toolbar-title {
+        font-size: 1.4rem !important;
+      }
+
+      .fc .fc-button {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .dash-header {
+        padding: 12px 16px;
+      }
+
+      .dash-header h1 {
+        font-size: 18px;
+      }
+
+      .dash-user-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .dash-container {
+        padding: 16px;
+      }
+
+      .dash-btn {
+        font-size: 14px;
+        padding: 6px 12px;
+      }
+
+      .dash-stat-value {
+        font-size: 28px;
+      }
+
+      .dash-stat-label {
+        font-size: 14px;
+      }
+
+      .dash-panel-header h3 {
+        font-size: 18px;
+      }
+
+      .dash-form-group label {
+        font-size: 14px;
+      }
+
+      .dash-modal-content {
+        max-width: 100%;
+        margin: 10px;
+        border-radius: 16px;
+      }
+
+      .dash-modal-header {
+        padding: 16px;
+      }
+
+      .dash-modal-body {
+        padding: 16px;
+      }
+
+      .dash-modal-header h3 {
+        font-size: 18px;
+      }
+
+      .dash-tabs {
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+
+      .dash-tab {
+        font-size: 13px;
+        padding: 6px 10px;
+        white-space: nowrap;
+      }
+
+      .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .fc .fc-toolbar-title {
+        font-size: 1.2rem !important;
+      }
+
+      .fc .fc-button {
+        font-size: 11px !important;
+        padding: 5px 10px !important;
       }
     }
 

@@ -164,7 +164,7 @@
 
 .collage-label-sub {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.8px;
   color: rgba(207, 168, 107, 0.6);
@@ -323,7 +323,7 @@
   color: var(--text-muted);
   padding: 8px 20px;
   border-radius: 30px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-normal);
@@ -425,7 +425,7 @@
 .salons-grid {
   display: flex !important;
   flex-direction: row !important;
-  gap: 32px;
+  gap: 24px;
   overflow-x: auto;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -441,7 +441,7 @@
 }
 
 .salon-link {
-  flex: 0 0 340px;
+  flex: 0 0 250px;
   max-width: 100%;
   scroll-snap-align: start;
   text-decoration: none;
@@ -470,7 +470,7 @@
 
 .salon-image-wrapper {
   position: relative;
-  height: 220px;
+  height: 180px;
   overflow: hidden;
 }
 
@@ -523,7 +523,7 @@
   background: rgba(9, 9, 11, 0.9);
   padding: 5px 12px;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--primary);
   backdrop-filter: blur(10px);
@@ -562,7 +562,7 @@
 
 .salon-location {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 15px;
   margin-bottom: 18px;
   display: flex;
   align-items: center;
@@ -570,7 +570,7 @@
 }
 
 .distance-badge {
-  font-size: 11px;
+  font-size: 12px;
   background: var(--primary);
   color: #fff;
   padding: 1px 8px;
@@ -590,7 +590,7 @@
   background: rgba(207, 168, 107, 0.04);
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-main);
   border: 1px solid rgba(207, 168, 107, 0.12);
 }
@@ -619,7 +619,7 @@
 }
 
 .salon-footer .btn-primary {
-  font-size: 13px;
+  font-size: 14px;
   padding: 8px 18px;
   border-radius: 30px;
 }
@@ -710,7 +710,7 @@
 
 .feature-card p {
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -809,7 +809,7 @@
 .empty-state p {
   color: var(--text-muted);
   margin-bottom: 28px;
-  font-size: 16px;
+  font-size: 17px;
 }
 
 @media (max-width: 1024px) {
