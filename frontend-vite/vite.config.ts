@@ -38,6 +38,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000',
+      '/assets': 'http://localhost:3000',
       '/p': {
         target: 'http://localhost:3000',
         bypass: (req) => {
