@@ -70,7 +70,7 @@ const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ['manicura', 'pedicura', 'uña', 'nail', 'esmaltado', 'semipermanente', 'kapping', 'esculpida', 'acrílica', 'gel']
   },
   {
-    key: 'maquillaje', label: 'Maquillaje', image: '/uploads/category-maquillaje.png',
+    key: 'maquillaje', label: 'Maquillaje', image: '/uploads/category-maquillaje.jpeg',
     keywords: ['maquillaje', 'makeup', 'social', 'novia']
   },
   {
