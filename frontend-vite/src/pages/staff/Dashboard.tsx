@@ -13,6 +13,9 @@ import PushNotificationToggle from '../../components/PushNotificationToggle';
 import SalonQR from '../../components/SalonQR';
 import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
 import { exportInvoicePdf, exportAppointmentsPdf } from '../../utils/invoicePdf';
+import RevenueChart from './RevenueChart';
+import TopServicesChart from './TopServicesChart';
+import { logger } from '../../services/logger';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
 
@@ -95,7 +98,7 @@ interface ClientSummary {
   first_appointment: string;
 }
 
-type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients';
+type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics';
 
 interface Toast {
   id: number;
@@ -140,6 +143,16 @@ export default function StaffDashboard() {
   const [clientsSearch, setClientsSearch] = useState('');
   const [clientsLoading, setClientsLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientSummary | null>(null);
+
+  const [analyticsSummary, setAnalyticsSummary] = useState<{
+    todayAppointments: number; monthAppointments: number; monthRevenue: number;
+    pendingAppointments: number; completedAppointments: number; cancellationRate: number;
+  } | null>(null);
+  const [revenueByMonth, setRevenueByMonth] = useState<{ month: string; appointments: number; revenue: number }[]>([]);
+  const [topServices, setTopServices] = useState<{ service: string; count: number; avg_price: number }[]>([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(false);
+  const [analyticsDateRange, setAnalyticsDateRange] = useState<'6m' | '12m' | 'all'>('12m');
   const [clientHistory, setClientHistory] = useState<Appointment[]>([]);
   const [clientHistoryLoading, setClientHistoryLoading] = useState(false);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
@@ -210,6 +223,47 @@ export default function StaffDashboard() {
       setClientsList(data.clients);
     } catch { addToast(t('staffDashboard.toastLoadClientsError'), 'error'); } finally { setClientsLoading(false); }
   }, []);
+
+  const loadAnalytics = useCallback(async (isRefresh?: boolean, range?: string) => {
+    try {
+      if (isRefresh) clearApiCache();
+      setAnalyticsLoading(true);
+      setAnalyticsError(false);
+      const [summaryResult, revenueResult, servicesResult] = await Promise.allSettled([
+        api.get<{
+          todayAppointments: number; monthAppointments: number; monthRevenue: number;
+          pendingAppointments: number; completedAppointments: number; cancellationRate: number;
+        }>('/api/tenant/stats/summary'),
+        api.get<{ months: { month: string; appointments: number; revenue: number }[] }>('/api/tenant/stats/revenue-by-month'),
+        api.get<{ services: { service: string; count: number; avg_price: number }[] }>('/api/tenant/stats/top-services'),
+      ]);
+      if (summaryResult.status === 'fulfilled') setAnalyticsSummary(summaryResult.value);
+      if (revenueResult.status === 'fulfilled') {
+        let months = revenueResult.value.months || [];
+        if (range && range !== 'all') {
+          const limit = range === '6m' ? 6 : 12;
+          months = months.slice(-limit);
+        }
+        setRevenueByMonth(months);
+      }
+      if (servicesResult.status === 'fulfilled') setTopServices(servicesResult.value.services || []);
+      const rejected = [summaryResult, revenueResult, servicesResult].filter(r => r.status === 'rejected');
+      if (rejected.length > 0) {
+        rejected.forEach(r => logger.error('Analytics endpoint failed:', (r as PromiseRejectedResult).reason));
+        if (rejected.length === 3) {
+          setAnalyticsError(true);
+          addToast(t('staffDashboard.toastLoadAnalyticsError'), 'error');
+        } else {
+          addToast(t('staffDashboard.toastLoadAnalyticsPartial'), 'error');
+        }
+      }
+    } catch {
+      setAnalyticsError(true);
+      addToast(t('staffDashboard.toastLoadAnalyticsError'), 'error');
+    } finally { setAnalyticsLoading(false); }
+  }, []);
+
+  useEffect(() => { if (activeTab === 'analytics') loadAnalytics(false, analyticsDateRange); }, [activeTab, loadAnalytics, analyticsDateRange]);
 
   const openClientHistory = useCallback(async (client: ClientSummary) => {
     setSelectedClient(client);
@@ -442,7 +496,7 @@ export default function StaffDashboard() {
           }
           setStaffUploadingPhoto(false);
         } catch (err) {
-          console.error('Error uploading photo:', err);
+          logger.error('Error uploading photo:', err);
           addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
           setStaffUploadingPhoto(false);
         }
@@ -453,7 +507,7 @@ export default function StaffDashboard() {
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      console.error('Error reading file:', err);
+      logger.error('Error reading file:', err);
       addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
       setStaffUploadingPhoto(false);
     }
@@ -495,7 +549,7 @@ export default function StaffDashboard() {
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
     } catch (e: any) {
-      console.error('Error saving staff:', e);
+      logger.error('Error saving staff:', e);
       const msg = e?.message || t('staffDashboard.toastStaffSaveError');
       addToast(msg, 'error');
     }
@@ -510,7 +564,7 @@ export default function StaffDashboard() {
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
     } catch (e: any) {
-      console.error('Error deleting staff:', e);
+      logger.error('Error deleting staff:', e);
       const errMsg = e?.message || t('staffDashboard.toastStaffDeleteError');
       addToast(errMsg, 'error');
     }
@@ -554,7 +608,7 @@ export default function StaffDashboard() {
       setServicesModal({ open: false, editing: null });
       loadServices();
     } catch (e: any) {
-      console.error('Error saving service:', e); addToast(e?.message || t('staffDashboard.toastServiceSaveError'), 'error');
+      logger.error('Error saving service:', e); addToast(e?.message || t('staffDashboard.toastServiceSaveError'), 'error');
     }
   };
 
@@ -785,9 +839,9 @@ export default function StaffDashboard() {
         </div>
 
         <div className="dash-tabs glass-panel">
-          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing'] as Tab[]).map(tab => (
+          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics'] as Tab[]).map(tab => (
             <button key={tab} className={`dash-tab${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : t('staffDashboard.tabBilling')}
+              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : t('staffDashboard.tabAnalytics')}
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
@@ -1196,9 +1250,153 @@ export default function StaffDashboard() {
             )}
           </div>
         )}
+
+        {activeTab === 'analytics' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.analyticsTitle')}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 3 }}>
+                  {(['6m', '12m', 'all'] as const).map(r => (
+                    <button key={r} onClick={() => { setAnalyticsDateRange(r); loadAnalytics(false, r); }}
+                      style={{
+                        padding: '4px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                        background: analyticsDateRange === r ? 'rgba(197,168,128,0.25)' : 'transparent',
+                        color: analyticsDateRange === r ? '#c5a880' : 'var(--text-muted)',
+                        transition: 'all 0.2s',
+                      }}>
+                      {r === '6m' ? t('staffDashboard.analytics6m') : r === '12m' ? t('staffDashboard.analytics12m') : t('staffDashboard.analyticsAll')}
+                    </button>
+                  ))}
+                </div>
+                <button className="dash-btn dash-btn-secondary" onClick={() => loadAnalytics(true, analyticsDateRange)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ↻ {t('staffDashboard.analyticsRefresh')}
+                </button>
+              </div>
+            </div>
+
+            {analyticsLoading && !analyticsSummary ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div className="dash-stats" style={{ marginBottom: 0 }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="dash-stat-card glass-panel" style={{ height: 96 }}>
+                      <div style={{ width: '60%', height: 14, background: 'rgba(148,163,184,0.12)', borderRadius: 6, marginBottom: 12 }} />
+                      <div style={{ width: '40%', height: 28, background: 'rgba(148,163,184,0.08)', borderRadius: 6 }} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  {[1, 2].map(i => (
+                    <div key={i} className="glass-panel" style={{ padding: 20, height: 320 }}>
+                      <div style={{ width: '50%', height: 16, background: 'rgba(148,163,184,0.12)', borderRadius: 6, marginBottom: 20 }} />
+                      <div style={{ width: '100%', height: 260, background: 'rgba(148,163,184,0.06)', borderRadius: 8 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : analyticsError ? (
+              <div className="dash-empty-state glass-panel">
+                <p>{t('staffDashboard.analyticsErrorState')}</p>
+                <button className="dash-btn dash-btn-primary" onClick={() => loadAnalytics(true, analyticsDateRange)} style={{ marginTop: 12 }}>
+                  {t('staffDashboard.analyticsRetry')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="dash-stats" style={{ marginBottom: 24 }}>
+                  <div className="dash-stat-card glass-panel">
+                    <div className="dash-stat-header">
+                      <div>
+                        <div className="dash-stat-label">{t('staffDashboard.analyticsRevenueMonth')}</div>
+                        <div className="dash-stat-value">${analyticsSummary?.monthRevenue?.toLocaleString() || '0'}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="dash-stat-card glass-panel">
+                    <div className="dash-stat-header">
+                      <div>
+                        <div className="dash-stat-label">{t('staffDashboard.analyticsAppointmentsMonth')}</div>
+                        <div className="dash-stat-value">{analyticsSummary?.monthAppointments || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="dash-stat-card glass-panel">
+                    <div className="dash-stat-header">
+                      <div>
+                        <div className="dash-stat-label">{t('staffDashboard.analyticsAvgTicket')}</div>
+                        <div className="dash-stat-value">
+                          ${analyticsSummary && analyticsSummary.monthAppointments > 0
+                            ? Math.round(analyticsSummary.monthRevenue / analyticsSummary.monthAppointments).toLocaleString()
+                            : '0'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="dash-stat-card glass-panel">
+                    <div className="dash-stat-header">
+                      <div>
+                        <div className="dash-stat-label">{t('staffDashboard.analyticsCancellationRate')}</div>
+                        <div className="dash-stat-value">{analyticsSummary?.cancellationRate || 0}%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+                  <div className="glass-panel" style={{ padding: 20 }}>
+                    <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)' }}>{t('staffDashboard.analyticsRevenueChart')}</h4>
+                    {revenueByMonth.length > 0 ? (
+                      <RevenueChart data={revenueByMonth} />
+                    ) : (
+                      <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('staffDashboard.analyticsNoData')}</p>
+                    )}
+                  </div>
+                  <div className="glass-panel" style={{ padding: 20 }}>
+                    <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)' }}>{t('staffDashboard.analyticsTopServices')}</h4>
+                    {topServices.length > 0 ? (
+                      <TopServicesChart data={topServices} />
+                    ) : (
+                      <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('staffDashboard.analyticsNoData')}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="glass-panel" style={{ padding: 20 }}>
+                  <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)' }}>{t('staffDashboard.analyticsTopServicesTable')}</h4>
+                  {topServices.length > 0 ? (
+                    <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsServiceName')}</th>
+                            <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsServiceCount')}</th>
+                            <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsServiceAvgPrice')}</th>
+                            <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsServiceRevenue')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topServices.map(s => (
+                            <tr key={s.service}>
+                              <td style={{ padding: 12, fontWeight: 600 }}>{s.service}</td>
+                              <td style={{ padding: 12, textAlign: 'right' }}>{s.count}</td>
+                              <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${Math.round(s.avg_price).toLocaleString()}</td>
+                              <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${Math.round(s.count * s.avg_price).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('staffDashboard.analyticsNoData')}</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Staff Modal */}
+        {/* Staff Modal */}
       {staffModal.open && (
         <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setStaffModal({ open: false, editing: null })}>
           <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
@@ -1554,7 +1752,7 @@ export default function StaffDashboard() {
                           <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
                             <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryTotalSpent')}</div>
                             <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>
-                              ${apptClientHistory.reduce((sum, a) => sum + (a.service_price || 0), 0).toLocaleString('es-UY', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                              ${Math.round(apptClientHistory.reduce((sum, a) => sum + (Number(a.service_price) || 0), 0)).toLocaleString('es-UY')}
                             </div>
                           </div>
                         </div>
