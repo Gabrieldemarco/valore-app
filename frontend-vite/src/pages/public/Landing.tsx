@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import '../../styles/landing.css';
@@ -445,7 +446,7 @@ export default function Landing() {
         return (
           <section key={block.id} id={block.id}>
             {block.title && <h2 className="section-title">{block.title}</h2>}
-            <div className="custom-block-content" dangerouslySetInnerHTML={{ __html: block.content || '' }} />
+            <div className="custom-block-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.content || '') }} />
           </section>
         );
 
