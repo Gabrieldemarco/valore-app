@@ -573,7 +573,18 @@
     "analyticsErrorState": "Could not load analytics data",
     "analyticsRetry": "Retry",
     "toastLoadAnalyticsError": "Error loading analytics",
-    "toastLoadAnalyticsPartial": "Some analytics data could not be loaded"
+    "toastLoadAnalyticsPartial": "Some analytics data could not be loaded",
+    "servicesTableCategory": "Category",
+    "servicesModalCategoryLabel": "Category",
+    "servicesModalCategoryPlaceholder": "E.g. Cuts, Color, Styling",
+    "remindersTitle": "Reminders",
+    "reminderHoursLabel": "Send reminder",
+    "reminderHour": "hour before",
+    "reminderHours": "hours before",
+    "reminderHoursHint": "A reminder will be sent via WhatsApp and email before the appointment.",
+    "clientHistoryNotes": "Notes",
+    "apptDetailClientHistoryNotes": "Notes",
+    "toastSaveNotesError": "Error saving notes"
   },
   "staffLandingEditor": {
     "headerIcon": "🎨",

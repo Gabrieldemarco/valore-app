@@ -138,6 +138,7 @@ async function initDB() {
         name TEXT NOT NULL,
         duration INTEGER NOT NULL,
         price DECIMAL(10,2) NOT NULL DEFAULT 0,
+        category TEXT DEFAULT '',
         image TEXT,
         active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -151,6 +152,7 @@ async function initDB() {
         client_email TEXT,
         service TEXT NOT NULL,
         service_duration INTEGER NOT NULL,
+        service_price DECIMAL(10,2),
         appointment_date TIMESTAMP NOT NULL,
         status TEXT DEFAULT 'confirmed',
         notes TEXT,

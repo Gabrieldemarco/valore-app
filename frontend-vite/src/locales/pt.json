@@ -573,7 +573,18 @@
     "analyticsErrorState": "Não foi possível carregar os dados de analytics",
     "analyticsRetry": "Tentar novamente",
     "toastLoadAnalyticsError": "Erro ao carregar analytics",
-    "toastLoadAnalyticsPartial": "Alguns dados de analytics não puderam ser carregados"
+    "toastLoadAnalyticsPartial": "Alguns dados de analytics não puderam ser carregados",
+    "servicesTableCategory": "Categoria",
+    "servicesModalCategoryLabel": "Categoria",
+    "servicesModalCategoryPlaceholder": "Ex: Cortes, Cor, Alisamentos",
+    "remindersTitle": "Lembretes",
+    "reminderHoursLabel": "Enviar lembrete",
+    "reminderHour": "hora antes",
+    "reminderHours": "horas antes",
+    "reminderHoursHint": "Será enviado um lembrete por WhatsApp e email antes do agendamento.",
+    "clientHistoryNotes": "Notas",
+    "apptDetailClientHistoryNotes": "Notas",
+    "toastSaveNotesError": "Erro ao salvar notas"
   },
   "staffLandingEditor": {
     "headerIcon": "🎨",

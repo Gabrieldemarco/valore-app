@@ -164,7 +164,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     if (cached) return res.json(cached);
     try {
       const services = await query(
-        'SELECT id, name, duration, price, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name',
+        'SELECT id, name, duration, price, category, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY category, name',
         [req.tenant.id]
       );
       const body = { tenant: req.tenant, services: services.rows };
@@ -247,9 +247,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           const ad = appointmentDates[i];
           const isFirst = i === 0;
           const result = await query(
-            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-            [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null]
+            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+            [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null]
           );
           const appt = result.rows[0];
           if (validStaffId) {

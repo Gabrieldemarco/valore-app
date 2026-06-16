@@ -569,7 +569,18 @@
     "analyticsErrorState": "No se pudieron cargar los datos de analytics",
     "analyticsRetry": "Reintentar",
     "toastLoadAnalyticsError": "Error al cargar analytics",
-    "toastLoadAnalyticsPartial": "Algunos datos de analytics no pudieron cargarse"
+    "toastLoadAnalyticsPartial": "Algunos datos de analytics no pudieron cargarse",
+    "servicesTableCategory": "Categoría",
+    "servicesModalCategoryLabel": "Categoría",
+    "servicesModalCategoryPlaceholder": "Ej: Cortes, Color, Alisados",
+    "remindersTitle": "Recordatorios",
+    "reminderHoursLabel": "Enviar recordatorio",
+    "reminderHour": "hora antes",
+    "reminderHours": "horas antes",
+    "reminderHoursHint": "Se enviará un recordatorio por WhatsApp y email antes del turno.",
+    "clientHistoryNotes": "Notas",
+    "apptDetailClientHistoryNotes": "Notas",
+    "toastSaveNotesError": "Error al guardar las notas"
   },
   "staffLandingEditor": {
     "headerIcon": "🎨",

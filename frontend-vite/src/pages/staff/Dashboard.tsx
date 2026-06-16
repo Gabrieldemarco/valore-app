@@ -73,6 +73,7 @@ interface ServiceItem {
   name: string;
   duration: number;
   price: number;
+  category?: string;
   active: boolean;
   image?: string;
 }
@@ -87,6 +88,7 @@ interface TenantSettings {
   smtp_email?: string;
   smtp_password?: string;
   opening_hours?: { startHour: number; endHour: number; workDays: number[] };
+  reminder_hours?: number;
 }
 
 interface ClientSummary {
@@ -138,7 +140,7 @@ export default function StaffDashboard() {
   const [staffForm, setStaffForm] = useState({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5] as number[], useIndividualHours: false });
   const [staffUploadingPhoto, setStaffUploadingPhoto] = useState(false);
   const [servicesModal, setServicesModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
-  const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', image: '' });
+  const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', category: '', image: '' });
   const [clientsList, setClientsList] = useState<ClientSummary[]>([]);
   const [clientsSearch, setClientsSearch] = useState('');
   const [clientsLoading, setClientsLoading] = useState(false);
@@ -572,7 +574,7 @@ export default function StaffDashboard() {
 
   // ===== SERVICES CRUD =====
   const openServiceCreate = () => {
-    setServicesForm({ name: '', duration: '30', price: '0', image: '' });
+    setServicesForm({ name: '', duration: '30', price: '0', category: '', image: '' });
     setServicesModal({ open: true, editing: null });
   };
 
@@ -581,6 +583,7 @@ export default function StaffDashboard() {
       name: s.name,
       duration: String(s.duration),
       price: String(s.price),
+      category: s.category || '',
       image: s.image || '',
     });
     setServicesModal({ open: true, editing: s });
@@ -596,6 +599,7 @@ export default function StaffDashboard() {
         name: servicesForm.name,
         duration: parseInt(servicesForm.duration, 10),
         price: parseFloat(servicesForm.price),
+        category: servicesForm.category || undefined,
         image: servicesForm.image || undefined,
       };
       if (servicesModal.editing) {
@@ -766,6 +770,24 @@ export default function StaffDashboard() {
                       </table>
                     </div>
                   )}
+                </details>
+              </div>
+              <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
+                <details>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.remindersTitle')}</summary>
+                  <div className="dash-form-group">
+                    <label>{t('staffDashboard.reminderHoursLabel')}</label>
+                    <select className="glass-input" value={settings.reminder_hours ?? 24} onChange={e => setSettings(p => ({ ...p, reminder_hours: parseInt(e.target.value, 10) }))}>
+                      <option value={1}>1 {t('staffDashboard.reminderHour')}</option>
+                      <option value={2}>2 {t('staffDashboard.reminderHours')}</option>
+                      <option value={4}>4 {t('staffDashboard.reminderHours')}</option>
+                      <option value={12}>12 {t('staffDashboard.reminderHours')}</option>
+                      <option value={24}>24 {t('staffDashboard.reminderHours')}</option>
+                      <option value={48}>48 {t('staffDashboard.reminderHours')}</option>
+                      <option value={72}>72 {t('staffDashboard.reminderHours')}</option>
+                    </select>
+                    <small>{t('staffDashboard.reminderHoursHint')}</small>
+                  </div>
                 </details>
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
@@ -1217,6 +1239,7 @@ export default function StaffDashboard() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableName')}</th>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableCategory')}</th>
                       <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableDuration')}</th>
                       <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTablePrice')}</th>
                       <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableActive')}</th>
@@ -1227,6 +1250,7 @@ export default function StaffDashboard() {
                     {servicesList.map(s => (
                       <tr key={s.id}>
                         <td style={{ padding: 12, fontWeight: 600 }}>{s.name}</td>
+                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{s.category || '-'}</td>
                         <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{s.duration} {t('landingServices.minutes')}</td>
                         <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{t('landingServices.pricePrefix')}{s.price}</td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
@@ -1505,6 +1529,10 @@ export default function StaffDashboard() {
                 <input type="number" className="glass-input" value={servicesForm.price} onChange={e => setServicesForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
               </div>
               <div className="dash-form-group">
+                <label>{t('staffDashboard.servicesModalCategoryLabel')}</label>
+                <input type="text" className="glass-input" value={servicesForm.category} onChange={e => setServicesForm(p => ({ ...p, category: e.target.value }))} placeholder={t('staffDashboard.servicesModalCategoryPlaceholder')} />
+              </div>
+              <div className="dash-form-group">
                 <label>{t('staffDashboard.servicesModalImageLabel')}</label>
                 <input type="text" className="glass-input" value={servicesForm.image} onChange={e => setServicesForm(p => ({ ...p, image: e.target.value }))} placeholder={t('staffDashboard.servicesModalImagePlaceholder')} />
               </div>
@@ -1624,6 +1652,7 @@ export default function StaffDashboard() {
                         <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)' }}>{t('staffDashboard.clientHistoryService')}</th>
                         <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)' }}>{t('staffDashboard.clientHistoryStaff')}</th>
                         <th style={{ textAlign: 'center', padding: 10, borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)' }}>{t('staffDashboard.clientHistoryStatus')}</th>
+                        <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)' }}>{t('staffDashboard.clientHistoryNotes')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1633,6 +1662,7 @@ export default function StaffDashboard() {
                           <td style={{ padding: 10 }}>{a.service_name || a.service}</td>
                           <td style={{ padding: 10 }}>{a.staff_name || '-'}</td>
                           <td style={{ padding: 10, textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
+                          <td style={{ padding: 10, color: 'var(--text-muted)', fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1711,7 +1741,9 @@ export default function StaffDashboard() {
                   onBlur={e => {
                     const val = e.target.value.trim();
                     if (val !== (selectedAppointment.internal_notes || '')) {
-                      updateStatus(selectedAppointment.id, selectedAppointment.status, val);
+                      api.put(`/api/appointments/${selectedAppointment.id}/notes`, { internalNotes: val }).then(() => {
+                        setSelectedAppointment(p => p ? { ...p, internal_notes: val } : null);
+                      }).catch(() => addToast(t('staffDashboard.toastSaveNotesError'), 'error'));
                     }
                   }}
                   placeholder={t('staffDashboard.apptDetailInternalNotesPlaceholder')}
@@ -1764,6 +1796,7 @@ export default function StaffDashboard() {
                                 <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryService')}</th>
                                 <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStaff')}</th>
                                 <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStatus')}</th>
+                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryNotes')}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1773,6 +1806,7 @@ export default function StaffDashboard() {
                                   <td style={{ padding: '6px 10px', fontSize: 13 }}>{a.service_name || a.service}</td>
                                   <td style={{ padding: '6px 10px', fontSize: 13 }}>{a.staff_name || '-'}</td>
                                   <td style={{ padding: '6px 10px', fontSize: 13, textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
+                                  <td style={{ padding: '6px 10px', fontSize: 12, color: '#94a3b8', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
                                 </tr>
                               ))}
                             </tbody>

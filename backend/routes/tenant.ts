@@ -63,9 +63,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
     try {
       const result = await query(
-        `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, appointment_date, notes, staff_id, status, client_token)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-        [tenantId, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
+        `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, status, client_token)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+        [tenantId, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
       );
       const newAppointment = result.rows[0];
 
@@ -177,6 +177,18 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       if (result.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
       res.json({ message: 'Estado actualizado', appointment: result.rows[0] });
     } catch (err: any) { logger.error('Error al actualizar estado', { error: err.message }); res.status(500).json({ error: 'Error al actualizar estado' }); }
+  });
+
+  router.put('/appointments/:id/notes', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
+    try {
+      const { internalNotes } = req.body;
+      const result = await query(
+        `UPDATE appointments SET internal_notes = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3 RETURNING *`,
+        [internalNotes || null, req.params.id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
+      res.json({ message: 'Notas actualizadas', appointment: result.rows[0] });
+    } catch (err: any) { logger.error('Error al actualizar notas', { error: err.message }); res.status(500).json({ error: 'Error al actualizar notas' }); }
   });
 
   router.delete('/appointments/:id', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
@@ -445,7 +457,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       opening_hours, lat, lng,
       landing_background_color, landing_hero_height, landing_hero_width,
       landing_primary_text_color, landing_secondary_text_color,
-      landing_primary_font, landing_secondary_font,
+      landing_primary_font, landing_secondary_font, reminder_hours,
     } = body;
 
     const sql = `UPDATE tenants SET
@@ -478,8 +490,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
              landing_secondary_text_color=COALESCE($27,landing_secondary_text_color),
              landing_primary_font=COALESCE($28,landing_primary_font),
              landing_secondary_font=COALESCE($29,landing_secondary_font),
+             reminder_hours=COALESCE($30::INTEGER,reminder_hours),
              updated_at=NOW()
-            WHERE id=$30 RETURNING *`;
+            WHERE id=$31 RETURNING *`;
 
     const params = [
       business_name, business_address, business_phone,
@@ -502,6 +515,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_secondary_text_color,
       landing_primary_font,
       landing_secondary_font,
+      reminder_hours !== undefined ? parseInt(reminder_hours, 10) : null,
       tenantId,
     ];
 
@@ -664,7 +678,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.get('/tenant/services', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
       const result = await query(
-        'SELECT id, name, duration, price, active, image FROM services WHERE tenant_id = $1 ORDER BY name',
+        'SELECT id, name, duration, price, category, active, image FROM services WHERE tenant_id = $1 ORDER BY category, name',
         [req.user.tenant_id]
       );
       res.json({ services: result.rows });
@@ -682,16 +696,16 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.post('/tenant/services', authenticateStaff, checkTenantActive, createServiceValidation, validate, async (req, res) => {
     try {
-      const { name, duration, price, image } = req.body;
+      const { name, duration, price, category, image } = req.body;
       const existing = await queryOne(
         'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
         [name, req.user.tenant_id]
       );
       if (existing) return res.status(409).json({ error: 'Ya existe un servicio con ese nombre' });
       const result = await query(
-        `INSERT INTO services (tenant_id, name, duration, price, active, image)
-         VALUES ($1, $2, $3, $4, true, $5) RETURNING id, name, duration, price, active, image`,
-        [req.user.tenant_id, name, parseInt(duration, 10), parseFloat(price), image || null]
+        `INSERT INTO services (tenant_id, name, duration, price, category, active, image)
+         VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id, name, duration, price, category, active, image`,
+        [req.user.tenant_id, name, parseInt(duration, 10), parseFloat(price), category?.trim() || '', image || null]
       );
       res.status(201).json({ message: 'Servicio creado', service: result.rows[0] });
     } catch (err: any) {
@@ -709,7 +723,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.put('/tenant/services/:id', authenticateStaff, checkTenantActive, updateServiceValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, duration, price, active, image } = req.body;
+      const { name, duration, price, category, active, image } = req.body;
       if (name) {
         const existing = await queryOne(
           'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2 AND id != $3',
@@ -722,10 +736,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
            name = COALESCE($1, name),
            duration = COALESCE($2::INTEGER, duration),
            price = COALESCE($3::NUMERIC, price),
-           active = COALESCE($4::BOOLEAN, active),
-           image = COALESCE($5, image)
-         WHERE id = $6 AND tenant_id = $7 RETURNING id, name, duration, price, active, image`,
-        [name, duration ? parseInt(duration, 10) : null, price !== undefined ? parseFloat(price) : null, active, image !== undefined ? image : null, id, req.user.tenant_id]
+           category = COALESCE($4, category),
+           active = COALESCE($5::BOOLEAN, active),
+           image = COALESCE($6, image)
+         WHERE id = $7 AND tenant_id = $8 RETURNING id, name, duration, price, category, active, image`,
+         [name, duration ? parseInt(duration, 10) : null, price !== undefined ? parseFloat(price) : null, category !== undefined ? category : null, active, image !== undefined ? image : null, id, req.user.tenant_id]
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
       res.json({ message: 'Servicio actualizado', service: result.rows[0] });
@@ -779,10 +794,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     try {
       const { phone } = req.params;
       const result = await query(
-        `SELECT a.*, s.name as staff_name, sv.price as service_price
+        `SELECT a.*, s.name as staff_name
          FROM appointments a
          LEFT JOIN staff s ON a.staff_id = s.id
-         LEFT JOIN services sv ON sv.tenant_id = a.tenant_id AND sv.name = a.service
          WHERE a.tenant_id = $1 AND a.client_phone = $2
          ORDER BY a.appointment_date DESC`,
         [req.user.tenant_id, phone]
@@ -830,6 +844,95 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al desbloquear fecha' });
+    }
+  });
+
+  // ========== ANALYTICS / STATS ==========
+
+  router.get('/tenant/stats/summary', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const tenantId = req.user.tenant_id;
+      const today = await queryOne(
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND appointment_date::date = CURRENT_DATE`,
+        [tenantId]
+      );
+      const month = await queryOne(
+        `SELECT COUNT(*) as total, COALESCE(SUM(a.service_price), 0) as revenue
+         FROM appointments a
+         WHERE a.tenant_id = $1 AND date_trunc('month', a.appointment_date) = date_trunc('month', CURRENT_DATE)`,
+        [tenantId]
+      );
+      const pending = await queryOne(
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND status = 'pending'`,
+        [tenantId]
+      );
+      const completed = await queryOne(
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND status = 'completed'`,
+        [tenantId]
+      );
+      const cancelled = await queryOne(
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND status = 'cancelled'`,
+        [tenantId]
+      );
+      const total = await queryOne(
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1`,
+        [tenantId]
+      );
+
+      res.json({
+        todayAppointments: parseInt(today?.total || '0'),
+        monthAppointments: parseInt(month?.total || '0'),
+        monthRevenue: parseFloat(month?.revenue || '0'),
+        pendingAppointments: parseInt(pending?.total || '0'),
+        completedAppointments: parseInt(completed?.total || '0'),
+        cancellationRate: parseInt(total?.total || '0') > 0
+          ? Math.round((parseInt(cancelled?.total || '0') / parseInt(total?.total || '0')) * 100)
+          : 0,
+      });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al obtener resumen' });
+    }
+  });
+
+  router.get('/tenant/stats/revenue-by-month', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT
+           to_char(date_trunc('month', a.appointment_date), 'YYYY-MM') as month,
+           COUNT(*) as appointments,
+           COALESCE(SUM(a.service_price), 0) as revenue
+         FROM appointments a
+         WHERE a.tenant_id = $1 AND a.appointment_date >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+         GROUP BY date_trunc('month', a.appointment_date)
+         ORDER BY month ASC`,
+        [req.user.tenant_id]
+      );
+      res.json({ months: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al obtener ingresos' });
+    }
+  });
+
+  router.get('/tenant/stats/top-services', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT
+           a.service,
+           COUNT(*) as count,
+           COALESCE(AVG(a.service_price), 0) as avg_price
+         FROM appointments a
+         WHERE a.tenant_id = $1 AND a.status != 'cancelled'
+         GROUP BY a.service
+         ORDER BY count DESC
+         LIMIT 10`,
+        [req.user.tenant_id]
+      );
+      res.json({ services: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al obtener servicios' });
     }
   });
 
