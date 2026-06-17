@@ -1,11 +1,11 @@
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend .
 RUN npx tsc
 
-FROM node:20-alpine
+FROM node:26-alpine
 WORKDIR /app
 RUN apk add --no-cache tzdata
 COPY --from=builder /app/backend/dist /app/backend/dist
