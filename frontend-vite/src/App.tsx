@@ -16,6 +16,9 @@ const StaffDashboard = lazy(() => import('./pages/staff/Dashboard'));
 const LandingEditor = lazy(() => import('./pages/staff/LandingEditor'));
 const AdminLogin = lazy(() => import('./pages/admin/Login'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const ClientLogin = lazy(() => import('./pages/client/Login'));
+const ClientRegister = lazy(() => import('./pages/client/Register'));
+const ClientDashboard = lazy(() => import('./pages/client/Dashboard'));
 
 function Loading() {
   return (
@@ -49,6 +52,9 @@ function App() {
             <Route path="/staff/landing-editor" element={<LandingEditor />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/client/login" element={<ClientLogin />} />
+            <Route path="/client/register" element={<ClientRegister />} />
+            <Route path="/client/dashboard" element={<ClientDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

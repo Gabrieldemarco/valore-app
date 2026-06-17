@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import StaffLogin from './Login';
@@ -31,28 +32,30 @@ beforeEach(() => {
 describe('StaffLogin', () => {
   it('renders login form', () => {
     renderLogin();
-    expect(screen.getByText('Acceso Peluqueros')).toBeInTheDocument();
+    expect(screen.getByText('Acceso Profesionales')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('admin@pelu.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
     expect(screen.getByText('Ingresar')).toBeInTheDocument();
   });
 
   it('shows error on failed login', async () => {
+    const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => ({ error: 'Credenciales inválidas' }),
     });
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('admin@pelu.com'), { target: { value: 'test@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByText('Ingresar'));
+    await user.type(screen.getByPlaceholderText('admin@pelu.com'), 'test@test.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'wrong');
+    await user.click(screen.getByText('Ingresar'));
     await waitFor(() => {
       expect(screen.getByText('Credenciales inválidas')).toBeInTheDocument();
     });
   });
 
   it('calls login and navigates on success', async () => {
+    const user = userEvent.setup();
     const loginMock = vi.fn();
     (useAuth as Mock).mockReturnValue({ login: loginMock });
     mockFetch.mockResolvedValueOnce({
@@ -61,9 +64,9 @@ describe('StaffLogin', () => {
       json: async () => ({ token: 'fake-token', name: 'Test', role: 'staff' }),
     });
     renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('admin@pelu.com'), { target: { value: 'admin@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'password' } });
-    fireEvent.click(screen.getByText('Ingresar'));
+    await user.type(screen.getByPlaceholderText('admin@pelu.com'), 'admin@test.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'password');
+    await user.click(screen.getByText('Ingresar'));
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith('fake-token', 'staff', 'Test');
       expect(mockNavigate).toHaveBeenCalledWith('/staff/dashboard');

@@ -13,6 +13,7 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
       {LANGUAGES.map(lang => (
         <button
           key={lang.code}
+          aria-label={lang.code === 'es' ? 'Español' : lang.code === 'en' ? 'English' : 'Português'}
           onClick={() => i18n.changeLanguage(lang.code)}
           style={{
             background: i18n.language === lang.code ? 'var(--glass-bg)' : 'transparent',

@@ -2,8 +2,9 @@
 import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { body } from 'express-validator';
-import { query } from '../database';
+import { query, queryOne } from '../database';
 import { authenticate, authenticateStaff, checkTenantActive, checkTrialExpiration, validate } from '../middleware';
 import logger from '../services/logger';
 
@@ -58,6 +59,49 @@ export default function(apiLimiter) {
       if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
       res.json({ message: 'Eliminado' });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al eliminar' }); }
+  });
+
+  // ========== CLIENT PROFILE ==========
+  router.get('/client/me', authenticate(['client']), async (req, res) => {
+    try {
+      const user = await queryOne('SELECT id, username, name, phone, created_at FROM users WHERE id = $1', [req.user.id]);
+      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+      res.json({ user });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar perfil' }); }
+  });
+
+  router.put('/client/me', authenticate(['client']), [
+    body('name').optional().trim().isLength({ max: 100 }).escape(),
+    body('phone').optional().trim().isLength({ min: 6, max: 20 }).escape(),
+  ], validate, async (req, res) => {
+    try {
+      const { name, phone } = req.body;
+      const result = await query(
+        `UPDATE users SET name = COALESCE(NULLIF($1, ''), name), phone = COALESCE(NULLIF($2, ''), phone) WHERE id = $3 RETURNING id, username, name, phone`,
+        [name, phone, req.user.id]
+      );
+      res.json({ user: result.rows[0] });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al actualizar perfil' }); }
+  });
+
+  // ========== CLIENT APPOINTMENTS ==========
+  router.get('/tenant/client-appointments', authenticate(['client']), async (req, res) => {
+    try {
+      const user = await queryOne('SELECT phone FROM users WHERE id = $1', [req.user.id]);
+      if (!user || !user.phone) return res.json({ appointments: [] });
+      const result = await query(
+        `SELECT a.*, t.slug as tenant_slug
+         FROM appointments a
+         JOIN tenants t ON t.id = a.tenant_id
+         WHERE a.client_phone = $1
+         ORDER BY a.appointment_date DESC`,
+        [user.phone]
+      );
+      res.json({ appointments: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar turnos' });
+    }
   });
 
   // ========== HEALTH CHECK ==========
@@ -175,11 +219,10 @@ export default function(apiLimiter) {
       const uploadsDir = path.join(__dirname, '..', 'uploads');
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-      const timestamp = Date.now();
-      const uniqueName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`;
+      const uniqueName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
       const filepath = path.join(uploadsDir, uniqueName);
 
-      fs.writeFileSync(filepath, buffer);
+      await fs.promises.writeFile(filepath, buffer);
 
       const imageUrl = `/uploads/${uniqueName}`;
       logger.info('Imagen subida: ' + imageUrl);

@@ -66,6 +66,8 @@ interface StaffMember {
   bio?: string;
   active?: boolean;
   individual_hours?: { startHour: number; endHour: number; workDays: number[] } | null;
+  commission_type?: string;
+  commission_value?: number;
 }
 
 interface ServiceItem {
@@ -89,6 +91,7 @@ interface TenantSettings {
   smtp_password?: string;
   opening_hours?: { startHour: number; endHour: number; workDays: number[] };
   reminder_hours?: number;
+  captcha_enabled?: boolean;
 }
 
 interface ClientSummary {
@@ -100,7 +103,7 @@ interface ClientSummary {
   first_appointment: string;
 }
 
-type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics';
+type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics' | 'coupons' | 'waitlist';
 
 interface Toast {
   id: number;
@@ -137,8 +140,13 @@ export default function StaffDashboard() {
   const [showApptClientHistory, setShowApptClientHistory] = useState(false);
 
   const [staffModal, setStaffModal] = useState<{ open: boolean; editing: StaffMember | null }>({ open: false, editing: null });
-  const [staffForm, setStaffForm] = useState({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5] as number[], useIndividualHours: false });
+  const [staffForm, setStaffForm] = useState({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5] as number[], useIndividualHours: false, commission_type: 'none', commission_value: '' });
   const [staffUploadingPhoto, setStaffUploadingPhoto] = useState(false);
+  const [couponsList, setCouponsList] = useState<any[]>([]);
+  const [couponModal, setCouponModal] = useState<{ open: boolean; editing: any | null }>({ open: false, editing: null });
+  const [couponForm, setCouponForm] = useState({ code: '', discount_type: 'percentage', discount_value: '', min_appointment_amount: '', max_uses: '', expires_at: '' });
+  const [waitlistList, setWaitlistList] = useState<any[]>([]);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [servicesModal, setServicesModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
   const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', category: '', image: '' });
   const [clientsList, setClientsList] = useState<ClientSummary[]>([]);
@@ -152,6 +160,7 @@ export default function StaffDashboard() {
   } | null>(null);
   const [revenueByMonth, setRevenueByMonth] = useState<{ month: string; appointments: number; revenue: number }[]>([]);
   const [topServices, setTopServices] = useState<{ service: string; count: number; avg_price: number }[]>([]);
+  const [revenueByStaff, setRevenueByStaff] = useState<{ id: number; name: string; appointments: number; revenue: number }[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState(false);
   const [analyticsDateRange, setAnalyticsDateRange] = useState<'6m' | '12m' | 'all'>('12m');
@@ -231,13 +240,14 @@ export default function StaffDashboard() {
       if (isRefresh) clearApiCache();
       setAnalyticsLoading(true);
       setAnalyticsError(false);
-      const [summaryResult, revenueResult, servicesResult] = await Promise.allSettled([
+      const [summaryResult, revenueResult, servicesResult, staffResult] = await Promise.allSettled([
         api.get<{
           todayAppointments: number; monthAppointments: number; monthRevenue: number;
           pendingAppointments: number; completedAppointments: number; cancellationRate: number;
         }>('/api/tenant/stats/summary'),
         api.get<{ months: { month: string; appointments: number; revenue: number }[] }>('/api/tenant/stats/revenue-by-month'),
         api.get<{ services: { service: string; count: number; avg_price: number }[] }>('/api/tenant/stats/top-services'),
+        api.get<{ staff: { id: number; name: string; appointments: number; revenue: number }[] }>('/api/tenant/stats/revenue-by-staff'),
       ]);
       if (summaryResult.status === 'fulfilled') setAnalyticsSummary(summaryResult.value);
       if (revenueResult.status === 'fulfilled') {
@@ -249,7 +259,8 @@ export default function StaffDashboard() {
         setRevenueByMonth(months);
       }
       if (servicesResult.status === 'fulfilled') setTopServices(servicesResult.value.services || []);
-      const rejected = [summaryResult, revenueResult, servicesResult].filter(r => r.status === 'rejected');
+      if (staffResult.status === 'fulfilled') setRevenueByStaff(staffResult.value.staff || []);
+      const rejected = [summaryResult, revenueResult, servicesResult, staffResult].filter(r => r.status === 'rejected');
       if (rejected.length > 0) {
         rejected.forEach(r => logger.error('Analytics endpoint failed:', (r as PromiseRejectedResult).reason));
         if (rejected.length === 3) {
@@ -324,6 +335,8 @@ export default function StaffDashboard() {
     api.get<{ staff: StaffMember[] }>('/api/tenant/staff').then(d => setStaffList(d.staff)).catch(() => {});
     loadServices();
     loadClients();
+    loadCoupons();
+    loadWaitlist();
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get('payment');
@@ -457,11 +470,6 @@ export default function StaffDashboard() {
   };
 
   // ===== STAFF CRUD =====
-  const openStaffCreate = () => {
-    setStaffForm({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5], useIndividualHours: false });
-    setStaffModal({ open: true, editing: null });
-  };
-
   const openStaffEdit = (s: StaffMember) => {
     const ind = s.individual_hours as { startHour?: number; endHour?: number; workDays?: number[] } | null | undefined;
     setStaffForm({
@@ -474,8 +482,15 @@ export default function StaffDashboard() {
       indStart: String(ind?.startHour ?? 9),
       indEnd: String(ind?.endHour ?? 19),
       indWorkDays: ind?.workDays ?? [1, 2, 3, 4, 5],
+      commission_type: s.commission_type || 'none',
+      commission_value: s.commission_value ? String(s.commission_value) : '',
     });
     setStaffModal({ open: true, editing: s });
+  };
+
+  const openStaffCreate = () => {
+    setStaffForm({ name: '', email: '', specialties: '', photo_url: '', bio: '', indStart: '9', indEnd: '19', indWorkDays: [1, 2, 3, 4, 5], useIndividualHours: false, commission_type: 'none', commission_value: '' });
+    setStaffModal({ open: true, editing: null });
   };
 
   const handleStaffPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -531,6 +546,8 @@ export default function StaffDashboard() {
         specialties: staffForm.specialties ? staffForm.specialties.split(',').map(s => s.trim()).filter(Boolean) : [],
         photo_url: staffForm.photo_url || undefined,
         bio: staffForm.bio || undefined,
+        commission_type: staffForm.commission_type,
+        commission_value: staffForm.commission_value ? parseFloat(staffForm.commission_value) : 0,
       };
       if (staffForm.useIndividualHours) {
         body.individual_hours = {
@@ -573,6 +590,97 @@ export default function StaffDashboard() {
   };
 
   // ===== SERVICES CRUD =====
+  const loadCoupons = useCallback(async () => {
+    try {
+      const data = await api.get<{ coupons: any[] }>('/api/tenant/coupons');
+      setCouponsList(data.coupons || []);
+    } catch { addToast(t('staffDashboard.toastLoadCouponsError'), 'error'); }
+  }, []);
+
+  const loadWaitlist = useCallback(async () => {
+    setWaitlistLoading(true);
+    try {
+      const data = await api.get<{ entries: any[] }>('/api/tenant/waitlist');
+      setWaitlistList(data.entries || []);
+    } catch { /* silencioso */ }
+    setWaitlistLoading(false);
+  }, []);
+
+  const notifyWaitlistEntry = useCallback(async (id: number) => {
+    try {
+      await api.put(`/api/tenant/waitlist/${id}/notify`);
+      loadWaitlist();
+      addToast(t('staffDashboard.toastWaitlistNotified'), 'success');
+    } catch { addToast(t('staffDashboard.toastError'), 'error'); }
+  }, [loadWaitlist, addToast]);
+
+  const deleteWaitlistEntry = useCallback(async (id: number) => {
+    try {
+      await api.delete(`/api/tenant/waitlist/${id}`);
+      loadWaitlist();
+      addToast(t('staffDashboard.toastWaitlistDeleted'), 'success');
+    } catch { addToast(t('staffDashboard.toastError'), 'error'); }
+  }, [loadWaitlist, addToast]);
+
+  const openCouponCreate = () => {
+    setCouponForm({ code: '', discount_type: 'percentage', discount_value: '', min_appointment_amount: '', max_uses: '', expires_at: '' });
+    setCouponModal({ open: true, editing: null });
+  };
+
+  const openCouponEdit = (c: any) => {
+    setCouponForm({
+      code: c.code,
+      discount_type: c.discount_type,
+      discount_value: String(c.discount_value),
+      min_appointment_amount: String(c.min_appointment_amount || ''),
+      max_uses: String(c.max_uses || ''),
+      expires_at: c.expires_at ? c.expires_at.slice(0, 16) : '',
+    });
+    setCouponModal({ open: true, editing: c });
+  };
+
+  const saveCoupon = async () => {
+    if (!couponForm.code || !couponForm.discount_value) {
+      addToast(t('staffDashboard.toastCouponRequired'), 'error');
+      return;
+    }
+    try {
+      const body: any = {
+        code: couponForm.code,
+        discount_type: couponForm.discount_type,
+        discount_value: parseFloat(couponForm.discount_value),
+      };
+      if (couponForm.min_appointment_amount) body.min_appointment_amount = parseFloat(couponForm.min_appointment_amount);
+      if (couponForm.max_uses) body.max_uses = parseInt(couponForm.max_uses, 10);
+      if (couponForm.expires_at) body.expires_at = new Date(couponForm.expires_at).toISOString();
+      if (couponModal.editing) {
+        await api.put(`/api/tenant/coupons/${couponModal.editing.id}`, body);
+        addToast(t('staffDashboard.toastCouponUpdated'), 'success');
+      } else {
+        await api.post('/api/tenant/coupons', body);
+        addToast(t('staffDashboard.toastCouponCreated'), 'success');
+      }
+      setCouponModal({ open: false, editing: null });
+      clearApiCache();
+      await loadCoupons();
+    } catch (e: any) {
+      const msg = e?.message || t('staffDashboard.toastCouponSaveError');
+      addToast(msg, 'error');
+    }
+  };
+
+  const deleteCoupon = async (id: number, code: string) => {
+    if (!confirm(t('staffDashboard.confirmDeleteCoupon', { code }))) return;
+    try {
+      await api.delete(`/api/tenant/coupons/${id}`);
+      addToast(t('staffDashboard.toastCouponDeleted'), 'success');
+      clearApiCache();
+      await loadCoupons();
+    } catch (e: any) {
+      addToast(e?.message || t('staffDashboard.toastCouponDeleteError'), 'error');
+    }
+  };
+
   const openServiceCreate = () => {
     setServicesForm({ name: '', duration: '30', price: '0', category: '', image: '' });
     setServicesModal({ open: true, editing: null });
@@ -792,6 +900,18 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.captchaTitle')}</summary>
+                  <div className="dash-form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={!!settings.captcha_enabled} onChange={e => setSettings(p => ({ ...p, captcha_enabled: e.target.checked }))} style={{ width: 18, height: 18 }} />
+                      {t('staffDashboard.captchaEnabledLabel')}
+                    </label>
+                    <small>{t('staffDashboard.captchaHint')}</small>
+                  </div>
+                </details>
+              </div>
+              <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
+                <details>
                   <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.smtpTitle')}</summary>
                   <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>{t('staffDashboard.smtpHint')}</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -861,9 +981,9 @@ export default function StaffDashboard() {
         </div>
 
         <div className="dash-tabs glass-panel">
-          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics'] as Tab[]).map(tab => (
+          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics', 'coupons', 'waitlist'] as Tab[]).map(tab => (
             <button key={tab} className={`dash-tab${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : t('staffDashboard.tabAnalytics')}
+              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : tab === 'coupons' ? t('staffDashboard.tabCoupons') : tab === 'waitlist' ? t('staffDashboard.tabWaitlist') : t('staffDashboard.tabAnalytics')}
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
@@ -1194,6 +1314,7 @@ export default function StaffDashboard() {
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableName')}</th>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableEmail')}</th>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableSpecialties')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableCommission')}</th>
                       <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableStatus')}</th>
                       <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
                     </tr>
@@ -1204,6 +1325,9 @@ export default function StaffDashboard() {
                         <td style={{ padding: 12, fontWeight: 600 }}>{s.name}</td>
                         <td style={{ padding: 12, color: 'var(--text-muted)' }}>{s.email || '-'}</td>
                         <td style={{ padding: 12, color: 'var(--text-muted)' }}>{(s.specialties || []).join(', ') || '-'}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          {s.commission_type === 'percentage' ? `${s.commission_value}%` : s.commission_type === 'fixed' ? `$${s.commission_value}` : '-'}
+                        </td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
                           <span className={`dash-appointment-status ${s.active !== false ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
                             {s.active !== false ? t('staffDashboard.staffActive') : t('staffDashboard.staffInactive')}
@@ -1265,6 +1389,118 @@ export default function StaffDashboard() {
                         <td style={{ padding: 12, textAlign: 'center' }}>
                           <button className="dash-btn dash-btn-success" style={{ marginRight: 8 }} onClick={() => openServiceEdit(s)}>{t('staffDashboard.servicesEditButton')}</button>
                           <button className="dash-btn dash-btn-danger" onClick={() => deleteService(s.id, s.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'coupons' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.couponsTitle')}</h3>
+              <button className="dash-btn dash-btn-primary" onClick={openCouponCreate}>{t('staffDashboard.couponsNewButton')}</button>
+            </div>
+            {couponsList.length === 0 ? (
+              <div className="dash-empty-state glass-panel">
+                <h4>{t('staffDashboard.couponsEmptyTitle')}</h4>
+                <p>{t('staffDashboard.couponsEmptyMessage')}</p>
+              </div>
+            ) : (
+              <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.couponsTableCode')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.couponsTableDiscount')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.couponsTableUses')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.couponsTableExpires')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.couponsTableStatus')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {couponsList.map(c => (
+                      <tr key={c.id}>
+                        <td style={{ padding: 12, fontWeight: 600 }}>{c.code}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>{c.discount_type === 'percentage' ? `${c.discount_value}%` : `$${c.discount_value}`}</td>
+                        <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>{c.current_uses}{c.max_uses ? ` / ${c.max_uses}` : ''}</td>
+                        <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '-'}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <span className={`dash-appointment-status ${c.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
+                            {c.active ? t('staffDashboard.couponsActive') : t('staffDashboard.couponsInactive')}
+                          </span>
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <button className="dash-btn dash-btn-success" style={{ marginRight: 8 }} onClick={() => openCouponEdit(c)}>{t('staffDashboard.staffEditButton')}</button>
+                          <button className="dash-btn dash-btn-danger" onClick={() => deleteCoupon(c.id, c.code)}>{t('staffDashboard.staffDeleteButton')}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'waitlist' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.waitlistTitle')}</h3>
+              <button className="dash-btn dash-btn-secondary" onClick={loadWaitlist} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                ↻ {t('staffDashboard.waitlistRefresh')}
+              </button>
+            </div>
+            {waitlistLoading ? (
+              <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+            ) : waitlistList.length === 0 ? (
+              <div className="dash-empty-state glass-panel">
+                <h4>{t('staffDashboard.waitlistEmptyTitle')}</h4>
+                <p>{t('staffDashboard.waitlistEmptyMessage')}</p>
+              </div>
+            ) : (
+              <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableClient')}</th>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTablePhone')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableService')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStaff')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStatus')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableDate')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {waitlistList.map(e => (
+                      <tr key={e.id}>
+                        <td style={{ padding: 12, fontWeight: 600 }}>{e.client_name}</td>
+                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{e.client_phone}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>{e.service_name || '-'}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>{e.staff_name || '-'}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <span className={`dash-appointment-status ${e.status === 'waiting' ? 'dash-status-pending' : e.status === 'notified' ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
+                            {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
+                          </span>
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                          {new Date(e.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          {e.status === 'waiting' && (
+                            <button className="dash-btn dash-btn-success" style={{ marginRight: 8, fontSize: 12 }} onClick={() => notifyWaitlistEntry(e.id)}>
+                              {t('staffDashboard.waitlistNotify')}
+                            </button>
+                          )}
+                          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12 }} onClick={() => deleteWaitlistEntry(e.id)}>
+                            {t('staffDashboard.waitlistDelete')}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1414,6 +1650,34 @@ export default function StaffDashboard() {
                     <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('staffDashboard.analyticsNoData')}</p>
                   )}
                 </div>
+
+                <div className="glass-panel" style={{ padding: 20, marginTop: 24 }}>
+                  <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)' }}>{t('staffDashboard.analyticsRevenueByStaff')}</h4>
+                  {revenueByStaff.length > 0 ? (
+                    <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableName')}</th>
+                            <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsStaffAppointments')}</th>
+                            <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.analyticsStaffRevenue')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {revenueByStaff.map(s => (
+                            <tr key={s.id}>
+                              <td style={{ padding: 12, fontWeight: 600 }}>{s.name}</td>
+                              <td style={{ padding: 12, textAlign: 'right' }}>{s.appointments}</td>
+                              <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${Math.round(s.revenue).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('staffDashboard.analyticsNoData')}</p>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -1456,6 +1720,20 @@ export default function StaffDashboard() {
                 <label>{t('staffDashboard.staffModalBioLabel')}</label>
                 <textarea className="glass-input" value={staffForm.bio} onChange={e => setStaffForm(p => ({ ...p, bio: e.target.value }))} placeholder={t('staffDashboard.staffModalBioPlaceholder')} rows={3} style={{ resize: 'vertical' }} />
               </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.staffModalCommissionType')}</label>
+                <select className="glass-input" value={staffForm.commission_type} onChange={e => setStaffForm(p => ({ ...p, commission_type: e.target.value }))}>
+                  <option value="none">{t('staffDashboard.commissionNone')}</option>
+                  <option value="percentage">{t('staffDashboard.commissionPercentage')}</option>
+                  <option value="fixed">{t('staffDashboard.commissionFixed')}</option>
+                </select>
+              </div>
+              {staffForm.commission_type !== 'none' && (
+                <div className="dash-form-group">
+                  <label>{t('staffDashboard.staffModalCommissionValue')}</label>
+                  <input type="number" className="glass-input" value={staffForm.commission_value} onChange={e => setStaffForm(p => ({ ...p, commission_value: e.target.value }))} placeholder={staffForm.commission_type === 'percentage' ? '10' : '0'} min="0" step={staffForm.commission_type === 'percentage' ? '1' : '0.01'} />
+                </div>
+              )}
               <div className="dash-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" checked={staffForm.useIndividualHours} onChange={e => setStaffForm(p => ({ ...p, useIndividualHours: e.target.checked }))} />
@@ -1539,6 +1817,50 @@ export default function StaffDashboard() {
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button className="dash-btn dash-btn-danger" onClick={() => setServicesModal({ open: false, editing: null })}>{t('staffDashboard.servicesModalCancel')}</button>
                 <button className="dash-btn dash-btn-success" onClick={saveService}>{servicesModal.editing ? t('staffDashboard.servicesModalSave') : t('staffDashboard.servicesModalCreate')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {couponModal.open && (
+        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setCouponModal({ open: false, editing: null })}>
+          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+            <div className="dash-modal-header">
+              <h3 className="text-gradient">{couponModal.editing ? t('staffDashboard.couponModalEditTitle') : t('staffDashboard.couponModalNewTitle')}</h3>
+              <button onClick={() => setCouponModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
+            </div>
+            <div className="dash-modal-body">
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalCodeLabel')}</label>
+                <input type="text" className="glass-input" value={couponForm.code} onChange={e => setCouponForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder={t('staffDashboard.couponModalCodePlaceholder')} disabled={!!couponModal.editing} />
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalTypeLabel')}</label>
+                <select className="glass-input" value={couponForm.discount_type} onChange={e => setCouponForm(p => ({ ...p, discount_type: e.target.value }))}>
+                  <option value="percentage">{t('staffDashboard.commissionPercentage')}</option>
+                  <option value="fixed">{t('staffDashboard.commissionFixed')}</option>
+                </select>
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalValueLabel')}</label>
+                <input type="number" className="glass-input" value={couponForm.discount_value} onChange={e => setCouponForm(p => ({ ...p, discount_value: e.target.value }))} min="0" step={couponForm.discount_type === 'percentage' ? '1' : '0.01'} />
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalMinAmount')}</label>
+                <input type="number" className="glass-input" value={couponForm.min_appointment_amount} onChange={e => setCouponForm(p => ({ ...p, min_appointment_amount: e.target.value }))} min="0" step="0.01" placeholder="0" />
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalMaxUses')}</label>
+                <input type="number" className="glass-input" value={couponForm.max_uses} onChange={e => setCouponForm(p => ({ ...p, max_uses: e.target.value }))} min="1" placeholder={t('staffDashboard.couponModalUnlimited')} />
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.couponModalExpires')}</label>
+                <input type="datetime-local" className="glass-input" value={couponForm.expires_at} onChange={e => setCouponForm(p => ({ ...p, expires_at: e.target.value }))} />
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button className="dash-btn dash-btn-danger" onClick={() => setCouponModal({ open: false, editing: null })}>{t('staffDashboard.couponModalCancel')}</button>
+                <button className="dash-btn dash-btn-success" onClick={saveCoupon}>{couponModal.editing ? t('staffDashboard.couponModalSave') : t('staffDashboard.couponModalCreate')}</button>
               </div>
             </div>
           </div>

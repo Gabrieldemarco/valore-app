@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useGeo } from '../../hooks/useGeo';
+import { logger } from '../../services/logger';
 import '../../styles/index.css';
 
 interface Salon {
@@ -209,6 +210,7 @@ export default function PublicIndex() {
             <a href="#salons" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>{t('publicIndex.navSalones')}</a>
             <Link to="/staff/register" className="btn btn-secondary btn-outline" style={{ padding: '8px 18px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>{t('publicIndex.navSumate')}</Link>
             <Link to="/staff/login" className="btn btn-primary btn-studio-access" style={{ padding: '10px 24px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>{t('publicIndex.navStudioAccess')}</Link>
+            <Link to="/client/login" className="btn btn-secondary" style={{ padding: '8px 18px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)' }}>{t('publicIndex.navClientLogin')}</Link>
             <LanguageSwitcher />
           </nav>
         </div>
@@ -237,7 +239,7 @@ export default function PublicIndex() {
           <p>{t('publicIndex.heroSubtitle')}</p>
           <div className="search-box">
             <input type="text" placeholder={t('publicIndex.searchPlaceholder')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            <button className="btn btn-primary">{t('publicIndex.searchButton')}</button>
+            <button className="btn btn-primary" aria-label={t('publicIndex.searchButton')}>{t('publicIndex.searchButton')}</button>
           </div>
           <div className="gender-filter-bar">
             {[

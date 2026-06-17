@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { Home, Sparkles, Image, Users, Calendar, RotateCcw, Trash2, X, User, GripVertical, Clock } from 'lucide-react';
+import { logger } from '../../services/logger';
 
 
 type EditorTab = 'general' | 'branding' | 'services' | 'hours' | 'gallery' | 'team' | 'social' | 'css' | 'layout';
@@ -182,7 +183,7 @@ export default function LandingEditor() {
             ? JSON.parse(data.tenant.opening_hours)
             : data.tenant.opening_hours;
           setHours({ startHour: h.startHour ?? 9, endHour: h.endHour ?? 19, workDays: h.workDays ?? [1, 2, 3, 4, 5] });
-        } catch { console.warn('Error al parsear opening_hours') }
+        } catch { logger.warn('Error al parsear opening_hours') }
       }
       const staffRes = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff').catch(() => ({ staff: [] }));
       setStaffList(staffRes.staff || []);

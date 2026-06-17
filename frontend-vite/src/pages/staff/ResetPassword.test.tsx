@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ResetPassword from './ResetPassword';
@@ -34,17 +35,19 @@ describe('ResetPassword', () => {
   });
 
   it('shows error when passwords do not match', async () => {
+    const user = userEvent.setup();
     renderResetPassword();
     const inputs = screen.getAllByPlaceholderText(/Mínimo 6 caracteres|Repetí tu contraseña/);
-    fireEvent.change(inputs[0], { target: { value: '123456' } });
-    fireEvent.change(inputs[1], { target: { value: '654321' } });
-    fireEvent.click(screen.getByText('Actualizar contraseña'));
+    await user.type(inputs[0], '123456');
+    await user.type(inputs[1], '654321');
+    await user.click(screen.getByText('Actualizar contraseña'));
     await waitFor(() => {
       expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument();
     });
   });
 
   it('shows error on API failure', async () => {
+    const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
@@ -52,15 +55,16 @@ describe('ResetPassword', () => {
     });
     renderResetPassword();
     const inputs = screen.getAllByPlaceholderText(/Mínimo 6 caracteres|Repetí tu contraseña/);
-    fireEvent.change(inputs[0], { target: { value: 'newpass123' } });
-    fireEvent.change(inputs[1], { target: { value: 'newpass123' } });
-    fireEvent.click(screen.getByText('Actualizar contraseña'));
+    await user.type(inputs[0], 'newpass123');
+    await user.type(inputs[1], 'newpass123');
+    await user.click(screen.getByText('Actualizar contraseña'));
     await waitFor(() => {
       expect(screen.getByText('Token inválido o expirado')).toBeInTheDocument();
     });
   });
 
   it('shows success and link to login after reset', async () => {
+    const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -68,9 +72,9 @@ describe('ResetPassword', () => {
     });
     renderResetPassword();
     const inputs = screen.getAllByPlaceholderText(/Mínimo 6 caracteres|Repetí tu contraseña/);
-    fireEvent.change(inputs[0], { target: { value: 'newpass123' } });
-    fireEvent.change(inputs[1], { target: { value: 'newpass123' } });
-    fireEvent.click(screen.getByText('Actualizar contraseña'));
+    await user.type(inputs[0], 'newpass123');
+    await user.type(inputs[1], 'newpass123');
+    await user.click(screen.getByText('Actualizar contraseña'));
     await waitFor(() => {
       expect(screen.getByText('Contraseña actualizada')).toBeInTheDocument();
       expect(screen.getByText('¡Tu contraseña fue actualizada!')).toBeInTheDocument();

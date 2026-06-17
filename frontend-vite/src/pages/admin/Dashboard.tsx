@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { logger } from '../../services/logger';
 
+import '../../styles/auth.css';
 import '../../styles/admin.css';
 
 interface Tenant {
@@ -173,11 +176,12 @@ export default function AdminDashboard() {
     }
   };
 
+  const { t } = useTranslation();
   const handleDelete = async () => {
     if (!selectedTenantId || !tenantDetail) return;
-    if (!window.confirm(`⚠️ ¿Eliminar permanentemente la peluquería "${tenantDetail.business_name}"?\n\nSe borrará TODO: turnos, servicios, staff, facturas.`)) return;
-    const confirmStr = window.prompt('🔴 Escribí "ELIMINAR" para confirmar:');
-    if (confirmStr !== 'ELIMINAR') { showToast('Cancelado', 'error'); return; }
+    if (!window.confirm(t('adminDashboard.confirmDeletePermanent', { name: tenantDetail.business_name }))) return;
+    const confirmStr = window.prompt(t('adminDashboard.confirmDeletePrompt'));
+    if (confirmStr !== 'ELIMINAR') { showToast(t('adminDashboard.toastDeleted'), 'error'); return; }
     try {
       await api.delete(`/api/super-admin/tenants/${selectedTenantId}`);
       showToast('Peluquería eliminada permanentemente', 'success');

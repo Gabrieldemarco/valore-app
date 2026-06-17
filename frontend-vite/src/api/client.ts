@@ -26,7 +26,7 @@ interface RequestOptions {
 }
 
 function getToken(): string | null {
-  return localStorage.getItem('staffToken') || localStorage.getItem('superAdminToken');
+  return localStorage.getItem('staffToken') || localStorage.getItem('clientToken') || localStorage.getItem('superAdminToken');
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -50,8 +50,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (res.status === 401) {
     localStorage.removeItem('staffToken');
+    localStorage.removeItem('clientToken');
     localStorage.removeItem('superAdminToken');
-    window.location.href = '/staff/login';
+    window.location.href = '/';
     throw new Error('Unauthorized');
   }
 

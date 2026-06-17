@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Terms from './Terms';
 
@@ -19,15 +20,17 @@ describe('Terms', () => {
     expect(screen.getByText('Bienvenido a Velsoie. Al acceder y utilizar nuestra plataforma, sitio web o servicios relacionados, aceptás los presentes Términos y Condiciones.')).toBeInTheDocument();
   });
 
-  it('switches to privacy tab on click', () => {
+  it('switches to privacy tab on click', async () => {
+    const user = userEvent.setup();
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    fireEvent.click(screen.getByText('Política de Privacidad'));
+    await user.click(screen.getByText('Política de Privacidad'));
     expect(screen.getByText('En Velsoie valoramos la privacidad y protección de los datos personales de nuestros usuarios.')).toBeInTheDocument();
   });
 
-  it('switches to cancellation tab on click', () => {
+  it('switches to cancellation tab on click', async () => {
+    const user = userEvent.setup();
     render(<MemoryRouter><Terms /></MemoryRouter>);
-    fireEvent.click(screen.getByText('Política de Cancelaciones'));
+    await user.click(screen.getByText('Política de Cancelaciones'));
     expect(screen.getByText('Los usuarios podrán cancelar o reprogramar reservas desde la plataforma.')).toBeInTheDocument();
   });
 

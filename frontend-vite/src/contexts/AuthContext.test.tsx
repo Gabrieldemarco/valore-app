@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from './AuthContext';
 
 beforeEach(() => {
@@ -32,9 +33,10 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('staffName')).toHaveTextContent('none');
   });
 
-  it('login as staff sets token and name', () => {
+  it('login as staff sets token and name', async () => {
+    const user = userEvent.setup();
     renderWithAuth();
-    fireEvent.click(screen.getByText('Login Staff'));
+    await user.click(screen.getByText('Login Staff'));
     expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     expect(screen.getByTestId('staffToken')).toHaveTextContent('staff-token');
     expect(screen.getByTestId('staffName')).toHaveTextContent('John');
@@ -42,19 +44,21 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('staffName')).toBe('John');
   });
 
-  it('login as superAdmin sets admin token', () => {
+  it('login as superAdmin sets admin token', async () => {
+    const user = userEvent.setup();
     renderWithAuth();
-    fireEvent.click(screen.getByText('Login Admin'));
+    await user.click(screen.getByText('Login Admin'));
     expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     expect(screen.getByTestId('staffToken')).toHaveTextContent('none');
     expect(localStorage.getItem('superAdminToken')).toBe('admin-token');
   });
 
-  it('logout clears everything', () => {
+  it('logout clears everything', async () => {
+    const user = userEvent.setup();
     renderWithAuth();
-    fireEvent.click(screen.getByText('Login Staff'));
+    await user.click(screen.getByText('Login Staff'));
     expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
-    fireEvent.click(screen.getByText('Logout'));
+    await user.click(screen.getByText('Logout'));
     expect(screen.getByTestId('authenticated')).toHaveTextContent('no');
     expect(screen.getByTestId('staffToken')).toHaveTextContent('none');
     expect(screen.getByTestId('staffName')).toHaveTextContent('none');

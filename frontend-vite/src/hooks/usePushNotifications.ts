@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
+import { logger } from '../services/logger';
 
 const VAPID_KEY_CACHE = 'velsoie-vapid-key';
 
@@ -84,7 +85,7 @@ export function usePushNotifications() {
         try {
           reg = await navigator.serviceWorker.register('/sw.js');
         } catch (swErr: any) {
-          console.error('SW registration failed:', swErr);
+          logger.error('SW registration failed:', swErr);
           setError('El Service Worker no pudo registrarse');
           setLoading(false);
           return;
@@ -111,7 +112,7 @@ export function usePushNotifications() {
 
       setSubscribed(true);
     } catch (err: any) {
-      console.error('Push subscribe error:', err.name, err.message, err);
+      logger.error('Push subscribe error:', err.name, err.message, err);
       const msg = err.name === 'AbortError'
         ? 'El servicio de notificaciones no está disponible (posiblemente bloqueado por red o firewall)'
         : err.name === 'NetworkError'

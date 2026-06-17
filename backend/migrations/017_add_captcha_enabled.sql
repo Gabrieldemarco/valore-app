@@ -1,0 +1,1 @@
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS captcha_enabled BOOLEAN DEFAULT false;

@@ -8,6 +8,7 @@ import logger from '../services/logger';
 import { sendClientConfirmation, notifyStaff } from '../services/notifications';
 import { createPreference as mpCreatePreference, isConfigured as mpConfigured } from '../services/mercadopago-client';
 import { MP_CURRENCY } from '../services/payment-config';
+import config from '../config';
 import { validate,
   authenticateStaff,
   identifyTenant,
@@ -38,12 +39,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       res.status(403).json({ error: 'Límite de plan alcanzado. Contactá al administrador.' });
       return null;
     }
-    const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring } = req.body;
+    const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode } = req.body;
     if (!clientName || !clientPhone || !serviceId || !appointmentDate) {
       res.status(400).json({ error: 'Datos obligatorios faltantes' });
       return null;
     }
-    return { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring };
+    return { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode };
   }
 
   async function resolveServiceAndStaff(serviceId, staffId, tenantId, res) {
@@ -152,7 +153,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         brand_secondary_color: req.tenant.brand_secondary_color,
         brand_logo_url: req.tenant.brand_logo_url,
         business_phone: req.tenant.business_phone,
+        captcha_enabled: req.tenant.captcha_enabled || false,
       },
+      captcha_site_key: config.TURNSTILE_SITE_KEY || null,
     };
     NodeCache.put(cacheKey, body, 120000);
     res.json(body);
@@ -228,15 +231,50 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
     body('serviceId').isInt({ min: 1 }).withMessage('serviceId inválido'),
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
+    body('captchaToken').optional().isString().withMessage('captchaToken inválido'),
   ], validate, async (req, res) => {
     try {
       const validated = await validateBookingRequest(req, res, req.tenant);
       if (!validated) return;
-      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring } = validated;
+      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode } = validated;
 
       const resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res);
       if (!resolved) return;
       const { service, validStaffId } = resolved;
+
+      if (req.tenant.captcha_enabled) {
+        const captchaToken = req.body.captchaToken;
+        if (!captchaToken) {
+          return res.status(400).json({ error: 'Captcha requerido' });
+        }
+        const verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const formData = new URLSearchParams();
+        formData.append('secret', config.TURNSTILE_SECRET_KEY || '');
+        formData.append('response', captchaToken);
+        const verifyRes = await fetch(verifyUrl, { method: 'POST', body: formData });
+        const verifyData: any = await verifyRes.json();
+        if (!verifyData.success) {
+          return res.status(400).json({ error: 'Captcha inválido' });
+        }
+      }
+
+      let discountAmount = 0;
+      let validCouponCode = null;
+      if (couponCode) {
+        const coupon = await queryOne(
+          `SELECT * FROM coupons WHERE code = $1 AND tenant_id = $2 AND active = true AND (expires_at IS NULL OR expires_at > NOW()) AND (max_uses IS NULL OR current_uses < max_uses)`,
+          [couponCode.toUpperCase(), req.tenant.id]
+        );
+        if (coupon && service.price >= (parseFloat(coupon.min_appointment_amount) || 0)) {
+          validCouponCode = couponCode.toUpperCase();
+          if (coupon.discount_type === 'percentage') {
+            discountAmount = Math.round(service.price * (parseFloat(coupon.discount_value) / 100) * 100) / 100;
+          } else {
+            discountAmount = Math.min(parseFloat(coupon.discount_value), service.price);
+          }
+          await query('UPDATE coupons SET current_uses = current_uses + 1 WHERE id = $1', [coupon.id]);
+        }
+      }
 
       const { clientToken, appointmentStatus, recurringGroup, appointmentDates } = buildAppointmentDates(appointmentDate, recurring, service);
 
@@ -247,9 +285,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           const ad = appointmentDates[i];
           const isFirst = i === 0;
           const result = await query(
-            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-            [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null]
+            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule, coupon_code, discount_amount)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+            [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null, isFirst ? validCouponCode : null, isFirst ? discountAmount : 0]
           );
           const appt = result.rows[0];
           if (validStaffId) {
@@ -287,6 +325,37 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al reservar turno' });
+    }
+  });
+
+  // POST: Validar cupón público
+  router.post('/:slug/validate-coupon', identifyTenant, requireActivePublicTenant, async (req, res) => {
+    try {
+      const { code, serviceId } = req.body;
+      if (!code) return res.status(400).json({ error: 'Código requerido' });
+      const coupon = await queryOne(
+        `SELECT * FROM coupons WHERE code = $1 AND tenant_id = $2 AND active = true AND (expires_at IS NULL OR expires_at > NOW()) AND (max_uses IS NULL OR current_uses < max_uses)`,
+        [code.toUpperCase(), req.tenant.id]
+      );
+      if (!coupon) return res.json({ valid: false, error: 'Cupón inválido o vencido' });
+      let servicePrice = 0;
+      if (serviceId) {
+        const service = await queryOne('SELECT price FROM services WHERE id = $1 AND tenant_id = $2', [serviceId, req.tenant.id]);
+        if (service) servicePrice = parseFloat(service.price);
+      }
+      if (servicePrice < parseFloat(coupon.min_appointment_amount || 0)) {
+        return res.json({ valid: false, error: `Monto mínimo de $${coupon.min_appointment_amount} no alcanzado` });
+      }
+      let discountAmount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discountAmount = Math.round(servicePrice * (parseFloat(coupon.discount_value) / 100) * 100) / 100;
+      } else {
+        discountAmount = Math.min(parseFloat(coupon.discount_value), servicePrice);
+      }
+      res.json({ valid: true, coupon: { ...coupon, discount_amount: discountAmount, final_price: servicePrice - discountAmount } });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al validar cupón' });
     }
   });
 
@@ -407,6 +476,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           landing_secondary_text_color: req.tenant.landing_secondary_text_color,
           landing_primary_font: req.tenant.landing_primary_font,
           landing_secondary_font: req.tenant.landing_secondary_font,
+          captcha_enabled: req.tenant.captcha_enabled || false,
         },
         services: services.rows,
       });
@@ -503,7 +573,14 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         'UPDATE appointments SET status = $1, updated_at = NOW() WHERE id = $2',
         ['cancelled', appointment.id]
       );
-      res.json({ message: 'Turno cancelado exitosamente' });
+      const waitlistCount = await queryOne(
+        'SELECT COUNT(*)::int as count FROM waitlist WHERE tenant_id = $1 AND status = $2',
+        [req.tenant.id, 'waiting']
+      );
+      res.json({
+        message: 'Turno cancelado exitosamente',
+        waitlist_count: waitlistCount?.count || 0,
+      });
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al cancelar turno' });
@@ -596,6 +673,63 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al reprogramar turno' });
+    }
+  });
+
+  // ========== WAITLIST (público) ==========
+  router.post('/:slug/waitlist', publicLimiter, identifyTenant, requireActivePublicTenant, [
+    body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
+    body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
+    body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
+    body('serviceId').optional().isInt({ min: 1 }),
+    body('staffId').optional().isInt({ min: 1 }),
+    body('preferredDate').optional().isISO8601(),
+    body('preferredTime').optional().matches(/^\d{2}:\d{2}$/),
+    body('notes').optional().trim().escape(),
+  ], validate, async (req, res) => {
+    try {
+      const { clientName, clientPhone, clientEmail, serviceId, staffId, preferredDate, preferredTime, notes } = req.body;
+      if (!clientName || !clientPhone) {
+        return res.status(400).json({ error: 'Nombre y teléfono requeridos' });
+      }
+      if (serviceId) {
+        const service = await queryOne('SELECT id FROM services WHERE id = $1 AND tenant_id = $2 AND active = true', [serviceId, req.tenant.id]);
+        if (!service) return res.status(400).json({ error: 'Servicio no disponible' });
+      }
+      if (staffId) {
+        const staff = await queryOne('SELECT id FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true', [staffId, req.tenant.id]);
+        if (!staff) return res.status(400).json({ error: 'Profesional no válido' });
+      }
+      const existing = await queryOne(
+        'SELECT id FROM waitlist WHERE tenant_id = $1 AND client_phone = $2 AND status = $3',
+        [req.tenant.id, clientPhone.trim(), 'waiting']
+      );
+      if (existing) return res.status(409).json({ error: 'Ya estás en la lista de espera para esta peluquería' });
+      const result = await query(
+        `INSERT INTO waitlist (tenant_id, service_id, staff_id, client_name, client_phone, client_email, preferred_date, preferred_time, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, created_at`,
+        [req.tenant.id, serviceId || null, staffId || null, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, preferredDate || null, preferredTime || null, notes?.trim() || null]
+      );
+      res.status(201).json({ message: 'Te agregamos a la lista de espera', entry: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al agregar a lista de espera' });
+    }
+  });
+
+  router.post('/:slug/waitlist/leave', identifyTenant, requireActivePublicTenant, async (req, res) => {
+    try {
+      const { id, clientPhone } = req.body;
+      if (!id || !clientPhone) return res.status(400).json({ error: 'id y clientPhone requeridos' });
+      const result = await query(
+        'DELETE FROM waitlist WHERE id = $1 AND tenant_id = $2 AND client_phone = $3 AND status = $4 RETURNING id',
+        [id, req.tenant.id, clientPhone.trim(), 'waiting']
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado o ya procesado' });
+      res.json({ message: 'Saliste de la lista de espera' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al salir de lista de espera' });
     }
   });
 

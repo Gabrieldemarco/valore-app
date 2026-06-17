@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AdminDashboard from './Dashboard';
@@ -89,12 +90,13 @@ describe('AdminDashboard', () => {
   });
 
   it('filters tenants by search', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
     const searchInput = screen.getByPlaceholderText('Buscar salón...');
-    fireEvent.change(searchInput, { target: { value: 'Norte' } });
+    await user.type(searchInput, 'Norte');
     await waitFor(() => {
       expect(screen.queryByText('Barbería Centro')).not.toBeInTheDocument();
     });
@@ -102,12 +104,13 @@ describe('AdminDashboard', () => {
   });
 
   it('opens tenant detail modal', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
     const verBtns = screen.getAllByText('Ver');
-    fireEvent.click(verBtns[0]);
+    await user.click(verBtns[0]);
     await waitFor(() => {
       const items = screen.getAllByText('Barbería Centro');
       expect(items.length).toBeGreaterThanOrEqual(2);
@@ -115,17 +118,18 @@ describe('AdminDashboard', () => {
   });
 
   it('closes modal via close button', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
-    fireEvent.click(screen.getAllByText('Ver')[0]);
+    await user.click(screen.getAllByText('Ver')[0]);
     await waitFor(() => {
       const items = screen.getAllByText('Barbería Centro');
       expect(items.length).toBeGreaterThanOrEqual(2);
     }, { timeout: 3000 });
     const closeBtn = document.querySelector('.close-modal');
-    if (closeBtn) fireEvent.click(closeBtn);
+    if (closeBtn) await user.click(closeBtn);
     await waitFor(() => {
       const items = screen.getAllByText('Barbería Centro');
       expect(items.length).toBe(1);
@@ -133,13 +137,14 @@ describe('AdminDashboard', () => {
   });
 
   it('switches to invoices tab in modal', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
-    fireEvent.click(screen.getAllByText('Ver')[0]);
+    await user.click(screen.getAllByText('Ver')[0]);
     await waitFor(() => expect(screen.getByText('Facturas')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Facturas'));
+    await user.click(screen.getByText('Facturas'));
     await waitFor(() => {
       expect(screen.getByText('INV-001')).toBeInTheDocument();
       expect(screen.getByText('INV-002')).toBeInTheDocument();
@@ -147,19 +152,21 @@ describe('AdminDashboard', () => {
   });
 
   it('switches to payments tab in modal', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
-    fireEvent.click(screen.getAllByText('Ver')[0]);
+    await user.click(screen.getAllByText('Ver')[0]);
     await waitFor(() => expect(screen.getByText('Pagos MP')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Pagos MP'));
+    await user.click(screen.getByText('Pagos MP'));
     await waitFor(() => {
       expect(screen.getByText('MP123')).toBeInTheDocument();
     });
   });
 
   it('shows Twilio config section', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
@@ -167,27 +174,30 @@ describe('AdminDashboard', () => {
   });
 
   it('saves Twilio config', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await screen.findByText(/Twilio \(WhatsApp\)/, {}, { timeout: 3000 });
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ message: 'Configuración de Twilio guardada' }) });
-    fireEvent.click(screen.getByText('Guardar Twilio'));
+    await user.click(screen.getByText('Guardar Twilio'));
     await screen.findByText('Configuración de Twilio guardada', {}, { timeout: 3000 });
   });
 
   it('logout calls logout and navigates', async () => {
+    const user = userEvent.setup();
     const logoutMock = vi.fn();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: logoutMock });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Panel de Administración')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Cerrar sesión'));
+    await user.click(screen.getByText('Cerrar sesión'));
     expect(logoutMock).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/admin/login');
   });
 
   it('shows set-trial button and calls API', async () => {
+    const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
@@ -195,7 +205,7 @@ describe('AdminDashboard', () => {
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
     const trialBtns = screen.getAllByText('Poner en Trial');
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ message: 'Cuenta puesta en trial correctamente' }) });
-    fireEvent.click(trialBtns[0]);
+    await user.click(trialBtns[0]);
     await waitFor(() => {
       expect(screen.getByText('Cuenta puesta en trial correctamente')).toBeInTheDocument();
     });
@@ -203,20 +213,21 @@ describe('AdminDashboard', () => {
   });
 
   it('creates a new invoice in modal', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
-    fireEvent.click(screen.getAllByText('Ver')[0]);
+    await user.click(screen.getAllByText('Ver')[0]);
     await waitFor(() => expect(screen.getByText('Facturas')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Facturas'));
+    await user.click(screen.getByText('Facturas'));
     await waitFor(() => expect(screen.getByText('Nueva Factura')).toBeInTheDocument());
     const amountInput = screen.getByPlaceholderText('0.00');
     const descInput = screen.getByPlaceholderText('Ej: Plan Mensual Pro');
-    fireEvent.change(amountInput, { target: { value: '1500' } });
-    fireEvent.change(descInput, { target: { value: 'Plan Premium' } });
+    await user.type(amountInput, '1500');
+    await user.type(descInput, 'Plan Premium');
     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ message: 'Factura creada' }) });
-    fireEvent.click(screen.getByText('Crear Factura'));
+    await user.click(screen.getByText('Crear Factura'));
     await waitFor(() => {
       expect(screen.getByText('Factura creada')).toBeInTheDocument();
     });

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
@@ -37,6 +38,8 @@ interface LandingBookingSectionProps {
   clientPhone: string;
   clientEmail: string;
   clientNotes: string;
+  couponCode: string;
+  couponDiscount: { valid: boolean; discount_amount?: number; final_price?: number; error?: string } | null;
   msg: string;
   errMsg: string;
   isQuickBook: boolean;
@@ -59,6 +62,8 @@ interface LandingBookingSectionProps {
   onSetClientPhone: (v: string) => void;
   onSetClientEmail: (v: string) => void;
   onSetClientNotes: (v: string) => void;
+  onSetCouponCode: (v: string) => void;
+  onSetCouponDiscount: (v: { valid: boolean; discount_amount?: number; final_price?: number; error?: string } | null) => void;
   onSetCalMonth: (m: number) => void;
   onSetCalYear: (y: number) => void;
   onFetchSlots: () => void;
@@ -69,24 +74,63 @@ interface LandingBookingSectionProps {
   onSetRecurringEnabled: (v: boolean) => void;
   onSetRecurringFrequency: (v: string) => void;
   onSetRecurringCount: (v: number) => void;
+  captchaEnabled: boolean;
+  captchaSiteKey: string;
+  captchaToken: string;
+  onSetCaptchaToken: (v: string) => void;
+  showWaitlistForm: boolean;
+  waitlistMsg: string;
+  waitlistErr: string;
+  onSetShowWaitlistForm: (v: boolean) => void;
+  onJoinWaitlist: () => void;
 }
 
 export default function LandingBookingSection({
   staff, services, slots, slotsTimeout,
   step, selectedStaff, selectedService, selectedDate, selectedTime,
   clientName, clientPhone, clientEmail, clientNotes,
+  couponCode, couponDiscount,
   msg, errMsg, isQuickBook, quickBookError, tenantSlug,
   calMonth, calYear, today, monthNames, dayNames, daysInMonth, firstDayOfMonth,
   fixImageUrl,
   onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
   onSetClientName, onSetClientPhone, onSetClientEmail, onSetClientNotes,
+  onSetCouponCode, onSetCouponDiscount,
   onSetCalMonth, onSetCalYear, onFetchSlots, onSubmit,
   recurringEnabled, recurringFrequency, recurringCount,
   onSetRecurringEnabled, onSetRecurringFrequency, onSetRecurringCount,
+  captchaEnabled, captchaSiteKey, captchaToken, onSetCaptchaToken,
+  showWaitlistForm, waitlistMsg, waitlistErr, onSetShowWaitlistForm, onJoinWaitlist,
 }: LandingBookingSectionProps) {
   const { t } = useTranslation();
   const selStaff = selectedStaff ? staff.find(s => s.id === selectedStaff) : null;
   const todayObj = new Date();
+  const turnstileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!captchaEnabled || !captchaSiteKey || step !== 5 || !turnstileRef.current) return;
+    if (captchaToken) return;
+    const id = 'turnstile-widget';
+    if (document.getElementById(id)) return;
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.id = id;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (turnstileRef.current && (window as any).turnstile) {
+        (window as any).turnstile.render(turnstileRef.current, {
+          sitekey: captchaSiteKey,
+          callback: (token: string) => onSetCaptchaToken(token),
+        });
+      }
+    };
+    document.body.appendChild(script);
+    return () => {
+      const s = document.getElementById(id);
+      if (s) s.remove();
+    };
+  }, [captchaEnabled, captchaSiteKey, step, captchaToken, onSetCaptchaToken]);
 
   const resetBooking = () => {
     if (isQuickBook) {
@@ -290,10 +334,25 @@ export default function LandingBookingSection({
                     </button>
                   </p>
                 </div>
-              ) : slots.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🕐</div>
-                  <p>{t('booking.noSlots')}</p>
+              ) : showWaitlistForm ? (
+                <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
+                  <h4 style={{ margin: '0 0 8px' }}>{t('booking.waitlistFormTitle')}</h4>
+                  <p style={{ fontSize: 13, marginBottom: 16 }}>{t('booking.waitlistFormHint')}</p>
+                  {waitlistMsg ? (
+                    <div style={{ color: '#4ade80', fontWeight: 600 }}>{waitlistMsg}</div>
+                  ) : (
+                    <>
+                      {waitlistErr && <div className="result error" style={{ marginBottom: 12 }}>{waitlistErr}</div>}
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                        <button type="button" className="btn btn-primary" onClick={onJoinWaitlist}>
+                          {t('booking.waitlistConfirm')}
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={() => { onSetShowWaitlistForm(false); }}>
+                          {t('booking.cancelButton')}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="slots-grid" style={{ marginTop: 6 }}>
@@ -360,6 +419,24 @@ export default function LandingBookingSection({
                 <label>{t('booking.notesLabel')}</label>
                 <textarea value={clientNotes} onChange={e => onSetClientNotes(e.target.value)} placeholder={t('booking.notesPlaceholder')} rows={3} />
               </div>
+              <div className="form-group">
+                <label>{t('booking.couponLabel')}</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input type="text" value={couponCode} onChange={e => { onSetCouponCode(e.target.value.toUpperCase()); onSetCouponDiscount(null); }}
+                    placeholder={t('booking.couponPlaceholder')} style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'inherit' }} />
+                </div>
+                {couponDiscount && (
+                  <div style={{ marginTop: 4, fontSize: 13 }}>
+                    {couponDiscount.valid ? (
+                      <span style={{ color: '#4ade80' }}>
+                        {t('booking.couponApplied')} -${couponDiscount.discount_amount}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#fca5a5' }}>{couponDiscount.error || t('booking.couponInvalid')}</span>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="form-group" style={{ marginTop: 8 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                   <input type="checkbox" checked={recurringEnabled} onChange={e => onSetRecurringEnabled(e.target.checked)} style={{ width: 18, height: 18 }} />
@@ -382,6 +459,11 @@ export default function LandingBookingSection({
                   </div>
                 )}
               </div>
+              {captchaEnabled && captchaSiteKey && (
+                <div className="form-group" style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                  <div ref={turnstileRef} />
+                </div>
+              )}
               <div className="booking-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => onSetStep(4)}>{t('booking.backButton')}</button>
                 <button type="submit" className="btn btn-primary btn-lg">{t('booking.submitButton')}</button>

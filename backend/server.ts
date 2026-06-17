@@ -99,12 +99,12 @@ app.use(helmet({
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       connectSrc: ["'self'"],
-      frameSrc: ["'self'", "https:", "http:"],
+      frameSrc: ["'self'", "https:", "http:", "https://challenges.cloudflare.com"],
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -255,6 +255,7 @@ app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, 
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
 app.use('/api', require('./routes/misc').default(apiLimiter));
 app.use('/api', require('./routes/push').default());
+app.use('/api', require('./routes/google').default());
 
 // ========== SWAGGER API DOCS ==========
 if (config.SWAGGER_UI_ENABLED) {
@@ -364,7 +365,7 @@ app.get('/p/:slug', async (req, res, next) => {
               brand_primary_color, brand_secondary_color, brand_logo_url,
               landing_description, landing_hero_image,
               landing_gallery, landing_team, landing_social_links,
-              landing_custom_css, landing_layout, opening_hours
+              landing_custom_css, landing_layout, opening_hours, captcha_enabled
        FROM tenants WHERE slug = $1`,
       [slug]
     );
@@ -398,7 +399,7 @@ app.get('/p/:slug', async (req, res, next) => {
     html = html.replace('<div id="root">',
       '<script>window.__INITIAL_DATA__='
       + JSON.stringify(initialData).replace(/</g, '\\u003c')
-      + '</script><div id="root">'
+      + ';window.__CAPTCHA_SITE_KEY__=' + JSON.stringify(config.TURNSTILE_SITE_KEY || '') + '</script><div id="root">'
       + prerenderHero(tenantRow, req));
 
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -467,8 +468,8 @@ cron.schedule('0 8 * * *', async () => {
   }
 });
 
-cron.schedule('30 8 * * *', async () => {
-  logger.info('🔔 Ejecutando recordatorios de turnos del día...');
+cron.schedule('0 20 * * *', async () => {
+  logger.info('🔔 Ejecutando recordatorios de turnos para mañana...');
   try {
     const result = await sendAppointmentReminders();
     logger.info('🔔 Resultado recordatorios:', result);
@@ -541,7 +542,7 @@ logger.info('⏰ Tareas programadas:');
 logger.info('  • Facturación: Día 1 de cada mes a las 00:00');
 logger.info('  • Backup DB: Diario a las 03:00');
 logger.info('  • Suspensión trials: Diario a las 08:00');
-logger.info('  • Recordatorio turnos: Diario a las 08:30');
+logger.info('  • Recordatorio turnos: Diario a las 20:00');
 logger.info('  • Recordatorio trial: Diario a las 09:00');
 logger.info('  • Recordatorio pagos: Diario a las 10:00');
 logger.info('  • Suspensión vencidos: Diario a las 23:00');

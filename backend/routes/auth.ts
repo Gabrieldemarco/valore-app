@@ -21,18 +21,20 @@ export default function(loginLimiter, passwordResetLimiter) {
 
   router.post('/register', loginLimiter, [
     body('username').trim().isLength({ min: 3, max: 50 }).withMessage('Usuario debe tener entre 3 y 50 caracteres').escape(),
-    body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres')
+    body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
+    body('name').optional().trim().isLength({ max: 100 }).escape(),
+    body('phone').optional().trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
   ], validate, async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, name, phone } = req.body;
       if (!username || !password) return res.status(400).json({ error: 'Faltan datos' });
       if (password.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
       const exists = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
       if (exists) return res.status(400).json({ error: 'Usuario ya existe' });
       const hashedPassword = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
       const result = await query(
-        `INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role`,
-        [username, hashedPassword, 'client']
+        `INSERT INTO users (username, password, role, name, phone) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, name, role`,
+        [username, hashedPassword, 'client', name || username, phone || null]
       );
       res.status(201).json({ message: 'Usuario creado', user: result.rows[0] });
     } catch (err: any) {
@@ -49,15 +51,15 @@ export default function(loginLimiter, passwordResetLimiter) {
       const { username, password } = req.body;
       if (!username || !password) return res.status(400).json({ error: 'Faltan credenciales' });
       const user = await queryOne('SELECT * FROM users WHERE username = $1', [username]);
-      if (!user) return res.status(400).json({ error: 'Usuario no encontrado' });
+      if (!user) return res.status(400).json({ error: 'Credenciales inválidas' });
       const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return res.status(400).json({ error: 'Contraseña incorrecta' });
+      if (!valid) return res.status(400).json({ error: 'Credenciales inválidas' });
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
         config.JWT_SECRET,
         { expiresIn: '24h', algorithm: config.JWT_ALGORITHM }
       );
-      res.json({ token, username: user.username, role: user.role });
+      res.json({ token, username: user.username, name: user.name || user.username, role: user.role, phone: user.phone });
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error de autenticación' });

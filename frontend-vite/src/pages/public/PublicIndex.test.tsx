@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import PublicIndex from './PublicIndex';
@@ -81,7 +82,7 @@ describe('PublicIndex', () => {
     await waitFor(() => {
       const initials = document.querySelector('.salon-initials');
       expect(initials).toBeInTheDocument();
-      expect(initials?.textContent).toBe('BC');
+      expect(screen.getByText('BC')).toBeInTheDocument();
     });
   });
 
@@ -96,6 +97,7 @@ describe('PublicIndex', () => {
   });
 
   it('gender filter buttons are rendered and clickable', async () => {
+    const user = userEvent.setup();
     renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Caballeros')).toBeInTheDocument();
@@ -105,7 +107,7 @@ describe('PublicIndex', () => {
     expect(screen.getAllByText('Todos').length).toBeGreaterThanOrEqual(1);
     const caballerosBtns = screen.getAllByText('Caballeros');
     const filterBtn = caballerosBtns.find(el => el.closest('button'));
-    if (filterBtn) fireEvent.click(filterBtn);
+    if (filterBtn) await user.click(filterBtn);
     await waitFor(() => {
       const allCaba = screen.getAllByText('Caballeros');
       const activeBtn = allCaba.find(el => el.closest('button')?.classList.contains('active'));
@@ -114,12 +116,13 @@ describe('PublicIndex', () => {
   });
 
   it('search filters salons by name', async () => {
+    const user = userEvent.setup();
     renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
     const searchInput = screen.getByPlaceholderText('Buscar por nombre o ubicación...');
-    fireEvent.change(searchInput, { target: { value: 'Elegance' } });
+    await user.type(searchInput, 'Elegance');
     await waitFor(() => {
       expect(screen.queryByText('Barbería Clásica')).not.toBeInTheDocument();
     });
@@ -127,13 +130,14 @@ describe('PublicIndex', () => {
   });
 
   it('hero collage click sets gender filter', async () => {
+    const user = userEvent.setup();
     renderPublicIndex(mockSalons);
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
     const collageCards = document.querySelectorAll('.collage-card');
     expect(collageCards.length).toBe(2);
-    if (collageCards[1]) fireEvent.click(collageCards[1]);
+    if (collageCards[1]) await user.click(collageCards[1]);
     await waitFor(() => {
       expect(document.querySelector('.filter-btn.active')).toBeInTheDocument();
     });

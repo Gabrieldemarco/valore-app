@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
+import { logger } from '../../services/logger';
 import '../../styles/landing.css';
 import LandingSkeletonLoader from './LandingSkeletonLoader';
 import LandingHeroSection from './LandingHeroSection';
@@ -128,6 +129,12 @@ export default function Landing() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientNotes, setClientNotes] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState<{ valid: boolean; discount_amount?: number; final_price?: number; error?: string } | null>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [showWaitlistForm, setShowWaitlistForm] = useState(false);
+  const [waitlistMsg, setWaitlistMsg] = useState('');
+  const [waitlistErr, setWaitlistErr] = useState('');
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
   const [quickBookError, setQuickBookError] = useState(false);
@@ -166,6 +173,26 @@ export default function Landing() {
       .finally(() => setLoading(false));
   }, [tenantSlug]);
 
+  // ── Auto-fill for logged-in clients ──
+  useEffect(() => {
+    const token = localStorage.getItem('clientToken');
+    if (!token) return;
+    const storedName = localStorage.getItem('clientDisplayName') || localStorage.getItem('clientName');
+    const storedPhone = localStorage.getItem('clientPhone');
+    if (storedName) setClientName(storedName);
+    if (storedPhone) setClientPhone(storedPhone);
+    if (!storedName || !storedPhone) {
+      fetch('/api/client/me', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(data => {
+          const displayName = data.user?.name || data.user?.username;
+          if (displayName) { setClientName(displayName); localStorage.setItem('clientDisplayName', displayName); }
+          if (data.user?.phone) { setClientPhone(data.user.phone); localStorage.setItem('clientPhone', data.user.phone); }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // ── QuickBook pre-selection ──
   useEffect(() => {
     if (isQuickBook && services.length > 0 && !quickBookError) {
@@ -192,7 +219,7 @@ export default function Landing() {
     timeoutRef.current = setTimeout(() => setSlotsTimeout(true), 8000);
     api.get<{ slots: SlotItem[] }>(url)
       .then(r => { setSlotsTimeout(false); setSlots(r.slots || []); })
-      .catch(() => { setSlotsTimeout(false); setSlots([]); console.warn('Error al cargar slots'); })
+      .catch(() => { setSlotsTimeout(false); setSlots([]); logger.warn('Error al cargar slots'); })
       .finally(() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); });
   }, [selectedDate, selectedService, selectedStaff, tenantSlug]);
 
@@ -271,7 +298,9 @@ export default function Landing() {
         notes: clientNotes || undefined,
       };
       if (selectedStaff) body.staffId = selectedStaff;
-      if (recurringEnabled) {
+    if (couponCode) body.couponCode = couponCode.toUpperCase();
+    if (captchaToken) body.captchaToken = captchaToken;
+    if (recurringEnabled) {
         body.recurring = { frequency: recurringFrequency, count: recurringCount };
       }
       const res: any = await api.post(`/p/${tenantSlug}/appointments`, body);
@@ -285,6 +314,32 @@ export default function Landing() {
       setRecurringEnabled(false); setRecurringFrequency('weekly'); setRecurringCount(4);
     } catch (e: unknown) {
       setErrMsg(e instanceof Error ? e.message : t('landing.bookError'));
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    setWaitlistMsg(''); setWaitlistErr('');
+    if (clientPhone.replace(/[^0-9]/g, '').length < 7) {
+      setWaitlistErr('El teléfono debe tener al menos 7 dígitos');
+      return;
+    }
+    if (!selectedService) {
+      setWaitlistErr('Seleccioná un servicio primero');
+      return;
+    }
+    try {
+      const body: Record<string, unknown> = {
+        clientName, clientPhone,
+        clientEmail: clientEmail || undefined,
+        serviceId: selectedService,
+        notes: clientNotes || undefined,
+      };
+      if (selectedStaff) body.staffId = selectedStaff;
+      await api.post(`/p/${tenantSlug}/waitlist`, body);
+      setWaitlistMsg('Te agregamos a la lista de espera');
+      setTimeout(() => setShowWaitlistForm(false), 2000);
+    } catch (e: unknown) {
+      setWaitlistErr(e instanceof Error ? e.message : 'Error al unirse a la lista de espera');
     }
   };
 
@@ -381,6 +436,8 @@ export default function Landing() {
             clientPhone={clientPhone}
             clientEmail={clientEmail}
             clientNotes={clientNotes}
+            couponCode={couponCode}
+            couponDiscount={couponDiscount}
             msg={msg}
             errMsg={errMsg}
             isQuickBook={isQuickBook}
@@ -403,6 +460,8 @@ export default function Landing() {
             onSetClientPhone={setClientPhone}
             onSetClientEmail={setClientEmail}
             onSetClientNotes={setClientNotes}
+            onSetCouponCode={setCouponCode}
+            onSetCouponDiscount={setCouponDiscount}
             onSetCalMonth={setCalMonth}
             onSetCalYear={setCalYear}
             onFetchSlots={fetchSlots}
@@ -413,6 +472,15 @@ export default function Landing() {
             onSetRecurringEnabled={setRecurringEnabled}
             onSetRecurringFrequency={setRecurringFrequency}
             onSetRecurringCount={setRecurringCount}
+            captchaEnabled={tenant?.captcha_enabled || false}
+            captchaSiteKey={(window as any).__CAPTCHA_SITE_KEY__ || ''}
+            captchaToken={captchaToken}
+            onSetCaptchaToken={setCaptchaToken}
+            showWaitlistForm={showWaitlistForm}
+            waitlistMsg={waitlistMsg}
+            waitlistErr={waitlistErr}
+            onSetShowWaitlistForm={setShowWaitlistForm}
+            onJoinWaitlist={handleJoinWaitlist}
           />
           </section>
         );

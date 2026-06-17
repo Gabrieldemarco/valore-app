@@ -117,6 +117,7 @@ async function initDB() {
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'client',
+        phone TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -156,11 +157,13 @@ async function initDB() {
         appointment_date TIMESTAMP NOT NULL,
         status TEXT DEFAULT 'confirmed',
         notes TEXT,
-        internal_notes TEXT,
-        reminder_sent BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+          internal_notes TEXT,
+          coupon_code TEXT,
+          discount_amount DECIMAL(10,2) DEFAULT 0,
+          reminder_sent BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
 
       CREATE TABLE IF NOT EXISTS personal_agenda (
         id SERIAL PRIMARY KEY,
@@ -231,7 +234,22 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date 
+      CREATE TABLE IF NOT EXISTS coupons (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+        code TEXT NOT NULL,
+        discount_type TEXT NOT NULL DEFAULT 'percentage',
+        discount_value DECIMAL(10,2) NOT NULL DEFAULT 0,
+        min_appointment_amount DECIMAL(10,2) DEFAULT 0,
+        max_uses INTEGER,
+        current_uses INTEGER DEFAULT 0,
+        expires_at TIMESTAMP,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(tenant_id, code)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date
       ON appointments(tenant_id, appointment_date);
       CREATE INDEX IF NOT EXISTS idx_appointments_tenant_status 
       ON appointments(tenant_id, status);

@@ -1,0 +1,2 @@
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;

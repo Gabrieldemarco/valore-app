@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import StaffRegister from './Register';
@@ -32,36 +33,38 @@ describe('StaffRegister', () => {
   });
 
   it('shows error on failed registration', async () => {
+    const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => ({ error: 'El email ya está registrado' }),
     });
     renderRegister();
-    fireEvent.change(screen.getByPlaceholderText('Ej: Estilo Único'), { target: { value: 'Mi Salon' } });
-    fireEvent.change(screen.getByPlaceholderText('tu@email.com'), { target: { value: 'test@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: '123456' } });
+    await user.type(screen.getByPlaceholderText('Ej: Estilo Único'), 'Mi Salon');
+    await user.type(screen.getByPlaceholderText('tu@email.com'), 'test@test.com');
+    await user.type(screen.getByPlaceholderText('Mínimo 6 caracteres'), '123456');
     const termsCheckbox = screen.getByLabelText(/Acepto los/);
-    fireEvent.click(termsCheckbox);
-    fireEvent.click(screen.getByText('Crear Cuenta'));
+    await user.click(termsCheckbox);
+    await user.click(screen.getByText('Crear Cuenta'));
     await waitFor(() => {
       expect(screen.getByText('El email ya está registrado')).toBeInTheDocument();
     });
   });
 
   it('shows success and redirects on successful registration', async () => {
+    const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 201,
       json: async () => ({ message: 'Registro exitoso' }),
     });
     renderRegister();
-    fireEvent.change(screen.getByPlaceholderText('Ej: Estilo Único'), { target: { value: 'Mi Salon' } });
-    fireEvent.change(screen.getByPlaceholderText('tu@email.com'), { target: { value: 'test@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Mínimo 6 caracteres'), { target: { value: '123456' } });
+    await user.type(screen.getByPlaceholderText('Ej: Estilo Único'), 'Mi Salon');
+    await user.type(screen.getByPlaceholderText('tu@email.com'), 'test@test.com');
+    await user.type(screen.getByPlaceholderText('Mínimo 6 caracteres'), '123456');
     const termsCheckbox = screen.getByLabelText(/Acepto los/);
-    fireEvent.click(termsCheckbox);
-    fireEvent.click(screen.getByText('Crear Cuenta'));
+    await user.click(termsCheckbox);
+    await user.click(screen.getByText('Crear Cuenta'));
     await waitFor(() => {
       expect(screen.getByText('Registro exitoso')).toBeInTheDocument();
     });

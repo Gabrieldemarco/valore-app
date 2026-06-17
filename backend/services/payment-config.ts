@@ -41,7 +41,7 @@ async function loadPlanPricesFromDB(query) {
       }
     }
 
-    console.log('✅ Precios de planes cargados desde DB:', {
+    logger.info('✅ Precios de planes cargados desde DB:', {
       pro: PLANS.pro.price,
       enterprise: PLANS.enterprise.price
     });

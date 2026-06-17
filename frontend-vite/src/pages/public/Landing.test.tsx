@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, beforeEach, vi } from 'vitest';
 import Landing from './Landing';
@@ -127,11 +128,12 @@ describe('Landing', () => {
   });
 
   test('advances to step 2 when selecting a staff member', async () => {
+    const user = userEvent.setup();
     mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument());
     const anaCards = screen.getAllByText('Ana López');
-    fireEvent.click(anaCards[1]);
+    await user.click(anaCards[1]);
     await waitFor(() => {
       const activeSteps = document.querySelectorAll('.step.active');
       expect(activeSteps.length).toBeGreaterThan(0);
@@ -139,6 +141,7 @@ describe('Landing', () => {
   });
 
   test('submits booking form and shows success message', async () => {
+    const user = userEvent.setup();
     let bookingCalled = false;
 
     mockFetch.mockImplementation((url: string | URL, options?: RequestInit) => {
@@ -152,7 +155,7 @@ describe('Landing', () => {
     // Wait for initial data
     await waitFor(() => expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument());
     const anaCardsSubmit = screen.getAllByText('Ana López');
-    fireEvent.click(anaCardsSubmit[1]);
+    await user.click(anaCardsSubmit[1]);
     await waitFor(() => {
       const steps = document.querySelectorAll('.step.active');
       expect(steps.length).toBeGreaterThan(0);
@@ -161,7 +164,7 @@ describe('Landing', () => {
     // Step 2: select service
     await waitFor(() => expect(screen.getByText('Elegí un servicio')).toBeInTheDocument());
     const serviceCards = screen.getAllByText('Corte moderno');
-    fireEvent.click(serviceCards[1]);
+    await user.click(serviceCards[1]);
 
     // Step 3: select a date
     await waitFor(() => {
@@ -169,23 +172,23 @@ describe('Landing', () => {
     });
     const todayBtn = document.querySelector('.cal-today-btn');
     expect(todayBtn).toBeInTheDocument();
-    fireEvent.click(todayBtn!);
+    await user.click(todayBtn!);
     const futureDay = document.querySelector('.cal-day:not(.disabled):not(.empty)');
-    if (futureDay) fireEvent.click(futureDay);
+    if (futureDay) await user.click(futureDay);
 
     // Step 4: wait for slots and select time
     await waitFor(() => {
       expect(screen.getByText('10:00')).toBeInTheDocument();
     }, { timeout: 2000 });
-    fireEvent.click(screen.getByText('10:00'));
+    await user.click(screen.getByText('10:00'));
 
     // Step 5: fill form and submit
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Tu nombre')).toBeInTheDocument();
     });
-    fireEvent.change(screen.getByPlaceholderText('Tu nombre'), { target: { value: 'María' } });
-    fireEvent.change(screen.getByPlaceholderText('099 123 456'), { target: { value: '099123456' } });
-    fireEvent.click(screen.getByText('Confirmar turno'));
+    await user.type(screen.getByPlaceholderText('Tu nombre'), 'María');
+    await user.type(screen.getByPlaceholderText('099 123 456'), '099123456');
+    await user.click(screen.getByText('Confirmar turno'));
 
     await waitFor(() => {
       expect(screen.getByText('Turno reservado con éxito')).toBeInTheDocument();

@@ -1,9 +1,29 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, beforeEach, vi } from 'vitest';
 import StaffDashboard from './Dashboard';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Mock } from 'vitest';
+
+vi.mock('../../api/client', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../api/client')>();
+  return {
+    ...mod,
+    api: {
+      get: (path: string) => {
+        if (path === '/api/tenant/stats/summary') return Promise.resolve({ todayAppointments: 2, monthAppointments: 15, monthRevenue: 7500, pendingAppointments: 3, completedAppointments: 10, cancellationRate: 10 });
+        if (path === '/api/tenant/stats/revenue-by-month') return Promise.resolve({ months: [{ month: '2026-01', appointments: 10, revenue: 5000 }, { month: '2026-02', appointments: 12, revenue: 6000 }, { month: '2026-03', appointments: 15, revenue: 7500 }] });
+        if (path === '/api/tenant/stats/top-services') return Promise.resolve({ services: [{ service: 'Corte', count: 20, avg_price: 500 }, { service: 'Tintura', count: 10, avg_price: 1200 }] });
+        return mod.api.get(path);
+      },
+      post: mod.api.post,
+      put: mod.api.put,
+      delete: mod.api.delete,
+    },
+  };
+});
+
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -70,6 +90,26 @@ const mockAppointments = {
   totalPages: 1,
 };
 
+const mockAnalyticsSummary = {
+  todayAppointments: 2, monthAppointments: 15, monthRevenue: 7500,
+  pendingAppointments: 3, completedAppointments: 10, cancellationRate: 10,
+};
+
+const mockRevenueByMonth = {
+  months: [
+    { month: '2026-01', appointments: 10, revenue: 5000 },
+    { month: '2026-02', appointments: 12, revenue: 6000 },
+    { month: '2026-03', appointments: 15, revenue: 7500 },
+  ],
+};
+
+const mockTopServices = {
+  services: [
+    { service: 'Corte', count: 20, avg_price: 500 },
+    { service: 'Tintura', count: 10, avg_price: 1200 },
+  ],
+};
+
 function setupFetchResponses() {
   mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
@@ -80,6 +120,9 @@ function setupFetchResponses() {
     if (u.includes('/api/tenant/services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockServicesList) });
     if (u.includes('/api/tenant/clients')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockClients) });
     if (u.includes('/api/appointments')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAppointments) });
+    if (u.includes('/api/tenant/stats/summary')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAnalyticsSummary) });
+    if (u.includes('/api/tenant/stats/revenue-by-month')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockRevenueByMonth) });
+    if (u.includes('/api/tenant/stats/top-services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTopServices) });
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
 }
@@ -107,7 +150,7 @@ beforeEach(() => {
 describe('StaffDashboard', () => {
   test('redirects to login when no token', async () => {
     renderDashboard();
-    await waitFor(() => {
+    await vi.waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/staff/login');
     });
   });
@@ -116,82 +159,89 @@ describe('StaffDashboard', () => {
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetchResponses();
     renderDashboard();
-    await waitFor(() => {
-      expect(screen.getByText('Gestión de Turnos')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Gestión de Turnos')).toBeInTheDocument();
     expect(screen.getByText('Carlos')).toBeInTheDocument();
     expect(screen.getByText('Sofia')).toBeInTheDocument();
-    expect(screen.getByText('📋 Turnos')).toBeInTheDocument();
-    expect(screen.getByText('👥 Staff')).toBeInTheDocument();
-    expect(screen.getByText('💇 Servicios')).toBeInTheDocument();
+    expect(screen.getAllByText('Turnos')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Staff')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Servicios')[0]).toBeInTheDocument();
   });
 
   test('switches between tabs', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetchResponses();
     renderDashboard();
-    await waitFor(() => expect(screen.getByText('Carlos')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('👥 Staff'));
-    await waitFor(() => {
-      expect(screen.getByText('Ana')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getAllByText('Staff')[0]);
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Luis')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('💇 Servicios'));
-    await waitFor(() => {
-      expect(screen.getAllByText('Corte').length).toBeGreaterThan(0);
-    });
+    await user.click(screen.getAllByText('Servicios')[0]);
+    const corteElements = await screen.findAllByText('Corte');
+    expect(corteElements.length).toBeGreaterThan(0);
   });
 
   test('opens new appointment modal', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetchResponses();
     renderDashboard();
-    await waitFor(() => expect(screen.getByText('Carlos')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('+ Nuevo Turno'));
-    await waitFor(() => {
-      expect(screen.getByText('Nuevo Turno')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getAllByText('Nuevo Turno')[0]);
+    expect(await screen.findByText('Crear Turno')).toBeInTheDocument();
   });
 
   test('opens staff modal and creates staff member', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetchResponses();
     renderDashboard();
-    await waitFor(() => expect(screen.getByText('Carlos')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('👥 Staff'));
-    await waitFor(() => expect(screen.getByText('Ana')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('+ Nuevo Peluquero'));
-    await waitFor(() => {
-      expect(screen.getByText('Nuevo Peluquero')).toBeInTheDocument();
-    });
-    fireEvent.change(screen.getByPlaceholderText('Nombre del peluquero'), { target: { value: 'Pedro' } });
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getAllByText('Staff')[0]);
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    await user.click(screen.getByText('+ Nuevo Peluquero'));
+    expect(await screen.findByText('Nuevo Peluquero')).toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText('Nombre del peluquero'));
+    await user.type(screen.getByPlaceholderText('Nombre del peluquero'), 'Pedro');
     const emailInput = screen.getByPlaceholderText('email@ejemplo.com') as HTMLInputElement;
-    fireEvent.change(emailInput, { target: { value: 'pedro@test.com' } });
+    await user.clear(emailInput);
+    await user.type(emailInput, 'pedro@test.com');
     const createBtn = screen.getByText('Crear Peluquero');
     expect(createBtn).toBeInTheDocument();
   });
 
   test('opens services modal and creates service', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetchResponses();
     renderDashboard();
-    await waitFor(() => expect(screen.getByText('Carlos')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('💇 Servicios'));
-    await waitFor(() => {
-      const corteElements = screen.getAllByText('Corte');
-      expect(corteElements.length).toBeGreaterThan(0);
-    });
-    fireEvent.click(screen.getByText('+ Nuevo Servicio'));
-    await waitFor(() => {
-      expect(screen.getByText('Nuevo Servicio')).toBeInTheDocument();
-    });
-    fireEvent.change(screen.getByPlaceholderText('Ej: Corte de cabello'), { target: { value: 'Peinado' } });
-    fireEvent.change(screen.getByDisplayValue('30'), { target: { value: '45' } });
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getAllByText('Servicios')[0]);
+    const corteElements = await screen.findAllByText('Corte');
+    expect(corteElements.length).toBeGreaterThan(0);
+    await user.click(screen.getByText('+ Nuevo Servicio'));
+    expect(await screen.findByText('Nuevo Servicio')).toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText('Ej: Corte de cabello'));
+    await user.type(screen.getByPlaceholderText('Ej: Corte de cabello'), 'Peinado');
+    const durationInput = screen.getByDisplayValue('30') as HTMLInputElement;
+    await user.clear(durationInput);
+    await user.type(durationInput, '45');
     const createBtn = screen.getByText('Crear Servicio');
     expect(createBtn).toBeInTheDocument();
   });
 
+  test('analytics tab loads when clicked', async () => {
+    const user = userEvent.setup();
+    (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
+    setupFetchResponses();
+    renderDashboard();
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getByText('📊 Analytics'));
+    expect(await screen.findByText('Ingresos del mes')).toBeInTheDocument();
+  });
+
   test('paginates appointments', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     mockFetch.mockImplementation((url: string | URL) => {
       const u = typeof url === 'string' ? url : url.toString();
@@ -207,13 +257,14 @@ describe('StaffDashboard', () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ appointments: Array.from({ length: 20 }, (_, i) => ({ id: i + 1, client_name: `Cliente ${i + 1}`, service: 'Corte', date: '2026-06-01', time: `${(i % 12) + 8}:00`, appointment_date: `2026-06-01T${(i % 12) + 8}:00:00`, status: 'confirmed', client_phone: `+59899${String(i).padStart(5, '0')}` })), total: 25, totalPages: 2 }) });
       }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    if (u.includes('/api/tenant/stats/summary')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAnalyticsSummary) });
+    if (u.includes('/api/tenant/stats/revenue-by-month')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockRevenueByMonth) });
+    if (u.includes('/api/tenant/stats/top-services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTopServices) });
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     });
     renderDashboard();
-    await waitFor(() => expect(screen.getByText(/Siguiente/)).toBeInTheDocument());
-    fireEvent.click(screen.getByText(/Siguiente/));
-    await waitFor(() => {
-      expect(screen.getByText('Page2')).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Siguiente/)).toBeInTheDocument();
+    await user.click(screen.getByText(/Siguiente/));
+    expect(await screen.findByText('Page2')).toBeInTheDocument();
   });
 });

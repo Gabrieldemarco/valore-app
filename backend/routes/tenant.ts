@@ -175,7 +175,15 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         [status, internalNotes || null, req.params.id, req.user.tenant_id]
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
-      res.json({ message: 'Estado actualizado', appointment: result.rows[0] });
+      let waitlistCount = 0;
+      if (status === 'cancelled') {
+        const wc = await queryOne(
+          'SELECT COUNT(*)::int as count FROM waitlist WHERE tenant_id = $1 AND status = $2',
+          [req.user.tenant_id, 'waiting']
+        );
+        waitlistCount = wc?.count || 0;
+      }
+      res.json({ message: 'Estado actualizado', appointment: result.rows[0], waitlist_count: waitlistCount });
     } catch (err: any) { logger.error('Error al actualizar estado', { error: err.message }); res.status(500).json({ error: 'Error al actualizar estado' }); }
   });
 
@@ -222,10 +230,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
                 brand_primary_color, brand_secondary_color, brand_logo_url,
                 landing_description, landing_enabled, landing_hero_image,
                 landing_gallery, landing_team, landing_services_info,
-                landing_social_links, landing_custom_css, landing_layout, opening_hours, updated_at, plan, trial_end_date,
+                landing_social_links, landing_custom_css, landing_layout, opening_hours, reminder_hours, updated_at, plan, trial_end_date,
                 landing_background_color, landing_hero_height, landing_hero_width,
                 landing_primary_text_color, landing_secondary_text_color,
-                landing_primary_font, landing_secondary_font
+                landing_primary_font, landing_secondary_font,
+                captcha_enabled
           FROM tenants WHERE id = $1`,
         [req.user.tenant_id]
       );
@@ -457,7 +466,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       opening_hours, lat, lng,
       landing_background_color, landing_hero_height, landing_hero_width,
       landing_primary_text_color, landing_secondary_text_color,
-      landing_primary_font, landing_secondary_font, reminder_hours,
+      landing_primary_font, landing_secondary_font, reminder_hours, captcha_enabled,
     } = body;
 
     const sql = `UPDATE tenants SET
@@ -491,8 +500,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
              landing_primary_font=COALESCE($28,landing_primary_font),
              landing_secondary_font=COALESCE($29,landing_secondary_font),
              reminder_hours=COALESCE($30::INTEGER,reminder_hours),
+             captcha_enabled=COALESCE($31::BOOLEAN,captcha_enabled),
              updated_at=NOW()
-            WHERE id=$31 RETURNING *`;
+            WHERE id=$32 RETURNING *`;
 
     const params = [
       business_name, business_address, business_phone,
@@ -516,6 +526,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_primary_font,
       landing_secondary_font,
       reminder_hours !== undefined ? parseInt(reminder_hours, 10) : null,
+      captcha_enabled !== undefined ? captcha_enabled : null,
       tenantId,
     ];
 
@@ -532,6 +543,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('landing_hero_width').optional().isInt({ min: 50, max: 200 }).withMessage('Ancho inválido'),
     body('landing_primary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
     body('landing_secondary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('captcha_enabled').optional().isBoolean().withMessage('captcha_enabled debe ser booleano'),
   ];
 
   router.put('/tenant/settings', authenticateStaff, checkTenantActive, checkTrialExpiration, settingsValidation, validate, async (req, res) => {
@@ -566,7 +578,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.get('/tenant/staff', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
       const staff = await query(
-        'SELECT id, name, email, role, specialties, photo_url, bio, individual_hours, active FROM staff WHERE tenant_id = $1 ORDER BY name',
+        'SELECT id, name, email, role, specialties, photo_url, bio, individual_hours, active, commission_type, commission_value FROM staff WHERE tenant_id = $1 ORDER BY name',
         [req.user.tenant_id]
       );
       res.json({ staff: staff.rows });
@@ -584,7 +596,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.post('/tenant/staff', authenticateStaff, checkTenantActive, createStaffValidation, validate, async (req, res) => {
     try {
-      const { name, email, role = 'staff', specialties = [], photo_url, bio } = req.body;
+      const { name, email, role = 'staff', specialties = [], photo_url, bio, commission_type, commission_value } = req.body;
 
       const exists = await queryOne(
         'SELECT id FROM staff WHERE email = $1 AND tenant_id = $2',
@@ -596,9 +608,9 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       const hashedPassword = await bcrypt.hash(tempPassword, config.BCRYPT_ROUNDS);
 
       const result = await query(
-        `INSERT INTO staff (tenant_id, email, password, name, role, specialties, photo_url, bio)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, name, email, role`,
-        [req.user.tenant_id, email, hashedPassword, name, role, specialties, photo_url, bio]
+        `INSERT INTO staff (tenant_id, email, password, name, role, specialties, photo_url, bio, commission_type, commission_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, name, email, role, commission_type, commission_value`,
+        [req.user.tenant_id, email, hashedPassword, name, role, specialties, photo_url, bio, commission_type || 'none', commission_value !== undefined ? parseFloat(commission_value) : 0]
       );
 
       const tenant = await queryOne('SELECT id, business_name FROM tenants WHERE id = $1', [req.user.tenant_id]);
@@ -625,7 +637,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.put('/tenant/staff/:id', authenticateStaff, checkTenantActive, updateStaffValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, specialties, photo_url, bio, individual_hours, active } = req.body;
+      const { name, email, specialties, photo_url, bio, individual_hours, active, commission_type, commission_value } = req.body;
 
       if (email) {
         const existing = await queryOne(
@@ -643,9 +655,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
            photo_url = COALESCE($4, photo_url),
            bio = COALESCE($5, bio),
            individual_hours = COALESCE($6::JSONB, individual_hours),
-           active = COALESCE($7::BOOLEAN, active)
+           active = COALESCE($7::BOOLEAN, active),
+           commission_type = COALESCE($10, commission_type),
+           commission_value = COALESCE($11, commission_value)
          WHERE id = $8 AND tenant_id = $9 RETURNING *`,
-        [name, email, specialties, photo_url, bio, individual_hours ? JSON.stringify(individual_hours) : null, active, id, req.user.tenant_id]
+        [name, email, specialties, photo_url, bio, individual_hours ? JSON.stringify(individual_hours) : null, active, id, req.user.tenant_id, commission_type, commission_value !== undefined ? parseFloat(commission_value) : null]
       );
 
       if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquero no encontrado' });
@@ -915,6 +929,28 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  router.get('/tenant/stats/revenue-by-staff', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT
+           s.id,
+           s.name,
+           COUNT(a.id) as appointments,
+           COALESCE(SUM(a.service_price), 0) as revenue
+         FROM staff s
+         LEFT JOIN appointments a ON a.staff_id = s.id AND a.tenant_id = s.tenant_id AND a.status != 'cancelled'
+         WHERE s.tenant_id = $1
+         GROUP BY s.id, s.name
+         ORDER BY revenue DESC`,
+        [req.user.tenant_id]
+      );
+      res.json({ staff: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al obtener ingresos por peluquero' });
+    }
+  });
+
   router.get('/tenant/stats/top-services', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
       const result = await query(
@@ -933,6 +969,147 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al obtener servicios' });
+    }
+  });
+
+  // ===== COUPONS =====
+  router.get('/tenant/coupons', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT * FROM coupons WHERE tenant_id = $1 ORDER BY created_at DESC',
+        [req.user.tenant_id]
+      );
+      res.json({ coupons: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar cupones' });
+    }
+  });
+
+  const createCouponValidation = [
+    body('code').trim().isLength({ min: 1, max: 50 }).withMessage('Código inválido').escape(),
+    body('discount_type').isIn(['percentage', 'fixed']).withMessage('Tipo de descuento inválido'),
+    body('discount_value').isFloat({ min: 0 }).withMessage('Valor de descuento inválido'),
+  ];
+
+  router.post('/tenant/coupons', authenticateStaff, checkTenantActive, createCouponValidation, validate, async (req, res) => {
+    try {
+      const { code, discount_type, discount_value, min_appointment_amount, max_uses, expires_at } = req.body;
+      const exists = await queryOne(
+        'SELECT id FROM coupons WHERE code = $1 AND tenant_id = $2',
+        [code.toUpperCase(), req.user.tenant_id]
+      );
+      if (exists) return res.status(400).json({ error: 'Código ya existe' });
+      const result = await query(
+        `INSERT INTO coupons (tenant_id, code, discount_type, discount_value, min_appointment_amount, max_uses, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [req.user.tenant_id, code.toUpperCase(), discount_type, parseFloat(discount_value), min_appointment_amount ? parseFloat(min_appointment_amount) : 0, max_uses || null, expires_at || null]
+      );
+      res.status(201).json({ coupon: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      if (err.code === '23505') return res.status(400).json({ error: 'Código ya existe' });
+      res.status(500).json({ error: 'Error al crear cupón' });
+    }
+  });
+
+  router.put('/tenant/coupons/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { code, discount_type, discount_value, min_appointment_amount, max_uses, expires_at, active } = req.body;
+      const result = await query(
+        `UPDATE coupons SET
+           code = COALESCE($1, code),
+           discount_type = COALESCE($2, discount_type),
+           discount_value = COALESCE($3, discount_value),
+           min_appointment_amount = COALESCE($4, min_appointment_amount),
+           max_uses = $5,
+           expires_at = $6,
+           active = COALESCE($7, active)
+         WHERE id = $8 AND tenant_id = $9 RETURNING *`,
+        [code ? code.toUpperCase() : null, discount_type, discount_value !== undefined ? parseFloat(discount_value) : null, min_appointment_amount !== undefined ? parseFloat(min_appointment_amount) : null, max_uses !== undefined ? max_uses : null, expires_at || null, active, id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Cupón no encontrado' });
+      res.json({ coupon: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      if (err.code === '23505') return res.status(400).json({ error: 'Código ya existe' });
+      res.status(500).json({ error: 'Error al actualizar cupón' });
+    }
+  });
+
+  router.delete('/tenant/coupons/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await query('DELETE FROM coupons WHERE id = $1 AND tenant_id = $2 RETURNING id', [id, req.user.tenant_id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Cupón no encontrado' });
+      res.json({ message: 'Cupón eliminado' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar cupón' });
+    }
+  });
+
+  // ===== PUBLIC COUPON VALIDATION =====
+  router.post('/tenant/validate-coupon', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { code } = req.body;
+      const coupon = await queryOne(
+        `SELECT * FROM coupons WHERE code = $1 AND tenant_id = $2 AND active = true AND (expires_at IS NULL OR expires_at > NOW()) AND (max_uses IS NULL OR current_uses < max_uses)`,
+        [code.toUpperCase(), req.user.tenant_id]
+      );
+      if (!coupon) return res.status(404).json({ error: 'Cupón inválido o vencido' });
+      res.json({ valid: true, coupon });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al validar cupón' });
+    }
+  });
+
+  // ========== WAITLIST (staff) ==========
+  router.get('/tenant/waitlist', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT w.*, s.name as service_name, st.name as staff_name
+         FROM waitlist w
+         LEFT JOIN services s ON w.service_id = s.id
+         LEFT JOIN staff st ON w.staff_id = st.id
+         WHERE w.tenant_id = $1
+         ORDER BY w.created_at DESC`,
+        [req.user.tenant_id]
+      );
+      res.json({ entries: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar lista de espera' });
+    }
+  });
+
+  router.put('/tenant/waitlist/:id/notify', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        `UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1 AND tenant_id = $2 AND status = 'waiting' RETURNING id`,
+        [req.params.id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+      res.json({ message: 'Marcado como notificado' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al actualizar' });
+    }
+  });
+
+  router.delete('/tenant/waitlist/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'DELETE FROM waitlist WHERE id = $1 AND tenant_id = $2 RETURNING id',
+        [req.params.id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+      res.json({ message: 'Eliminado de la lista de espera' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar' });
     }
   });
 

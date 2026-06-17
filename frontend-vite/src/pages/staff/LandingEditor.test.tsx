@@ -1,4 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import LandingEditor from './LandingEditor';
@@ -90,11 +91,12 @@ describe('LandingEditor', () => {
   });
 
   it('switches tabs on click', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Branding'));
+    await user.click(screen.getByText('Branding'));
     await waitFor(() => {
       const activeTab = document.querySelector('.tab-btn.active');
       expect(activeTab).toHaveTextContent('Branding');
@@ -112,11 +114,12 @@ describe('LandingEditor', () => {
   });
 
   it('services tab shows services list', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Servicios'));
+    await user.click(screen.getByText('Servicios'));
     await waitFor(() => {
       const nameInputs = document.querySelectorAll<HTMLInputElement>('input[placeholder="Nombre"]');
       const corte = Array.from(nameInputs).find(i => i.value === 'Corte');
@@ -125,22 +128,24 @@ describe('LandingEditor', () => {
   });
 
   it('services tab has add service button', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Servicios'));
+    await user.click(screen.getByText('Servicios'));
     await waitFor(() => {
       expect(screen.getByText('+ Nuevo Servicio')).toBeInTheDocument();
     });
   });
 
   it('hours tab shows day checkboxes and hour inputs', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Horarios'));
+    await user.click(screen.getByText('Horarios'));
     await waitFor(() => {
       expect(screen.getByText('Días Laborables')).toBeInTheDocument();
       expect(screen.getByText('Hora Apertura')).toBeInTheDocument();
@@ -149,11 +154,12 @@ describe('LandingEditor', () => {
   });
 
   it('social tab shows social media fields', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Redes'));
+    await user.click(screen.getByText('Redes'));
     await waitFor(() => {
       expect(screen.getByText('Instagram')).toBeInTheDocument();
       expect(screen.getByText('Facebook')).toBeInTheDocument();
@@ -162,11 +168,12 @@ describe('LandingEditor', () => {
   });
 
   it('team tab shows staff list', async () => {
+    const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ staffToken: 'staff-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
     setupFetch();
     renderEditor();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Equipo'));
+    await user.click(screen.getByText('Equipo'));
     await waitFor(() => {
       expect(screen.getByDisplayValue('Ana')).toBeInTheDocument();
     }, { timeout: 3000 });
