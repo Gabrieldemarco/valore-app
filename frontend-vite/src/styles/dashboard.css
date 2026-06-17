@@ -307,21 +307,28 @@
     /* Tabs */
     .dash-tabs {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 24px;
       padding: 8px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    .dash-tabs::-webkit-scrollbar { display: none; }
 
     .dash-tab {
-      padding: 10px 20px;
+      padding: 8px 14px;
       border: none;
       background: transparent;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-muted);
       border-radius: 8px;
       transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .dash-tab.active {
@@ -671,14 +678,9 @@
         grid-template-columns: 1fr;
       }
 
-      .dash-tabs {
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
       .dash-tab {
-        font-size: 14px;
-        padding: 8px 12px;
+        font-size: 12px;
+        padding: 6px 10px;
       }
 
       .dash-modal-content {

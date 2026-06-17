@@ -1113,5 +1113,116 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  // ========== PRODUCTOS / INVENTARIO ==========
+
+  const productValidation = [
+    body('name').trim().isLength({ min: 1, max: 200 }).escape(),
+    body('price').isFloat({ min: 0 }),
+    body('cost').optional({ values: 'falsy' }).isFloat({ min: 0 }),
+    body('stock').optional({ values: 'falsy' }).isInt({ min: 0 }),
+    body('min_stock').optional({ values: 'falsy' }).isInt({ min: 0 }),
+    body('category').optional().trim().escape(),
+    body('sku').optional().trim().escape(),
+    body('description').optional().trim().escape(),
+  ];
+
+  router.get('/tenant/products', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, name, description, price, cost, stock, min_stock, category, sku, image_url, active, created_at FROM products WHERE tenant_id = $1 ORDER BY name',
+        [req.user.tenant_id]
+      );
+      res.json({ products: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar productos' }); }
+  });
+
+  router.post('/tenant/products', authenticateStaff, checkTenantActive, productValidation, validate, async (req, res) => {
+    try {
+      const { name, description, price, cost, stock, min_stock, category, sku, image_url } = req.body;
+      const result = await query(
+        `INSERT INTO products (tenant_id, name, description, price, cost, stock, min_stock, category, sku, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [req.user.tenant_id, name, description || '', parseFloat(price), cost ? parseFloat(cost) : 0, stock !== undefined ? parseInt(stock, 10) : 0, min_stock ? parseInt(min_stock, 10) : 0, category || '', sku || '', image_url || '']
+      );
+      res.status(201).json({ message: 'Producto creado', product: result.rows[0] });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al crear producto' }); }
+  });
+
+  router.put('/tenant/products/:id', authenticateStaff, checkTenantActive, productValidation, validate, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, price, cost, stock, min_stock, category, sku, image_url, active } = req.body;
+      const result = await query(
+        `UPDATE products SET
+           name = COALESCE($1, name), description = COALESCE($2, description),
+           price = COALESCE($3::NUMERIC, price), cost = COALESCE($4::NUMERIC, cost),
+           stock = COALESCE($5::INTEGER, stock), min_stock = COALESCE($6::INTEGER, min_stock),
+           category = COALESCE($7, category), sku = COALESCE($8, sku),
+           image_url = COALESCE($9, image_url), active = COALESCE($10::BOOLEAN, active),
+           updated_at = NOW()
+         WHERE id = $11 AND tenant_id = $12 RETURNING *`,
+        [name, description, price !== undefined ? parseFloat(price) : null, cost !== undefined ? parseFloat(cost) : null, stock !== undefined ? parseInt(stock, 10) : null, min_stock !== undefined ? parseInt(min_stock, 10) : null, category, sku, image_url, active, id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+      res.json({ message: 'Producto actualizado', product: result.rows[0] });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al actualizar producto' }); }
+  });
+
+  router.delete('/tenant/products/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query('DELETE FROM products WHERE id = $1 AND tenant_id = $2 RETURNING id', [req.params.id, req.user.tenant_id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+      res.json({ message: 'Producto eliminado' });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al eliminar producto' }); }
+  });
+
+  // ========== VENTAS (POS) ==========
+
+  const saleValidation = [
+    body('items').isArray({ min: 1 }).withMessage('Debe incluir al menos un producto'),
+    body('items.*.product_id').isInt(),
+    body('items.*.name').trim().notEmpty(),
+    body('items.*.quantity').isInt({ min: 1 }),
+    body('items.*.unit_price').isFloat({ min: 0 }),
+    body('items.*.total').isFloat({ min: 0 }),
+    body('total').isFloat({ min: 0 }),
+    body('payment_method').optional().isIn(['cash', 'card', 'mp']),
+    body('client_name').optional().trim().escape(),
+    body('client_phone').optional().trim().escape(),
+  ];
+
+  router.get('/tenant/sales', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, items, total, payment_method, client_name, client_phone, notes, created_at FROM sales WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100',
+        [req.user.tenant_id]
+      );
+      res.json({ sales: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar ventas' }); }
+  });
+
+  router.post('/tenant/sales', authenticateStaff, checkTenantActive, saleValidation, validate, async (req, res) => {
+    try {
+      const { items, total, payment_method, client_name, client_phone, notes } = req.body;
+
+      // Decrement stock for each product
+      for (const item of items) {
+        if (item.product_id) {
+          await query(
+            'UPDATE products SET stock = GREATEST(stock - $1, 0), updated_at = NOW() WHERE id = $2 AND tenant_id = $3',
+            [item.quantity, item.product_id, req.user.tenant_id]
+          );
+        }
+      }
+
+      const result = await query(
+        `INSERT INTO sales (tenant_id, items, total, payment_method, client_name, client_phone, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [req.user.tenant_id, JSON.stringify(items), parseFloat(total), payment_method || 'cash', client_name || '', client_phone || '', notes || '']
+      );
+      res.status(201).json({ message: 'Venta registrada', sale: result.rows[0] });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al registrar venta' }); }
+  });
+
   return router;
 }

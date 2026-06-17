@@ -103,7 +103,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://oauth2.googleapis.com", "https://www.googleapis.com"],
       frameSrc: ["'self'", "https:", "http:", "https://challenges.cloudflare.com"],
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
@@ -256,6 +256,7 @@ app.use('/api', require('./routes/superadmin').default(loginLimiter, createMerca
 app.use('/api', require('./routes/misc').default(apiLimiter));
 app.use('/api', require('./routes/push').default());
 app.use('/api', require('./routes/google').default());
+app.use('/', require('./routes/calendar').default());
 
 // ========== SWAGGER API DOCS ==========
 if (config.SWAGGER_UI_ENABLED) {
@@ -538,6 +539,25 @@ cron.schedule('0 23 * * *', async () => {
   }
 });
 
+// ========== SINCRONIZACIÓN GOOGLE CALENDAR (cada 30 min) ==========
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    const tokens = await query(
+      'SELECT gct.staff_id, gct.tenant_id FROM google_calendar_tokens gct WHERE gct.sync_enabled = true AND gct.refresh_token IS NOT NULL'
+    );
+    for (const row of tokens.rows) {
+      try {
+        const { syncStaffCalendar } = require('./services/google-calendar');
+        await syncStaffCalendar(row.staff_id, row.tenant_id);
+      } catch (err: any) {
+        logger.error(`Calendar auto-sync error for staff ${row.staff_id}:`, err.message);
+      }
+    }
+  } catch (err: any) {
+    logger.error('Calendar auto-sync cron error:', err.message);
+  }
+});
+
 logger.info('⏰ Tareas programadas:');
 logger.info('  • Facturación: Día 1 de cada mes a las 00:00');
 logger.info('  • Backup DB: Diario a las 03:00');
@@ -546,6 +566,7 @@ logger.info('  • Recordatorio turnos: Diario a las 20:00');
 logger.info('  • Recordatorio trial: Diario a las 09:00');
 logger.info('  • Recordatorio pagos: Diario a las 10:00');
 logger.info('  • Suspensión vencidos: Diario a las 23:00');
+logger.info('  • Google Calendar Sync: Cada 30 minutos');
 
 // ========== INICIAR SERVIDOR ==========
 const PORT = process.env.PORT || 3000;

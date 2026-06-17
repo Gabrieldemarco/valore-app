@@ -103,7 +103,7 @@ interface ClientSummary {
   first_appointment: string;
 }
 
-type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics' | 'coupons' | 'waitlist';
+type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics' | 'coupons' | 'waitlist' | 'products' | 'pos';
 
 interface Toast {
   id: number;
@@ -174,9 +174,55 @@ export default function StaffDashboard() {
   const [suggestedClients, setSuggestedClients] = useState<ClientSummary[]>([]);
   const [selectedSuggested, setSelectedSuggested] = useState<ClientSummary | null>(null);
 
+  // ===== PRODUCTOS / INVENTARIO =====
+  interface ProductItem {
+    id: number; name: string; description: string; price: number; cost: number;
+    stock: number; min_stock: number; category: string; sku: string; image_url: string;
+    active: boolean; created_at: string;
+  }
+  const [productsList, setProductsList] = useState<ProductItem[]>([]);
+  const [productsForm, setProductsForm] = useState({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '' });
+  const [productsModal, setProductsModal] = useState<{ open: boolean; editing: ProductItem | null }>({ open: false, editing: null });
+
+  // ===== POS (VENTAS) =====
+  const [salesList, setSalesList] = useState<any[]>([]);
+  const [posCart, setPosCart] = useState<{ product_id: number; name: string; quantity: number; unit_price: number; total: number }[]>([]);
+  const [posClientName, setPosClientName] = useState('');
+  const [posClientPhone, setPosClientPhone] = useState('');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'card' | 'mp'>('cash');
+  const [posNotes, setPosNotes] = useState('');
+  const [posSearch, setPosSearch] = useState('');
+
+  // ===== GOOGLE CALENDAR SYNC =====
+  interface CalendarStatus {
+    connected: boolean;
+    google_email?: string;
+    sync_enabled?: boolean;
+    last_sync?: string;
+    staff_name?: string;
+  }
+  const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({ connected: false });
+  const [calendarSyncing, setCalendarSyncing] = useState(false);
+
   useEffect(() => {
     if (!staffToken) navigate('/staff/login');
   }, [staffToken, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calResult = params.get('calendar');
+    if (calResult === 'connected') {
+      addToast(t('staffDashboard.calendarSyncSyncSuccess'), 'success');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('calendar');
+      window.history.replaceState({}, '', url.toString());
+    } else if (calResult === 'error') {
+      addToast(t('staffDashboard.calendarSyncConnectError'), 'error');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('calendar');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
 
   const addToast = useCallback((message: string, type: 'success' | 'error') => {
     const id = Date.now();
@@ -233,6 +279,27 @@ export default function StaffDashboard() {
       const data = await api.get<{ clients: ClientSummary[] }>(`/api/tenant/clients${query}`);
       setClientsList(data.clients);
     } catch { addToast(t('staffDashboard.toastLoadClientsError'), 'error'); } finally { setClientsLoading(false); }
+  }, []);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const data = await api.get<{ products: ProductItem[] }>('/api/tenant/products');
+      setProductsList(data.products);
+    } catch { addToast('Error al cargar productos', 'error'); }
+  }, []);
+
+  const loadSales = useCallback(async () => {
+    try {
+      const data = await api.get<{ sales: any[] }>('/api/tenant/sales');
+      setSalesList(data.sales);
+    } catch { /* silencioso */ }
+  }, []);
+
+  const loadCalendarStatus = useCallback(async () => {
+    try {
+      const data = await api.get<CalendarStatus>('/api/calendar/status');
+      setCalendarStatus(data);
+    } catch { /* silencioso */ }
   }, []);
 
   const loadAnalytics = useCallback(async (isRefresh?: boolean, range?: string) => {
@@ -337,6 +404,9 @@ export default function StaffDashboard() {
     loadClients();
     loadCoupons();
     loadWaitlist();
+    loadProducts();
+    loadSales();
+    loadCalendarStatus();
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get('payment');
@@ -741,6 +811,84 @@ export default function StaffDashboard() {
     } catch { addToast(t('staffDashboard.toastServiceToggleError'), 'error'); }
   };
 
+  // ===== PRODUCTOS CRUD =====
+  const openProductCreate = () => {
+    setProductsForm({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '' });
+    setProductsModal({ open: true, editing: null });
+  };
+
+  const openProductEdit = (p: ProductItem) => {
+    setProductsForm({ name: p.name, description: p.description, price: String(p.price), cost: String(p.cost), stock: String(p.stock), min_stock: String(p.min_stock), category: p.category, sku: p.sku });
+    setProductsModal({ open: true, editing: p });
+  };
+
+  const saveProduct = async () => {
+    if (!productsForm.name || !productsForm.price) { addToast('Completá nombre y precio', 'error'); return; }
+    try {
+      const body = { name: productsForm.name, description: productsForm.description, price: parseFloat(productsForm.price), cost: parseFloat(productsForm.cost), stock: parseInt(productsForm.stock, 10), min_stock: parseInt(productsForm.min_stock, 10), category: productsForm.category, sku: productsForm.sku };
+      if (productsModal.editing) {
+        await api.put(`/api/tenant/products/${productsModal.editing.id}`, body);
+        addToast('Producto actualizado', 'success');
+      } else {
+        await api.post('/api/tenant/products', body);
+        addToast('Producto creado', 'success');
+      }
+      setProductsModal({ open: false, editing: null });
+      loadProducts();
+    } catch (e: any) { addToast(e?.message || 'Error al guardar', 'error'); }
+  };
+
+  const deleteProduct = async (id: number, name: string) => {
+    if (!confirm(`¿Eliminar "${name}"?`)) return;
+    try {
+      await api.delete(`/api/tenant/products/${id}`);
+      addToast('Producto eliminado', 'success');
+      loadProducts();
+    } catch { addToast('Error al eliminar', 'error'); }
+  };
+
+  const addToCart = (p: ProductItem) => {
+    setPosCart(prev => {
+      const existing = prev.find(i => i.product_id === p.id);
+      if (existing) {
+        return prev.map(i => i.product_id === p.id ? { ...i, quantity: i.quantity + 1, total: (i.quantity + 1) * i.unit_price } : i);
+      }
+      return [...prev, { product_id: p.id, name: p.name, quantity: 1, unit_price: p.price, total: p.price }];
+    });
+  };
+
+  const removeFromCart = (productId: number) => {
+    setPosCart(prev => prev.filter(i => i.product_id !== productId));
+  };
+
+  const updateCartQty = (productId: number, qty: number) => {
+    if (qty < 1) return;
+    setPosCart(prev => prev.map(i => i.product_id === productId ? { ...i, quantity: qty, total: qty * i.unit_price } : i));
+  };
+
+  const posTotal = posCart.reduce((sum, i) => sum + i.total, 0);
+
+  const checkout = async () => {
+    if (posCart.length === 0) { addToast('Agregá productos al carrito', 'error'); return; }
+    try {
+      await api.post('/api/tenant/sales', {
+        items: posCart,
+        total: posTotal,
+        payment_method: posPaymentMethod,
+        client_name: posClientName,
+        client_phone: posClientPhone,
+        notes: posNotes,
+      });
+      addToast('Venta registrada', 'success');
+      setPosCart([]);
+      setPosClientName('');
+      setPosClientPhone('');
+      setPosNotes('');
+      loadSales();
+      loadProducts();
+    } catch (e: any) { addToast(e?.message || 'Error al registrar venta', 'error'); }
+  };
+
   return (
     <div className="dash-body">
       {toasts.length > 0 && (
@@ -927,6 +1075,55 @@ export default function StaffDashboard() {
                   </div>
                 </details>
               </div>
+              <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
+                <details>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.calendarSyncSettingsTitle')}</summary>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>{t('staffDashboard.calendarSyncConnectHint')}</p>
+                  {calendarStatus.connected ? (
+                    <div>
+                      <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 8 }}>
+                        ✅ {t('staffDashboard.calendarSyncConnected')}
+                        {calendarStatus.google_email && <span> — {t('staffDashboard.calendarSyncConnectedAs', { email: calendarStatus.google_email })}</span>}
+                      </p>
+                      {calendarStatus.last_sync && (
+                        <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>
+                          {t('staffDashboard.calendarSyncLastSync', { time: new Date(calendarStatus.last_sync).toLocaleString('es-UY') })}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="dash-btn dash-btn-success" disabled={calendarSyncing} onClick={async () => {
+                          setCalendarSyncing(true);
+                          try {
+                            await api.post('/api/calendar/sync');
+                            addToast(t('staffDashboard.calendarSyncSyncSuccess'), 'success');
+                            loadCalendarStatus();
+                          } catch { addToast(t('staffDashboard.calendarSyncSyncError'), 'error'); }
+                          setCalendarSyncing(false);
+                        }} style={{ fontSize: 13 }}>
+                          {calendarSyncing ? t('staffDashboard.calendarSyncSyncing') : t('staffDashboard.calendarSyncSyncNow')}
+                        </button>
+                        <button className="dash-btn dash-btn-danger" style={{ fontSize: 13 }} onClick={async () => {
+                          if (!confirm('¿Desconectar Google Calendar?')) return;
+                          try {
+                            await api.delete('/api/calendar/disconnect');
+                            setCalendarStatus({ connected: false });
+                            addToast(t('staffDashboard.calendarSyncDisconnected'), 'success');
+                          } catch { addToast(t('staffDashboard.calendarSyncConnectError'), 'error'); }
+                        }}>
+                          {t('staffDashboard.calendarSyncDisconnect')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 8 }}>{t('staffDashboard.calendarSyncNotConnected')}</p>
+                      <a href={`/api/auth/google/calendar?staff_token=${encodeURIComponent(staffToken || '')}`} className="dash-btn dash-btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
+                        {t('staffDashboard.calendarSyncConnect')}
+                      </a>
+                    </div>
+                  )}
+                </details>
+              </div>
 
               <div className="dash-form-group full-width" style={{ textAlign: 'right', marginTop: 10 }}>
                 <button type="submit" className="dash-btn dash-btn-success">{t('staffDashboard.saveSettings')}</button>
@@ -981,9 +1178,9 @@ export default function StaffDashboard() {
         </div>
 
         <div className="dash-tabs glass-panel">
-          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics', 'coupons', 'waitlist'] as Tab[]).map(tab => (
+          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics', 'coupons', 'waitlist', 'products', 'pos'] as Tab[]).map(tab => (
             <button key={tab} className={`dash-tab${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : tab === 'coupons' ? t('staffDashboard.tabCoupons') : tab === 'waitlist' ? t('staffDashboard.tabWaitlist') : t('staffDashboard.tabAnalytics')}
+              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : tab === 'coupons' ? t('staffDashboard.tabCoupons') : tab === 'waitlist' ? t('staffDashboard.tabWaitlist') : tab === 'products' ? t('staffDashboard.tabProducts') : tab === 'pos' ? t('staffDashboard.tabPOS') : t('staffDashboard.tabAnalytics')}
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
@@ -1511,6 +1708,137 @@ export default function StaffDashboard() {
           </div>
         )}
 
+        {activeTab === 'products' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.tabProducts')}</h3>
+              <button className="dash-btn dash-btn-success" onClick={openProductCreate}>+ {t('staffDashboard.servicesAddButton')}</button>
+            </div>
+            {productsList.length === 0 ? (
+              <div className="dash-empty-state glass-panel">
+                <h4>{t('staffDashboard.servicesEmptyTitle')}</h4>
+                <p>{t('staffDashboard.servicesEmptyMessage')}</p>
+              </div>
+            ) : (
+              <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableName')}</th>
+                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Categoría</th>
+                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Precio</th>
+                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Costo</th>
+                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Stock</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableActive')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productsList.map(p => (
+                      <tr key={p.id}>
+                        <td style={{ padding: 12, fontWeight: 600 }}>{p.name}</td>
+                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{p.category || '-'}</td>
+                        <td style={{ padding: 12, textAlign: 'right' }}>${p.price}</td>
+                        <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
+                        <td style={{ padding: 12, textAlign: 'right' }}>
+                          <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
+                          {p.min_stock > 0 && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
+                            {p.active ? t('staffDashboard.servicesYes') : t('staffDashboard.servicesNo')}
+                          </span>
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          <button className="dash-btn dash-btn-success" style={{ marginRight: 8, fontSize: 12 }} onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
+                          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12 }} onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'pos' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>Punto de Venta</h3>
+            </div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <div style={{ flex: '2 1 400px' }}>
+                <input type="text" className="glass-input" placeholder="Buscar producto..." value={posSearch} onChange={e => setPosSearch(e.target.value)} style={{ marginBottom: 12, width: '100%' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
+                  {productsList.filter(p => p.active && (p.stock < 1 || p.name.toLowerCase().includes(posSearch.toLowerCase()))).length === 0 && posSearch ? (
+                    <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1' }}>Sin resultados</p>
+                  ) : productsList.filter(p => p.active && (!posSearch || p.name.toLowerCase().includes(posSearch.toLowerCase()))).map(p => (
+                    <div key={p.id} onClick={() => p.stock > 0 && addToCart(p)} style={{
+                      background: p.stock > 0 ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.08)',
+                      borderRadius: 10, padding: 12, cursor: p.stock > 0 ? 'pointer' : 'not-allowed',
+                      border: '1px solid rgba(99,102,241,0.15)', opacity: p.stock > 0 ? 1 : 0.5,
+                    }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0' }}>{p.name}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
+                      <div style={{ fontSize: 11, color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>Stock: {p.stock}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: '1 1 300px' }}>
+                <div className="glass-panel" style={{ padding: 16, marginBottom: 12 }}>
+                  <h4 style={{ margin: '0 0 12px', color: '#e2e8f0' }}>Carrito ({posCart.length})</h4>
+                  {posCart.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Carrito vacío</p>
+                  ) : (
+                    <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+                      {posCart.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>${item.unit_price} c/u</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <button className="dash-btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
+                            <span style={{ fontSize: 13, minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
+                            <button className="dash-btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => updateCartQty(item.product_id, item.quantity + 1)}>+</button>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, minWidth: 60, textAlign: 'right' }}>${item.total.toFixed(2)}</div>
+                          <button className="dash-btn dash-btn-danger" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => removeFromCart(item.product_id)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(148,163,184,0.2)' }}>
+                    <span style={{ fontWeight: 700 }}>Total</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#c8827d' }}>${posTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <input type="text" className="glass-input" placeholder="Cliente (opcional)" value={posClientName} onChange={e => setPosClientName(e.target.value)} style={{ width: '100%', marginBottom: 6 }} />
+                  <input type="tel" className="glass-input" placeholder="Teléfono (opcional)" value={posClientPhone} onChange={e => setPosClientPhone(e.target.value)} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <select className="glass-input" value={posPaymentMethod} onChange={e => setPosPaymentMethod(e.target.value as any)} style={{ width: '100%' }}>
+                    <option value="cash">Efectivo</option>
+                    <option value="card">Tarjeta</option>
+                    <option value="mp">Mercado Pago</option>
+                  </select>
+                </div>
+
+                <textarea className="glass-input" placeholder="Notas (opcional)" value={posNotes} onChange={e => setPosNotes(e.target.value)} style={{ width: '100%', minHeight: 50, marginBottom: 12 }} />
+
+                <button className="btn btn-primary" style={{ width: '100%', padding: 14 }} onClick={checkout} disabled={posCart.length === 0}>
+                  Cobrar ${posTotal.toFixed(2)}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'analytics' && (
           <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
@@ -1861,6 +2189,61 @@ export default function StaffDashboard() {
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button className="dash-btn dash-btn-danger" onClick={() => setCouponModal({ open: false, editing: null })}>{t('staffDashboard.couponModalCancel')}</button>
                 <button className="dash-btn dash-btn-success" onClick={saveCoupon}>{couponModal.editing ? t('staffDashboard.couponModalSave') : t('staffDashboard.couponModalCreate')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {productsModal.open && (
+        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setProductsModal({ open: false, editing: null })}>
+          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+            <div className="dash-modal-header">
+              <h3 className="text-gradient">{productsModal.editing ? 'Editar Producto' : 'Nuevo Producto'}</h3>
+              <button onClick={() => setProductsModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
+            </div>
+            <div className="dash-modal-body">
+              <div className="dash-form-group">
+                <label>Nombre *</label>
+                <input type="text" className="glass-input" value={productsForm.name} onChange={e => setProductsForm(p => ({ ...p, name: e.target.value }))} placeholder="Nombre del producto" />
+              </div>
+              <div className="dash-form-group">
+                <label>Descripción</label>
+                <textarea className="glass-input" value={productsForm.description} onChange={e => setProductsForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="dash-form-group">
+                  <label>Precio *</label>
+                  <input type="number" className="glass-input" value={productsForm.price} onChange={e => setProductsForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
+                </div>
+                <div className="dash-form-group">
+                  <label>Costo</label>
+                  <input type="number" className="glass-input" value={productsForm.cost} onChange={e => setProductsForm(p => ({ ...p, cost: e.target.value }))} min="0" step="0.01" />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="dash-form-group">
+                  <label>Stock</label>
+                  <input type="number" className="glass-input" value={productsForm.stock} onChange={e => setProductsForm(p => ({ ...p, stock: e.target.value }))} min="0" />
+                </div>
+                <div className="dash-form-group">
+                  <label>Stock mínimo</label>
+                  <input type="number" className="glass-input" value={productsForm.min_stock} onChange={e => setProductsForm(p => ({ ...p, min_stock: e.target.value }))} min="0" />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="dash-form-group">
+                  <label>SKU</label>
+                  <input type="text" className="glass-input" value={productsForm.sku} onChange={e => setProductsForm(p => ({ ...p, sku: e.target.value }))} placeholder="SKU" />
+                </div>
+                <div className="dash-form-group">
+                  <label>Categoría</label>
+                  <input type="text" className="glass-input" value={productsForm.category} onChange={e => setProductsForm(p => ({ ...p, category: e.target.value }))} placeholder="Categoría" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>Cancelar</button>
+                <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? 'Guardar' : 'Crear'}</button>
               </div>
             </div>
           </div>
