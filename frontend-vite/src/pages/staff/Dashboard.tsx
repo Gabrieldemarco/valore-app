@@ -15,6 +15,7 @@ import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
 import { exportInvoicePdf, exportAppointmentsPdf } from '../../utils/invoicePdf';
 import RevenueChart from './RevenueChart';
 import TopServicesChart from './TopServicesChart';
+import ImageCropModal from '../../components/ImageCropModal';
 import { logger } from '../../services/logger';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
@@ -149,6 +150,9 @@ export default function StaffDashboard() {
   const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [servicesModal, setServicesModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
   const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', category: '', image: '' });
+  const [serviceCropFile, setServiceCropFile] = useState<File | null>(null);
+  const [serviceCropAspect, setServiceCropAspect] = useState(16 / 9);
+  const [serviceCropTarget, setServiceCropTarget] = useState<string>('service_image');
   const [clientsList, setClientsList] = useState<ClientSummary[]>([]);
   const [clientsSearch, setClientsSearch] = useState('');
   const [clientsLoading, setClientsLoading] = useState(false);
@@ -181,8 +185,11 @@ export default function StaffDashboard() {
     active: boolean; created_at: string;
   }
   const [productsList, setProductsList] = useState<ProductItem[]>([]);
-  const [productsForm, setProductsForm] = useState({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '' });
+  const [productsForm, setProductsForm] = useState({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '', image_url: '' });
   const [productsModal, setProductsModal] = useState<{ open: boolean; editing: ProductItem | null }>({ open: false, editing: null });
+  const [productCropFile, setProductCropFile] = useState<File | null>(null);
+  const [productCropAspect, setProductCropAspect] = useState(1 / 1);
+  const [productCropTarget, setProductCropTarget] = useState<string>('product_image');
 
   // ===== POS (VENTAS) =====
   const [salesList, setSalesList] = useState<any[]>([]);
@@ -285,7 +292,7 @@ export default function StaffDashboard() {
     try {
       const data = await api.get<{ products: ProductItem[] }>('/api/tenant/products');
       setProductsList(data.products);
-    } catch { addToast('Error al cargar productos', 'error'); }
+    } catch { addToast(t('staffDashboard.toastProductLoadError'), 'error'); }
   }, []);
 
   const loadSales = useCallback(async () => {
@@ -574,7 +581,7 @@ export default function StaffDashboard() {
         try {
           const base64 = reader.result as string;
           const filename = `staff-${Date.now()}.${file.name.split('.').pop()}`;
-          const res = await api.post<{ success: boolean; url: string; message: string }>('/upload-image', { image: base64, filename });
+          const res = await api.post<{ success: boolean; url: string; message: string }>('/api/upload-image', { image: base64, filename });
           if (res.success && res.url) {
             setStaffForm(p => ({ ...p, photo_url: res.url }));
             addToast(t('staffDashboard.toastStaffPhotoUploadSuccess'), 'success');
@@ -598,6 +605,32 @@ export default function StaffDashboard() {
       addToast(t('staffDashboard.toastStaffPhotoUploadError'), 'error');
       setStaffUploadingPhoto(false);
     }
+  };
+
+  const handleServiceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setServiceCropFile(file);
+    setServiceCropAspect(16 / 9);
+    setServiceCropTarget('service_image');
+  };
+
+  const handleServiceCropApply = async (dataUrl: string) => {
+    if (!serviceCropFile) return;
+    try {
+      const filename = `service-${Date.now()}.${serviceCropFile.name.split('.').pop()}`;
+      const res = await api.post<{ success: boolean; url: string; message: string }>('/api/upload-image', { image: dataUrl, filename: `service-${Date.now()}.jpg` });
+      if (res.success && res.url) {
+        setServicesForm(p => ({ ...p, image: res.url }));
+        addToast(t('staffDashboard.toastServiceImageUploadSuccess'), 'success');
+      } else {
+        addToast(t('staffDashboard.toastServiceImageUploadError'), 'error');
+      }
+    } catch (err) {
+      logger.error('Error uploading service image:', err);
+      addToast(t('staffDashboard.toastServiceImageUploadError'), 'error');
+    }
+    setServiceCropFile(null);
   };
 
   const saveStaff = async () => {
@@ -813,38 +846,64 @@ export default function StaffDashboard() {
 
   // ===== PRODUCTOS CRUD =====
   const openProductCreate = () => {
-    setProductsForm({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '' });
+    setProductsForm({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '', image_url: '' });
     setProductsModal({ open: true, editing: null });
   };
 
   const openProductEdit = (p: ProductItem) => {
-    setProductsForm({ name: p.name, description: p.description, price: String(p.price), cost: String(p.cost), stock: String(p.stock), min_stock: String(p.min_stock), category: p.category, sku: p.sku });
+    setProductsForm({ name: p.name, description: p.description, price: String(p.price), cost: String(p.cost), stock: String(p.stock), min_stock: String(p.min_stock), category: p.category, sku: p.sku, image_url: p.image_url || '' });
     setProductsModal({ open: true, editing: p });
   };
 
-  const saveProduct = async () => {
-    if (!productsForm.name || !productsForm.price) { addToast('Completá nombre y precio', 'error'); return; }
+  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProductCropFile(file);
+    setProductCropAspect(1 / 1);
+    setProductCropTarget('product_image');
+  };
+
+  const handleProductCropApply = async (dataUrl: string) => {
+    if (!productCropFile) return;
     try {
-      const body = { name: productsForm.name, description: productsForm.description, price: parseFloat(productsForm.price), cost: parseFloat(productsForm.cost), stock: parseInt(productsForm.stock, 10), min_stock: parseInt(productsForm.min_stock, 10), category: productsForm.category, sku: productsForm.sku };
+      const res = await api.post<{ success: boolean; url: string; message: string }>('/api/upload-image', { image: dataUrl, filename: `product-${Date.now()}.jpg` });
+      if (res.success && res.url) {
+        setProductsForm(p => ({ ...p, image_url: res.url }));
+        addToast(t('staffDashboard.toastProductImageUploadSuccess'), 'success');
+      } else {
+        addToast(t('staffDashboard.toastProductImageUploadError'), 'error');
+      }
+    } catch (err) {
+      logger.error('Error uploading product image:', err);
+      addToast(t('staffDashboard.toastProductImageUploadError'), 'error');
+    }
+    setProductCropFile(null);
+  };
+
+  const saveProduct = async () => {
+    if (!productsForm.name || !productsForm.price) { addToast(t('staffDashboard.toastProductSaveValidation'), 'error'); return; }
+    try {
+      const body = { name: productsForm.name, description: productsForm.description, price: parseFloat(productsForm.price), cost: parseFloat(productsForm.cost), stock: parseInt(productsForm.stock, 10), min_stock: parseInt(productsForm.min_stock, 10), category: productsForm.category, sku: productsForm.sku, image_url: productsForm.image_url };
       if (productsModal.editing) {
         await api.put(`/api/tenant/products/${productsModal.editing.id}`, body);
-        addToast('Producto actualizado', 'success');
+        addToast(t('staffDashboard.toastProductUpdated'), 'success');
       } else {
         await api.post('/api/tenant/products', body);
-        addToast('Producto creado', 'success');
+        addToast(t('staffDashboard.toastProductCreated'), 'success');
       }
       setProductsModal({ open: false, editing: null });
+      setProductCropFile(null);
       loadProducts();
-    } catch (e: any) { addToast(e?.message || 'Error al guardar', 'error'); }
+    } catch (e: any) { addToast(e?.message || t('staffDashboard.toastProductSaveError'), 'error'); }
   };
 
   const deleteProduct = async (id: number, name: string) => {
-    if (!confirm(`¿Eliminar "${name}"?`)) return;
+    if (!confirm(t('staffDashboard.toastProductDeleteConfirm', { name }))) return;
     try {
       await api.delete(`/api/tenant/products/${id}`);
-      addToast('Producto eliminado', 'success');
+      addToast(t('staffDashboard.toastProductDeleted'), 'success');
       loadProducts();
-    } catch { addToast('Error al eliminar', 'error'); }
+    } catch {       addToast(t('staffDashboard.toastProductDeleteError'), 'error'); }
   };
 
   const addToCart = (p: ProductItem) => {
@@ -1213,7 +1272,7 @@ export default function StaffDashboard() {
                           background: filterMode === m ? 'var(--accent)' : 'transparent',
                           color: filterMode === m ? '#fff' : 'var(--text-muted)',
                           transition: 'all 0.15s'
-                        }}>{m === 'day' ? 'Día' : m === 'week' ? 'Semana' : 'Mes'}</button>
+                        }}>{m === 'day' ? t('staffDashboard.calendarDay') : m === 'week' ? t('staffDashboard.calendarWeek') : t('staffDashboard.calendarMonth')}</button>
                     ))}
                   </div>
                   <input type="date" className="glass-input" value={filterDate} onChange={e => { setPage(1); setFilterDate(e.target.value); }} style={{ flex: 1, minWidth: 0 }} />
@@ -1712,7 +1771,7 @@ export default function StaffDashboard() {
           <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.tabProducts')}</h3>
-              <button className="dash-btn dash-btn-success" onClick={openProductCreate}>+ {t('staffDashboard.servicesAddButton')}</button>
+              <button className="dash-btn dash-btn-success" onClick={openProductCreate}>{t('staffDashboard.productsNewButton')}</button>
             </div>
             {productsList.length === 0 ? (
               <div className="dash-empty-state glass-panel">
@@ -1725,6 +1784,7 @@ export default function StaffDashboard() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableName')}</th>
+                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableImage')}</th>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Categoría</th>
                       <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Precio</th>
                       <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Costo</th>
@@ -1737,6 +1797,13 @@ export default function StaffDashboard() {
                     {productsList.map(p => (
                       <tr key={p.id}>
                         <td style={{ padding: 12, fontWeight: 600 }}>{p.name}</td>
+                        <td style={{ padding: 12, textAlign: 'center' }}>
+                          {p.image_url ? (
+                            <img src={p.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', opacity: 0.4 }}>—</span>
+                          )}
+                        </td>
                         <td style={{ padding: 12, color: 'var(--text-muted)' }}>{p.category || '-'}</td>
                         <td style={{ padding: 12, textAlign: 'right' }}>${p.price}</td>
                         <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
@@ -1750,8 +1817,8 @@ export default function StaffDashboard() {
                           </span>
                         </td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
-                          <button className="dash-btn dash-btn-success" fs-13 onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
-                          <button className="dash-btn dash-btn-danger" className="fs-13" onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
+                          <button className="dash-btn dash-btn-success" onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
+                          <button className="dash-btn dash-btn-danger" onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
                         </td>
                       </tr>
                     ))}
@@ -1779,6 +1846,9 @@ export default function StaffDashboard() {
                       borderRadius: 10, padding: 12, cursor: p.stock > 0 ? 'pointer' : 'not-allowed',
                       border: '1px solid rgba(99,102,241,0.15)', opacity: p.stock > 0 ? 1 : 0.5,
                     }}>
+                      {p.image_url && (
+                        <img src={p.image_url} alt="" style={{ width: '100%', height: 80, borderRadius: 6, objectFit: 'cover', marginBottom: 8 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      )}
                       <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{p.name}</div>
                       <div  className="fs-17" style={{ fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
                       <div  className="fs-12" style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>Stock: {p.stock}</div>
@@ -2141,6 +2211,12 @@ export default function StaffDashboard() {
               <div className="dash-form-group">
                 <label>{t('staffDashboard.servicesModalImageLabel')}</label>
                 <input type="text" className="glass-input" value={servicesForm.image} onChange={e => setServicesForm(p => ({ ...p, image: e.target.value }))} placeholder={t('staffDashboard.servicesModalImagePlaceholder')} />
+                <input type="file" accept="image/*" style={{ marginTop: 6, padding: 6, fontSize: 13 }} className="glass-input" onChange={handleServiceImageUpload} />
+                {servicesForm.image && (
+                  <div style={{ marginTop: 6 }}>
+                    <img src={servicesForm.image} alt="" style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button className="dash-btn dash-btn-danger" onClick={() => setServicesModal({ open: false, editing: null })}>{t('staffDashboard.servicesModalCancel')}</button>
@@ -2199,51 +2275,61 @@ export default function StaffDashboard() {
         <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setProductsModal({ open: false, editing: null })}>
           <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="dash-modal-header">
-              <h3 className="text-gradient">{productsModal.editing ? 'Editar Producto' : 'Nuevo Producto'}</h3>
+              <h3 className="text-gradient">{productsModal.editing ? t('staffDashboard.productsModalEditTitle') : t('staffDashboard.productsModalNewTitle')}</h3>
               <button onClick={() => setProductsModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
             </div>
             <div className="dash-modal-body">
               <div className="dash-form-group">
-                <label>Nombre *</label>
-                <input type="text" className="glass-input" value={productsForm.name} onChange={e => setProductsForm(p => ({ ...p, name: e.target.value }))} placeholder="Nombre del producto" />
+                <label>{t('staffDashboard.productsModalNameLabel')}</label>
+                <input type="text" className="glass-input" value={productsForm.name} onChange={e => setProductsForm(p => ({ ...p, name: e.target.value }))} placeholder={t('staffDashboard.productsModalNamePlaceholder')} />
               </div>
               <div className="dash-form-group">
-                <label>Descripción</label>
-                <textarea className="glass-input" value={productsForm.description} onChange={e => setProductsForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción" />
+                <label>{t('staffDashboard.productsModalDescriptionLabel')}</label>
+                <textarea className="glass-input" value={productsForm.description} onChange={e => setProductsForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.productsModalDescriptionPlaceholder')} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="dash-form-group">
-                  <label>Precio *</label>
+                  <label>{t('staffDashboard.productsModalPriceLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.price} onChange={e => setProductsForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
                 </div>
                 <div className="dash-form-group">
-                  <label>Costo</label>
+                  <label>{t('staffDashboard.productsModalCostLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.cost} onChange={e => setProductsForm(p => ({ ...p, cost: e.target.value }))} min="0" step="0.01" />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="dash-form-group">
-                  <label>Stock</label>
+                  <label>{t('staffDashboard.productsModalStockLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.stock} onChange={e => setProductsForm(p => ({ ...p, stock: e.target.value }))} min="0" />
                 </div>
                 <div className="dash-form-group">
-                  <label>Stock mínimo</label>
+                  <label>{t('staffDashboard.productsModalMinStockLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.min_stock} onChange={e => setProductsForm(p => ({ ...p, min_stock: e.target.value }))} min="0" />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="dash-form-group">
-                  <label>SKU</label>
-                  <input type="text" className="glass-input" value={productsForm.sku} onChange={e => setProductsForm(p => ({ ...p, sku: e.target.value }))} placeholder="SKU" />
+                  <label>{t('staffDashboard.productsModalSKULabel')}</label>
+                  <input type="text" className="glass-input" value={productsForm.sku} onChange={e => setProductsForm(p => ({ ...p, sku: e.target.value }))} placeholder={t('staffDashboard.productsModalSKUPlaceholder')} />
                 </div>
                 <div className="dash-form-group">
-                  <label>Categoría</label>
-                  <input type="text" className="glass-input" value={productsForm.category} onChange={e => setProductsForm(p => ({ ...p, category: e.target.value }))} placeholder="Categoría" />
+                  <label>{t('staffDashboard.productsModalCategoryLabel')}</label>
+                  <input type="text" className="glass-input" value={productsForm.category} onChange={e => setProductsForm(p => ({ ...p, category: e.target.value }))} placeholder={t('staffDashboard.productsModalCategoryPlaceholder')} />
                 </div>
               </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.productsModalImageLabel')}</label>
+                <input type="text" className="glass-input" value={productsForm.image_url} onChange={e => setProductsForm(p => ({ ...p, image_url: e.target.value }))} placeholder={t('staffDashboard.productsModalImagePlaceholder')} />
+                <input type="file" accept="image/*" style={{ marginTop: 6, padding: 6, fontSize: 13 }} className="glass-input" onChange={handleProductImageUpload} />
+                {productsForm.image_url && (
+                  <div style={{ marginTop: 6 }}>
+                    <img src={productsForm.image_url} alt="" style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>Cancelar</button>
-                <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? 'Guardar' : 'Crear'}</button>
+                <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>{t('staffDashboard.productsModalCancel')}</button>
+                <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? t('staffDashboard.productsModalSave') : t('staffDashboard.productsModalCreate')}</button>
               </div>
             </div>
           </div>
@@ -2525,6 +2611,24 @@ export default function StaffDashboard() {
             </div>
           </div>
         </div>
+      )}
+      {serviceCropFile && (
+        <ImageCropModal
+          open={true}
+          file={serviceCropFile}
+          aspectRatio={serviceCropAspect}
+          onApply={(dataUrl) => handleServiceCropApply(dataUrl)}
+          onCancel={() => setServiceCropFile(null)}
+        />
+      )}
+      {productCropFile && (
+        <ImageCropModal
+          open={true}
+          file={productCropFile}
+          aspectRatio={productCropAspect}
+          onApply={(dataUrl) => handleProductCropApply(dataUrl)}
+          onCancel={() => setProductCropFile(null)}
+        />
       )}
       {showQR && settings.slug && <SalonQR slug={settings.slug} services={servicesList} onClose={() => setShowQR(false)} />}
     </div>
