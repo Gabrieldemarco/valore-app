@@ -22,8 +22,8 @@ export default function TopServicesChart({ data }: Props) {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.08)" horizontal={false} />
-        <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey="service" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+        <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey="service" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} width={80} />
         <Tooltip
           contentStyle={{ background: 'rgba(26,26,31,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(197,168,128,0.25)', borderRadius: 10, color: '#f4f4f5', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
           formatter={(value: any, name: string, props: any) => {

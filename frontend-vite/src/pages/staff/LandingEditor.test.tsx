@@ -147,9 +147,9 @@ describe('LandingEditor', () => {
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
     await user.click(screen.getByText('Horarios'));
     await waitFor(() => {
-      expect(screen.getByText('Días Laborables')).toBeInTheDocument();
-      expect(screen.getByText('Hora Apertura')).toBeInTheDocument();
-      expect(screen.getByText('Hora Cierre')).toBeInTheDocument();
+      expect(screen.getByText('Días laborales')).toBeInTheDocument();
+      expect(screen.getByText('Hora de apertura')).toBeInTheDocument();
+      expect(screen.getByText('Hora de cierre')).toBeInTheDocument();
     });
   });
 
@@ -177,7 +177,7 @@ describe('LandingEditor', () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue('Ana')).toBeInTheDocument();
     }, { timeout: 3000 });
-    expect(screen.getByText('+ Nuevo Peluquero')).toBeInTheDocument();
+      expect(screen.getByText('+ Nuevo Profesional')).toBeInTheDocument();
   });
 
   it('shows trial days left when on free plan', async () => {

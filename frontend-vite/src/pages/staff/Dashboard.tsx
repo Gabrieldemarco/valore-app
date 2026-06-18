@@ -910,10 +910,10 @@ export default function StaffDashboard() {
               {t('staffDashboard.trialBadge', { days: Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) })}
             </span>
           )}
-          <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 18px' }}>{t('staffDashboard.landingPageLink')}</Link>
-          {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>{t('staffDashboard.viewLanding')}</a>}
-          {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 14px', textDecoration: 'none' }}>{t('staffDashboard.qrButton')}</button>}
-          <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 16px', fontWeight: 500, borderRadius: 8 }}>{t('staffDashboard.settingsButton')}</button>
+          <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary" className="fs-14" style={{ padding: '8px 18px' }}>{t('staffDashboard.landingPageLink')}</Link>
+          {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary" className="fs-14" style={{ padding: '8px 18px', textDecoration: 'none' }}>{t('staffDashboard.viewLanding')}</a>}
+          {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary" fs-14 style={{ padding: '8px 14px', textDecoration: 'none' }}>{t('staffDashboard.qrButton')}</button>}
+          <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary" fs-15 style={{ padding: '8px 16px', fontWeight: 500, borderRadius: 8 }}>{t('staffDashboard.settingsButton')}</button>
           <span className="dash-user-name">{staffName || t('staffDashboard.userNameLoading')}</span>
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>{t('staffDashboard.logoutButton')}</button>
         </div>
@@ -951,7 +951,7 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.hoursTitle')}</summary>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.hoursTitle')}</summary>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="dash-form-group">
                       <label>{t('staffDashboard.openingHourLabel')}</label>
@@ -973,7 +973,7 @@ export default function StaffDashboard() {
                         { v: 1, l: t('staffDashboard.dayLun') }, { v: 2, l: t('staffDashboard.dayMar') }, { v: 3, l: t('staffDashboard.dayMie') },
                         { v: 4, l: t('staffDashboard.dayJue') }, { v: 5, l: t('staffDashboard.dayVie') }, { v: 6, l: t('staffDashboard.daySab') }, { v: 0, l: t('staffDashboard.dayDom') }
                       ].map(d => (
-                        <label key={d.v} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 14, color: 'var(--text-main)' }}>
+                        <label key={d.v} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-main)' }}>
                           <input type="checkbox" checked={openingHours.workDays.includes(d.v)} onChange={() => {
                             setOpeningHours(p => ({
                               ...p,
@@ -989,8 +989,8 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.blockedDatesTitle')}</summary>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>{t('staffDashboard.blockedDatesHint')}</p>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.blockedDatesTitle')}</summary>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{t('staffDashboard.blockedDatesHint')}</p>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'end' }}>
                     <div className="dash-form-group" style={{ flex: 1 }}>
                       <input type="date" className="glass-input" value={newBlockedDate.date} onChange={e => setNewBlockedDate(p => ({ ...p, date: e.target.value }))} />
@@ -1001,25 +1001,25 @@ export default function StaffDashboard() {
                     <button className="dash-btn dash-btn-primary" onClick={addBlockedDate} style={{ whiteSpace: 'nowrap' }}>{t('staffDashboard.blockedDatesAddLabel')}</button>
                   </div>
                   {blockedDates.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('staffDashboard.blockedDatesEmpty')}</p>
+                    <p  className="fs-14">{t('staffDashboard.blockedDatesEmpty')}</p>
                   ) : (
                     <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                           <tr>
-                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.blockedDatesDelete')}</th>
-                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', fontSize: 12, color: '#94a3b8' }}>Fecha</th>
-                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', fontSize: 12, color: '#94a3b8' }}>Motivo</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>{t('staffDashboard.blockedDatesDelete')}</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>Fecha</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>Motivo</th>
                           </tr>
                         </thead>
                         <tbody>
                           {blockedDates.map(bd => (
                             <tr key={bd.id}>
                               <td style={{ padding: '6px 10px' }}>
-                                <button className="dash-btn dash-btn-danger" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteBlockedDate(bd.id)}>✕</button>
+                                <button className="dash-btn dash-btn-danger" fs-13 onClick={() => deleteBlockedDate(bd.id)}>✕</button>
                               </td>
-                              <td style={{ padding: '6px 10px', fontSize: 13 }}>{new Date(bd.date).toLocaleDateString('es-UY')}</td>
-                              <td style={{ padding: '6px 10px', fontSize: 13 }}>{bd.reason || '-'}</td>
+                              <td  className="fs-14">{new Date(bd.date).toLocaleDateString('es-UY')}</td>
+                              <td  className="fs-14">{bd.reason || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1030,7 +1030,7 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.remindersTitle')}</summary>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.remindersTitle')}</summary>
                   <div className="dash-form-group">
                     <label>{t('staffDashboard.reminderHoursLabel')}</label>
                     <select className="glass-input" value={settings.reminder_hours ?? 24} onChange={e => setSettings(p => ({ ...p, reminder_hours: parseInt(e.target.value, 10) }))}>
@@ -1048,7 +1048,7 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.captchaTitle')}</summary>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.captchaTitle')}</summary>
                   <div className="dash-form-group">
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                       <input type="checkbox" checked={!!settings.captcha_enabled} onChange={e => setSettings(p => ({ ...p, captcha_enabled: e.target.checked }))} style={{ width: 18, height: 18 }} />
@@ -1060,8 +1060,8 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.smtpTitle')}</summary>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>{t('staffDashboard.smtpHint')}</p>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.smtpTitle')}</summary>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{t('staffDashboard.smtpHint')}</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="dash-form-group">
                       <label>{t('staffDashboard.smtpEmailLabel')}</label>
@@ -1077,16 +1077,16 @@ export default function StaffDashboard() {
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', fontSize: 15, marginBottom: 12 }}>{t('staffDashboard.calendarSyncSettingsTitle')}</summary>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>{t('staffDashboard.calendarSyncConnectHint')}</p>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-main)', marginBottom: 12 }}>{t('staffDashboard.calendarSyncSettingsTitle')}</summary>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{t('staffDashboard.calendarSyncConnectHint')}</p>
                   {calendarStatus.connected ? (
                     <div>
-                      <p style={{ color: '#4ade80', fontSize: 13, marginBottom: 8 }}>
+                      <p style={{ color: '#4ade80', marginBottom: 8 }}>
                         ✅ {t('staffDashboard.calendarSyncConnected')}
                         {calendarStatus.google_email && <span> — {t('staffDashboard.calendarSyncConnectedAs', { email: calendarStatus.google_email })}</span>}
                       </p>
                       {calendarStatus.last_sync && (
-                        <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: 8 }}>
                           {t('staffDashboard.calendarSyncLastSync', { time: new Date(calendarStatus.last_sync).toLocaleString('es-UY') })}
                         </p>
                       )}
@@ -1099,10 +1099,10 @@ export default function StaffDashboard() {
                             loadCalendarStatus();
                           } catch { addToast(t('staffDashboard.calendarSyncSyncError'), 'error'); }
                           setCalendarSyncing(false);
-                        }} style={{ fontSize: 13 }}>
+                        }} className="fs-14">
                           {calendarSyncing ? t('staffDashboard.calendarSyncSyncing') : t('staffDashboard.calendarSyncSyncNow')}
                         </button>
-                        <button className="dash-btn dash-btn-danger" style={{ fontSize: 13 }} onClick={async () => {
+                        <button className="dash-btn dash-btn-danger fs-14" onClick={async () => {
                           if (!confirm('¿Desconectar Google Calendar?')) return;
                           try {
                             await api.delete('/api/calendar/disconnect');
@@ -1116,7 +1116,7 @@ export default function StaffDashboard() {
                     </div>
                   ) : (
                     <div>
-                      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 8 }}>{t('staffDashboard.calendarSyncNotConnected')}</p>
+                      <p style={{ color: 'var(--text-muted)', marginBottom: 8 }}>{t('staffDashboard.calendarSyncNotConnected')}</p>
                       <a href={`/api/auth/google/calendar?staff_token=${encodeURIComponent(staffToken || '')}`} className="dash-btn dash-btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
                         {t('staffDashboard.calendarSyncConnect')}
                       </a>
@@ -1209,7 +1209,7 @@ export default function StaffDashboard() {
                     {(['day', 'week', 'month'] as const).map(m => (
                       <button key={m} onClick={() => { setPage(1); setFilterMode(m); }}
                         style={{
-                          padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                          padding: '6px 14px', fontWeight: 600, cursor: 'pointer', border: 'none',
                           background: filterMode === m ? 'var(--accent)' : 'transparent',
                           color: filterMode === m ? '#fff' : 'var(--text-muted)',
                           transition: 'all 0.15s'
@@ -1305,7 +1305,7 @@ export default function StaffDashboard() {
             {totalPages > 1 && (
               <div className="glass-panel" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, padding: 12 }}>
                 <button className="dash-btn dash-btn-success" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ opacity: page <= 1 ? 0.4 : 1 }}>{t('staffDashboard.paginationPrev')}</button>
-                <span style={{ color: 'var(--text-muted)', fontSize: 14, padding: '0 8px' }}>
+                <span style={{ color: 'var(--text-muted)', padding: '0 8px' }}>
                   {t('staffDashboard.paginationInfo', { page, totalPages, totalAppointments })}
                 </span>
                 <button className="dash-btn dash-btn-success" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} style={{ opacity: page >= totalPages ? 0.4 : 1 }}>{t('staffDashboard.paginationNext')}</button>
@@ -1349,7 +1349,7 @@ export default function StaffDashboard() {
                 };
               })}
               eventContent={(arg) => ({
-                html: `<div style="padding:2px 4px;font-size:12px;line-height:1.3">${arg.event.title}</div>`,
+                html: `<div style="padding:2px 4px;font-size:13px;line-height:1.3">${arg.event.title}</div>`,
               })}
               eventClick={(info) => {
                 const appt = info.event.extendedProps.appt as Appointment;
@@ -1481,7 +1481,7 @@ export default function StaffDashboard() {
                           {inv.status === 'pending' && (
                             <button className="dash-btn dash-btn-success" onClick={() => handlePayInvoice(inv.id)}>{t('staffDashboard.invoicePayButton')}</button>
                           )}
-                          <button className="dash-btn" style={{ marginLeft: inv.status === 'pending' ? 4 : 0, padding: '6px 10px', fontSize: 12 }} onClick={() => exportInvoicePdf(inv, settings)}>{t('staffDashboard.invoiceDownloadPdf')}</button>
+                          <button className="dash-btn" fs-13 onClick={() => exportInvoicePdf(inv, settings)}>{t('staffDashboard.invoiceDownloadPdf')}</button>
                         </td>
                       </tr>
                     ))}
@@ -1686,16 +1686,16 @@ export default function StaffDashboard() {
                             {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
                           </span>
                         </td>
-                        <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                        <td  className="fs-14">
                           {new Date(e.created_at).toLocaleDateString()}
                         </td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
                           {e.status === 'waiting' && (
-                            <button className="dash-btn dash-btn-success" style={{ marginRight: 8, fontSize: 12 }} onClick={() => notifyWaitlistEntry(e.id)}>
+                            <button className="dash-btn dash-btn-success" fs-13 onClick={() => notifyWaitlistEntry(e.id)}>
                               {t('staffDashboard.waitlistNotify')}
                             </button>
                           )}
-                          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12 }} onClick={() => deleteWaitlistEntry(e.id)}>
+                          <button className="dash-btn dash-btn-danger" className="fs-13" onClick={() => deleteWaitlistEntry(e.id)}>
                             {t('staffDashboard.waitlistDelete')}
                           </button>
                         </td>
@@ -1742,7 +1742,7 @@ export default function StaffDashboard() {
                         <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
                         <td style={{ padding: 12, textAlign: 'right' }}>
                           <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
-                          {p.min_stock > 0 && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
+                          {p.min_stock > 0 && <span  className="fs-12" style={{ color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
                         </td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
                           <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
@@ -1750,8 +1750,8 @@ export default function StaffDashboard() {
                           </span>
                         </td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
-                          <button className="dash-btn dash-btn-success" style={{ marginRight: 8, fontSize: 12 }} onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
-                          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12 }} onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
+                          <button className="dash-btn dash-btn-success" fs-13 onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
+                          <button className="dash-btn dash-btn-danger" className="fs-13" onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
                         </td>
                       </tr>
                     ))}
@@ -1779,9 +1779,9 @@ export default function StaffDashboard() {
                       borderRadius: 10, padding: 12, cursor: p.stock > 0 ? 'pointer' : 'not-allowed',
                       border: '1px solid rgba(99,102,241,0.15)', opacity: p.stock > 0 ? 1 : 0.5,
                     }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0' }}>{p.name}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
-                      <div style={{ fontSize: 11, color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>Stock: {p.stock}</div>
+                      <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{p.name}</div>
+                      <div  className="fs-17" style={{ fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
+                      <div  className="fs-12" style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>Stock: {p.stock}</div>
                     </div>
                   ))}
                 </div>
@@ -1790,29 +1790,29 @@ export default function StaffDashboard() {
                 <div className="glass-panel" style={{ padding: 16, marginBottom: 12 }}>
                   <h4 style={{ margin: '0 0 12px', color: '#e2e8f0' }}>Carrito ({posCart.length})</h4>
                   {posCart.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Carrito vacío</p>
+                    <p  className="fs-14">Carrito vacío</p>
                   ) : (
                     <div style={{ maxHeight: 250, overflowY: 'auto' }}>
                       {posCart.map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600 }}>{item.name}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>${item.unit_price} c/u</div>
+                            <div  className="fs-14" style={{ fontWeight: 600 }}>{item.name}</div>
+                            <div  className="fs-12" style={{ color: '#94a3b8' }}>${item.unit_price} c/u</div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <button className="dash-btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
-                            <span style={{ fontSize: 13, minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
-                            <button className="dash-btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => updateCartQty(item.product_id, item.quantity + 1)}>+</button>
+                            <button className="dash-btn" fs-13 onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
+                            <span  className="fs-14" style={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
+                            <button className="dash-btn" fs-13 onClick={() => updateCartQty(item.product_id, item.quantity + 1)}>+</button>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, minWidth: 60, textAlign: 'right' }}>${item.total.toFixed(2)}</div>
-                          <button className="dash-btn dash-btn-danger" style={{ padding: '2px 6px', fontSize: 10 }} onClick={() => removeFromCart(item.product_id)}>✕</button>
+                          <div  className="fs-14" style={{ fontWeight: 700, minWidth: 60, textAlign: 'right' }}>${item.total.toFixed(2)}</div>
+                          <button className="dash-btn dash-btn-danger" fs-11 onClick={() => removeFromCart(item.product_id)}>✕</button>
                         </div>
                       ))}
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(148,163,184,0.2)' }}>
                     <span style={{ fontWeight: 700 }}>Total</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: '#c8827d' }}>${posTotal.toFixed(2)}</span>
+                    <span  className="fs-21" style={{ fontWeight: 700, color: '#c8827d' }}>${posTotal.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -1848,7 +1848,7 @@ export default function StaffDashboard() {
                   {(['6m', '12m', 'all'] as const).map(r => (
                     <button key={r} onClick={() => { setAnalyticsDateRange(r); loadAnalytics(false, r); }}
                       style={{
-                        padding: '4px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                        padding: '4px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
                         background: analyticsDateRange === r ? 'rgba(197,168,128,0.25)' : 'transparent',
                         color: analyticsDateRange === r ? '#c5a880' : 'var(--text-muted)',
                         transition: 'all 0.2s',
@@ -2089,7 +2089,7 @@ export default function StaffDashboard() {
                         { v: 0, l: t('staffDashboard.dayDom') }, { v: 1, l: t('staffDashboard.dayLun') }, { v: 2, l: t('staffDashboard.dayMar') }, { v: 3, l: t('staffDashboard.dayMie') },
                         { v: 4, l: t('staffDashboard.dayJue') }, { v: 5, l: t('staffDashboard.dayVie') }, { v: 6, l: t('staffDashboard.daySab') }
                       ].map(d => (
-                        <label key={d.v} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 13 }}>
+                        <label key={d.v} className="fs-14">
                           <input type="checkbox" checked={staffForm.indWorkDays.includes(d.v)}
                             onChange={() => setStaffForm(p => ({
                               ...p,
@@ -2273,7 +2273,7 @@ export default function StaffDashboard() {
                           setNewApptForm(p => ({ ...p, clientName: c.client_name, clientPhone: c.client_phone, clientEmail: c.client_email || '' }));
                           setSelectedSuggested(c);
                           setSuggestedClients([]);
-                        }} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                        }} className="fs-14" style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
                           <span><strong>{c.client_name}</strong> - {c.client_phone}</span>
                           <span style={{ color: 'var(--text-muted)' }}>{c.total_appointments} {t('staffDashboard.clientsTableAppointments')}</span>
                         </div>
@@ -2367,7 +2367,7 @@ export default function StaffDashboard() {
                           <td style={{ padding: 10 }}>{a.service_name || a.service}</td>
                           <td style={{ padding: 10 }}>{a.staff_name || '-'}</td>
                           <td style={{ padding: 10, textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
-                          <td style={{ padding: 10, color: 'var(--text-muted)', fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
+                          <td style={{ padding: 10, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2479,16 +2479,16 @@ export default function StaffDashboard() {
                       <>
                         <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap', padding: '0 4px' }}>
                           <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
-                            <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryTotal')}</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>{apptClientHistory.length}</div>
+                            <div  className="fs-12" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryTotal')}</div>
+                            <div  className="fs-21" style={{ fontWeight: 700, color: '#e2e8f0' }}>{apptClientHistory.length}</div>
                           </div>
                           <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
-                            <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryLastVisit')}</div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{new Date(apptClientHistory[0].appointment_date || apptClientHistory[0].date).toLocaleDateString('es-UY')}</div>
+                            <div  className="fs-12" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryLastVisit')}</div>
+                            <div  className="fs-15" style={{ fontWeight: 600, color: '#e2e8f0' }}>{new Date(apptClientHistory[0].appointment_date || apptClientHistory[0].date).toLocaleDateString('es-UY')}</div>
                           </div>
                           <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
-                            <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryTotalSpent')}</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>
+                            <div  className="fs-12" style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>{t('staffDashboard.apptDetailClientHistoryTotalSpent')}</div>
+                            <div  className="fs-21" style={{ fontWeight: 700, color: '#e2e8f0' }}>
                               ${Math.round(apptClientHistory.reduce((sum, a) => sum + (Number(a.service_price) || 0), 0)).toLocaleString('es-UY')}
                             </div>
                           </div>
@@ -2497,21 +2497,21 @@ export default function StaffDashboard() {
                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                               <tr>
-                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryDate')}</th>
-                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryService')}</th>
-                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStaff')}</th>
-                                <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStatus')}</th>
-                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', fontSize: 12, color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryNotes')}</th>
+                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryDate')}</th>
+                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryService')}</th>
+                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStaff')}</th>
+                                <th style={{ textAlign: 'center', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryStatus')}</th>
+                                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', position: 'sticky', top: 0, background: 'var(--bg-deep)', color: '#94a3b8' }}>{t('staffDashboard.apptDetailClientHistoryNotes')}</th>
                               </tr>
                             </thead>
                             <tbody>
                               {apptClientHistory.map(a => (
                                 <tr key={a.id}>
-                                  <td style={{ padding: '6px 10px', fontSize: 13 }}>{new Date(a.appointment_date || a.date).toLocaleDateString('es-UY')}</td>
-                                  <td style={{ padding: '6px 10px', fontSize: 13 }}>{a.service_name || a.service}</td>
-                                  <td style={{ padding: '6px 10px', fontSize: 13 }}>{a.staff_name || '-'}</td>
-                                  <td style={{ padding: '6px 10px', fontSize: 13, textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
-                                  <td style={{ padding: '6px 10px', fontSize: 12, color: '#94a3b8', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
+                                  <td  className="fs-14">{new Date(a.appointment_date || a.date).toLocaleDateString('es-UY')}</td>
+                                  <td  className="fs-14">{a.service_name || a.service}</td>
+                                  <td  className="fs-14">{a.staff_name || '-'}</td>
+                                  <td style={{ padding: '6px 10px', textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
+                                  <td style={{ padding: '6px 10px', color: '#94a3b8', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
                                 </tr>
                               ))}
                             </tbody>

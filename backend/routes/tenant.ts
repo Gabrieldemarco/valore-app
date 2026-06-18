@@ -5,8 +5,9 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 const config = require('../config');
-import { query, queryOne } from '../database';
+import { query, queryOne, pool } from '../database';
 import logger from '../services/logger';
+import { AppError } from '../services/errors';
 import { getOrCreateSubscriptionInvoice } from '../services/billing';
 import { sendClientConfirmation, notifyStaff, sendStaffCredentials } from '../services/notifications';
 import { validate,
@@ -1205,23 +1206,55 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     try {
       const { items, total, payment_method, client_name, client_phone, notes } = req.body;
 
-      // Decrement stock for each product
-      for (const item of items) {
-        if (item.product_id) {
-          await query(
-            'UPDATE products SET stock = GREATEST(stock - $1, 0), updated_at = NOW() WHERE id = $2 AND tenant_id = $3',
-            [item.quantity, item.product_id, req.user.tenant_id]
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        for (const item of items) {
+          if (!item.product_id) continue;
+
+          const product = await client.query(
+            'SELECT stock FROM products WHERE id = $1 AND tenant_id = $2 FOR UPDATE',
+            [item.product_id, req.user.tenant_id]
+          );
+          if (product.rows.length === 0) {
+            throw new AppError(`Producto ID ${item.product_id} no encontrado`, 404);
+          }
+          const currentStock = parseInt(product.rows[0].stock, 10);
+          if (currentStock < item.quantity) {
+            throw new AppError(
+              `Stock insuficiente para "${item.name || 'producto'}": disponible ${currentStock}, requerido ${item.quantity}`,
+              400
+            );
+          }
+
+          await client.query(
+            'UPDATE products SET stock = stock - $1, updated_at = NOW() WHERE id = $2',
+            [item.quantity, item.product_id]
           );
         }
-      }
 
-      const result = await query(
-        `INSERT INTO sales (tenant_id, items, total, payment_method, client_name, client_phone, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [req.user.tenant_id, JSON.stringify(items), parseFloat(total), payment_method || 'cash', client_name || '', client_phone || '', notes || '']
-      );
-      res.status(201).json({ message: 'Venta registrada', sale: result.rows[0] });
-    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al registrar venta' }); }
+        const result = await client.query(
+          `INSERT INTO sales (tenant_id, items, total, payment_method, client_name, client_phone, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [req.user.tenant_id, JSON.stringify(items), parseFloat(total), payment_method || 'cash', client_name || '', client_phone || '', notes || '']
+        );
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Venta registrada', sale: result.rows[0] });
+      } catch (err: any) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } catch (err: any) {
+      if (err instanceof AppError) {
+        return res.status(err.statusCode || 400).json({ error: err.message });
+      }
+      logger.error(err);
+      res.status(500).json({ error: 'Error al registrar venta' });
+    }
   });
 
   return router;

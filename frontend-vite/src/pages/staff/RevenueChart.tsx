@@ -34,10 +34,10 @@ export default function RevenueChart({ data }: Props) {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.08)" vertical={false} />
-        <XAxis dataKey="label" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} dy={6} />
-        <YAxis yAxisId="revenue" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} dx={-4} />
-        <YAxis yAxisId="appointments" orientation="right" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} dx={4} />
-        <ReferenceLine yAxisId="revenue" y={avgRevenue} stroke="rgba(197,168,128,0.4)" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: t('staffDashboard.analyticsRevenueAxis') + ' avg', fill: '#9ca3af', fontSize: 10, position: 'right' }} />
+        <XAxis dataKey="label" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} dy={6} />
+        <YAxis yAxisId="revenue" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} dx={-4} />
+        <YAxis yAxisId="appointments" orientation="right" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} dx={4} />
+        <ReferenceLine yAxisId="revenue" y={avgRevenue} stroke="rgba(197,168,128,0.4)" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: t('staffDashboard.analyticsRevenueAxis') + ' avg', fill: '#9ca3af', fontSize: 11, position: 'right' }} />
         <Tooltip
           contentStyle={{ background: 'rgba(26,26,31,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(197,168,128,0.25)', borderRadius: 10, color: '#f4f4f5', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
           formatter={(value: any, name: string, props: any) => {

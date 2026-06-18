@@ -34,7 +34,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    allowedHosts: ['nexo-dev.com'],
+    allowedHosts: ['nexo-dev.com', 'www.nexo-dev.com'],
     proxy: {
       '/api': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000',

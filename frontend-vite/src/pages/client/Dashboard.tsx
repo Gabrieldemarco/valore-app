@@ -64,14 +64,13 @@ export default function ClientDashboard() {
   const [editingAgenda, setEditingAgenda] = useState<AgendaEvent | null>(null);
 
   useEffect(() => {
-    if (clientToken) return;
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
       login(token, 'client', params.get('name') || '');
       if (params.get('name')) localStorage.setItem('clientDisplayName', params.get('name')!);
       window.history.replaceState(null, '', '/client/dashboard');
-    } else {
+    } else if (!clientToken) {
       navigate('/client/login');
     }
   }, []);

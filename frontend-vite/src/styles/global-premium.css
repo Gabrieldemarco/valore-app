@@ -109,7 +109,7 @@ h1, h2, h3, h4, .serif-text {
   border: 1px solid var(--glass-border);
   border-radius: 30px;
   color: var(--text-main);
-  font-size: 15px;
+  font-size: 16px;
   transition: all var(--transition-normal);
 }
 
@@ -132,7 +132,7 @@ h1, h2, h3, h4, .serif-text {
   padding: 12px 26px;
   border-radius: 30px;
   font-weight: 500;
-  font-size: 15px;
+  font-size: 16px;
   cursor: pointer;
   transition: all var(--transition-normal);
   border: none;
@@ -218,7 +218,7 @@ h1, h2, h3, h4, .serif-text {
 }
 
 .logo-monogram {
-  font-size: 26px !important;
+  font-size: 27px !important;
   font-weight: 300 !important;
   font-family: 'Cormorant Garamond', serif !important;
   letter-spacing: -1px !important;
@@ -229,7 +229,7 @@ h1, h2, h3, h4, .serif-text {
 }
 
 .logo-text {
-  font-size: 16px !important;
+  font-size: 17px !important;
   font-weight: 400 !important;
   font-family: 'Outfit', sans-serif !important;
   letter-spacing: 4px !important;
@@ -252,7 +252,7 @@ h1, h2, h3, h4, .serif-text {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
   font-family: 'Outfit', sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-main);
   animation: installSlideDown 0.3s ease-out;
 }
@@ -276,7 +276,7 @@ h1, h2, h3, h4, .serif-text {
   background: var(--primary);
   color: var(--text-dark);
   font-family: 'Outfit', sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
@@ -304,7 +304,7 @@ h1, h2, h3, h4, .serif-text {
   border-radius: 50%;
   background: transparent;
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 17px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -316,6 +316,6 @@ h1, h2, h3, h4, .serif-text {
 
 .ios-icon {
   display: inline-block;
-  font-size: 18px;
+  font-size: 19px;
   vertical-align: middle;
 }

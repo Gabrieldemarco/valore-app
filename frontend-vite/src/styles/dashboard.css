@@ -19,7 +19,7 @@
     }
 
     .dash-header h1 {
-      font-size: 24px;
+      font-size: 25px;
       font-weight: 700;
       margin: 0;
     }
@@ -32,7 +32,7 @@
 
     .dash-user-name {
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16px;
     }
 
     .dash-trial-badge {
@@ -41,7 +41,7 @@
       color: #facc15;
       padding: 4px 12px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       white-space: nowrap;
     }
@@ -54,7 +54,7 @@
 
     .dash-btn {
       padding: 8px 16px;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 500;
       border-radius: 8px;
     }
@@ -137,23 +137,23 @@
 
     .dash-stat-label {
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
     }
 
     .dash-stat-icon {
-      font-size: 24px;
+      font-size: 25px;
     }
 
     .dash-stat-value {
-      font-size: 32px;
+      font-size: 33px;
       font-weight: 700;
       color: var(--text-main);
       margin-bottom: 4px;
     }
 
     .dash-stat-change {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--accent);
       font-weight: 600;
     }
@@ -192,14 +192,14 @@
     }
 
     .dash-panel-header h3 {
-      font-size: 20px;
+      font-size: 21px;
       color: var(--text-main);
     }
 
     .dash-close-btn {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--glass-border);
-      font-size: 20px;
+      font-size: 21px;
       cursor: pointer;
       color: var(--text-muted);
       width: 32px;
@@ -235,12 +235,12 @@
       margin-bottom: 8px;
       font-weight: 600;
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16px;
     }
 
     .dash-form-group small {
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 14px;
       display: block;
       margin-top: 6px;
     }
@@ -257,7 +257,7 @@
     .dash-form-section h4 {
       color: var(--primary-hover);
       margin-bottom: 16px;
-      font-size: 17px;
+      font-size: 18px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -283,7 +283,7 @@
       margin-bottom: 8px;
       font-weight: 600;
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16px;
     }
 
     .dash-filter-group select {
@@ -291,7 +291,7 @@
       border: none;
       background: transparent;
       cursor: pointer;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
       color: var(--text-muted);
       border-radius: 8px;
@@ -322,7 +322,7 @@
       border: none;
       background: transparent;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--text-muted);
       border-radius: 8px;
@@ -383,7 +383,7 @@
     }
 
     .dash-appointment-time {
-      font-size: 28px;
+      font-size: 29px;
       font-weight: 700;
       color: var(--text-main);
       line-height: 1;
@@ -391,7 +391,7 @@
 
     .dash-appointment-date {
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16px;
       margin-top: 4px;
       text-transform: capitalize;
     }
@@ -399,7 +399,7 @@
     .dash-appointment-status {
       padding: 6px 16px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -438,7 +438,7 @@
 
     .dash-info-group label {
       display: block;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 4px;
       font-weight: 600;
@@ -447,7 +447,7 @@
     }
 
     .dash-info-group value {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 600;
       color: var(--text-main);
     }
@@ -466,7 +466,7 @@
       background: rgba(0, 0, 0, 0.2);
       padding: 12px 16px;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 15px;
       color: var(--text-muted);
       margin-bottom: 20px;
       border-left: 3px solid var(--glass-border);
@@ -484,7 +484,7 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 15px;
       transition: all 0.2s;
     }
 
@@ -534,7 +534,7 @@
       border-radius: 8px;
       text-decoration: none;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 15px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -555,11 +555,11 @@
     .dash-empty-state h3 {
       margin-bottom: 12px;
       color: var(--text-main);
-      font-size: 24px;
+      font-size: 25px;
     }
 
     .dash-empty-state p {
-      font-size: 16px;
+      font-size: 17px;
     }
 
     .dash-loading {
@@ -586,7 +586,7 @@
 
     .dash-error-state h3 {
       margin-bottom: 12px;
-      font-size: 24px;
+      font-size: 25px;
     }
 
     /* Toast Notifications */
@@ -622,7 +622,7 @@
     }
 
     .dash-toast-icon {
-      font-size: 20px;
+      font-size: 21px;
     }
 
     .dash-toast-message {
@@ -650,7 +650,7 @@
       }
 
       .dash-header h1 {
-        font-size: 20px;
+        font-size: 21px;
       }
 
       .dash-user-info {
@@ -679,7 +679,7 @@
       }
 
       .dash-tab {
-        font-size: 12px;
+        font-size: 13px;
         padding: 6px 10px;
       }
 
@@ -689,7 +689,7 @@
       }
 
       .dash-modal-header h3 {
-        font-size: 20px;
+        font-size: 21px;
       }
 
       .fc .fc-toolbar-title {
@@ -697,7 +697,7 @@
       }
 
       .fc .fc-button {
-        font-size: 12px !important;
+        font-size: 13px !important;
         padding: 6px 12px !important;
       }
     }
@@ -708,7 +708,7 @@
       }
 
       .dash-header h1 {
-        font-size: 18px;
+        font-size: 19px;
       }
 
       .dash-user-info {
@@ -722,24 +722,24 @@
       }
 
       .dash-btn {
-        font-size: 14px;
+        font-size: 15px;
         padding: 6px 12px;
       }
 
       .dash-stat-value {
-        font-size: 28px;
+        font-size: 29px;
       }
 
       .dash-stat-label {
-        font-size: 14px;
+        font-size: 15px;
       }
 
       .dash-panel-header h3 {
-        font-size: 18px;
+        font-size: 19px;
       }
 
       .dash-form-group label {
-        font-size: 14px;
+        font-size: 15px;
       }
 
       .dash-modal-content {
@@ -757,7 +757,7 @@
       }
 
       .dash-modal-header h3 {
-        font-size: 18px;
+        font-size: 19px;
       }
 
       .dash-tabs {
@@ -766,7 +766,7 @@
       }
 
       .dash-tab {
-        font-size: 13px;
+        font-size: 14px;
         padding: 6px 10px;
         white-space: nowrap;
       }
@@ -781,7 +781,7 @@
       }
 
       .fc .fc-button {
-        font-size: 11px !important;
+        font-size: 12px !important;
         padding: 5px 10px !important;
       }
     }
@@ -823,7 +823,7 @@
       border: 1px solid var(--glass-border) !important;
       color: var(--text-main) !important;
       font-family: 'Outfit', sans-serif;
-      font-size: 14px !important;
+      font-size: 15px !important;
       font-weight: 600 !important;
       border-radius: 30px !important;
       padding: 8px 18px !important;
@@ -857,7 +857,7 @@
       font-weight: 600;
       color: var(--primary);
       text-transform: uppercase;
-      font-size: 13px;
+      font-size: 14px;
       letter-spacing: 1px;
     }
 
@@ -889,7 +889,7 @@
     .fc-event {
       border-radius: 8px !important;
       padding: 4px 8px !important;
-      font-size: 12px !important;
+      font-size: 13px !important;
       font-weight: 600 !important;
       cursor: pointer !important;
       margin: 3px 6px !important;
@@ -998,7 +998,7 @@
     }
 
     .dash-modal-header h3 {
-      font-size: 24px;
+      font-size: 25px;
       margin: 0;
     }
 
@@ -1020,7 +1020,7 @@
 
     .dash-modal-info-item label {
       display: block;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       font-weight: 700;
       text-transform: uppercase;
@@ -1029,7 +1029,7 @@
     }
 
     .dash-modal-info-item value {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 600;
       color: var(--text-main);
       display: block;
@@ -1074,7 +1074,7 @@
       -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
       animation: dashToastSlideIn 0.3s ease-out;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .dash-toast.success {
@@ -1102,7 +1102,7 @@
       padding: 8px 16px;
       border-radius: 20px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       transition: all 0.2s;
     }
@@ -1128,7 +1128,7 @@
       padding: 60px 20px;
       gap: 16px;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .dash-loading-spinner {
@@ -1153,13 +1153,13 @@
 
     .dash-empty-state h3 {
       margin: 0 0 8px;
-      font-size: 20px;
+      font-size: 21px;
     }
 
     .dash-empty-state p {
       color: var(--text-muted);
       margin: 0;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     /* Filters row */
@@ -1181,7 +1181,7 @@
     }
 
     .dash-filter-group label {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -1194,7 +1194,7 @@
       padding: 10px 14px;
       background: rgba(148, 163, 184, 0.08);
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-muted);
       border-left: 3px solid var(--primary);
       font-style: italic;
@@ -1229,7 +1229,7 @@
 
     .dash-modal-header h3 {
       margin: 0;
-      font-size: 20px;
+      font-size: 21px;
     }
 
     .dash-modal-body {
@@ -1246,7 +1246,7 @@
 
     .dash-info-group label {
       display: block;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       font-weight: 700;
       text-transform: uppercase;
@@ -1256,7 +1256,7 @@
 
     .dash-info-group value,
     .dash-info-group .dash-appointment-status {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       color: var(--text-main);
     }
@@ -1265,6 +1265,15 @@
       from { transform: scale(0.95); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
+
+    .fs-11 { font-size: 11px; }
+    .fs-12 { font-size: 12px; }
+    .fs-13 { font-size: 13px; }
+    .fs-14 { font-size: 14px; }
+    .fs-15 { font-size: 15px; }
+    .fs-16 { font-size: 16px; }
+    .fs-17 { font-size: 17px; }
+    .fs-21 { font-size: 21px; }
   
 
 

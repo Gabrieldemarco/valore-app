@@ -199,10 +199,10 @@ describe('StaffDashboard', () => {
     expect(await screen.findByText('Carlos')).toBeInTheDocument();
     await user.click(screen.getAllByText('Staff')[0]);
     expect(await screen.findByText('Ana')).toBeInTheDocument();
-    await user.click(screen.getByText('+ Nuevo Peluquero'));
-    expect(await screen.findByText('Nuevo Peluquero')).toBeInTheDocument();
-    await user.clear(screen.getByPlaceholderText('Nombre del peluquero'));
-    await user.type(screen.getByPlaceholderText('Nombre del peluquero'), 'Pedro');
+    await user.click(screen.getByText('+ Nuevo Profesional'));
+    expect(await screen.findByText('Nuevo Profesional')).toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText('Nombre del profesional'));
+    await user.type(screen.getByPlaceholderText('Nombre del profesional'), 'Pedro');
     const emailInput = screen.getByPlaceholderText('email@ejemplo.com') as HTMLInputElement;
     await user.clear(emailInput);
     await user.type(emailInput, 'pedro@test.com');

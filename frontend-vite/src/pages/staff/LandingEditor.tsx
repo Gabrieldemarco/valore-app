@@ -5,6 +5,7 @@ import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { Home, Sparkles, Image, Users, Calendar, RotateCcw, Trash2, X, User, GripVertical, Clock } from 'lucide-react';
 import { logger } from '../../services/logger';
+import ImageCropModal from '../../components/ImageCropModal';
 
 
 type EditorTab = 'general' | 'branding' | 'services' | 'hours' | 'gallery' | 'team' | 'social' | 'css' | 'layout';
@@ -132,10 +133,15 @@ export default function LandingEditor() {
   const [modalContent, setModalContent] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropAspect, setCropAspect] = useState(1);
+  const [cropTarget, setCropTarget] = useState<{ targetKey?: string; serviceIndex?: number; staffIndex?: number } | null>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const dragIndexRef = useRef<number | null>(null);
+  const galleryCropRef = useRef(false);
+  const saveChangesRef = useRef<((manual?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!staffToken) navigate('/staff/login');
@@ -159,7 +165,7 @@ export default function LandingEditor() {
   const debounceSave = useCallback(() => {
     setDirty(true);
     clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveChanges(false), 2000);
+    saveTimeoutRef.current = setTimeout(() => saveChangesRef.current(false), 2000);
   }, []);
 
   const loadAllData = useCallback(async () => {
@@ -242,6 +248,7 @@ export default function LandingEditor() {
       showStatus(t('staffLandingEditor.statusSaveError'), false);
     }
   }, [dirty, collectPayload, layout, updatePreview, showStatus, t]);
+  saveChangesRef.current = saveChanges;
 
   const handleTenantField = useCallback((key: string, value: unknown) => {
     setTenant(prev => ({ ...prev, [key]: value }));
@@ -411,28 +418,39 @@ export default function LandingEditor() {
       showStatus(t('staffLandingEditor.statusImageTooLarge'), false);
       return;
     }
+    let aspect = 1;
+    if (targetKey === 'landing_hero_image') aspect = 16 / 9;
+    else if (targetKey === 'brand_logo_url') aspect = 1;
+    else if (serviceIndex !== undefined) aspect = 4 / 3;
+    else if (staffIndex !== undefined) aspect = 1;
+    setCropAspect(aspect);
+    setCropTarget({ targetKey, serviceIndex, staffIndex });
+    setCropFile(file);
+  }, [showStatus, t]);
+
+  const handleCropApply = useCallback(async (dataUrl: string) => {
+    if (!cropTarget) return;
+    const { targetKey, serviceIndex, staffIndex } = cropTarget;
+    setCropFile(null);
+    setCropTarget(null);
     showStatus(t('staffLandingEditor.statusUploadingImage'), true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const res = await api.post<{ url?: string }>('/api/upload-image', { image: e.target?.result, filename: file.name });
-          const url = res.url;
-          if (!url) throw new Error('No se recibió URL');
-          if (serviceIndex !== undefined) {
-            setServices(prev => { const next = [...prev]; next[serviceIndex] = { ...next[serviceIndex], image: url }; return next; });
-          } else if (staffIndex !== undefined) {
-            setStaffList(prev => { const next = [...prev]; next[staffIndex] = { ...next[staffIndex], photo_url: url }; return next; });
-          } else {
-            setTenant(prev => ({ ...prev, [targetKey]: url }));
-          }
-          debounceSave();
-          showStatus(t('staffLandingEditor.statusImageUploaded'), false);
-        } catch { showStatus(t('staffLandingEditor.statusImageUploadError'), false); }
-      };
-      reader.readAsDataURL(file);
-    } catch { showStatus(t('staffLandingEditor.statusGeneralError'), false); }
-  }, [debounceSave, showStatus, t]);
+      const res = await api.post<{ url?: string }>('/api/upload-image', { image: dataUrl, filename: `image-${Date.now()}.jpg` });
+      const url = res.url;
+      if (!url) throw new Error('No se recibió URL');
+      if (serviceIndex !== undefined) {
+        setServices(prev => { const next = [...prev]; next[serviceIndex] = { ...next[serviceIndex], image: url }; return next; });
+      } else if (staffIndex !== undefined) {
+        setStaffList(prev => { const next = [...prev]; next[staffIndex] = { ...next[staffIndex], photo_url: url }; return next; });
+      } else if (targetKey === 'gallery') {
+        setGallery(prev => [...prev, url!]);
+      } else if (targetKey) {
+        setTenant(prev => ({ ...prev, [targetKey]: url }));
+      }
+      debounceSave();
+      showStatus(t('staffLandingEditor.statusImageUploaded'), false);
+    } catch { showStatus(t('staffLandingEditor.statusImageUploadError'), false); }
+  }, [cropTarget, showStatus, t, debounceSave]);
 
   const updateCustomBackgroundAndHero = useCallback((overrides?: Record<string, unknown>) => {
     const bgColor = (overrides?.landing_background_color as string) || (tenant.landing_background_color as string) || '#0f0808';
@@ -588,7 +606,7 @@ footer { order: 100 !important; }
   const tabs: { key: EditorTab; label: string }[] = [
     { key: 'general', label: t('staffLandingEditor.tabGeneral') },
     { key: 'branding', label: t('staffLandingEditor.tabBranding') },
-    { key: 'services', label: t('staffLandingEditor.tabServices') },
+    { key: 'services', label: t('staffDashboard.tabServices') },
     { key: 'hours', label: t('staffLandingEditor.tabHours') },
     { key: 'gallery', label: t('staffLandingEditor.tabGallery') },
     { key: 'team', label: t('staffLandingEditor.tabTeam') },
@@ -618,23 +636,23 @@ footer { order: 100 !important; }
         .main-container { display: flex; flex: 1; overflow: hidden; }
         .editor-pane { width: 45%; min-width: 400px; background: var(--bg-deep); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; overflow: hidden; }
         .tabs-nav { padding: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; gap: 0.5rem; overflow-x: auto; background: rgba(0,0,0,0.2); flex-shrink: 0; }
-        .tab-btn { padding: 0.5rem 0.75rem; border: 1px solid transparent; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; flex: 1; min-width: 0; text-align: center; }
+        .tab-btn { padding: 0.5rem 0.75rem; border: 1px solid transparent; background: transparent; border-radius: 6px; cursor: pointer; font-size: 1.9rem; font-weight: 500; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; flex: 1; min-width: 0; text-align: center; }
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
         .editor-content { padding: 2rem; flex: 1; overflow-y: auto; }
         .preview-pane { flex: 1; background: var(--bg-deep); display: flex; flex-direction: column; position: relative; }
-        .preview-toolbar { background: rgba(0,0,0,0.5); color: var(--text-main); padding: 0.5rem 1rem; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
+        .preview-toolbar { background: rgba(0,0,0,0.5); color: var(--text-main); padding: 0.5rem 1rem; font-size: 1.8rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
         iframe { width: 100%; height: 100%; border: none; background: var(--bg-deep); }
         .flex-row { display: flex; align-items: center; }
         .flex-row-gap { display: flex; align-items: center; gap: 10px; }
         .flex-row-gap-lg { display: flex; align-items: center; gap: 15px; }
         .flex-gap-sm { display: flex; gap: 5px; }
         .hidden { display: none !important; }
-        .text-muted-sm { color: var(--text-muted); font-size: 0.85rem; }
+        .text-muted-sm { color: var(--text-muted); font-size: 1.85rem; }
         .card { margin-bottom: 1.5rem; }
-        .card h3 { margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-main); border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; }
+        .card h3 { margin-bottom: 1rem; font-size: 2.1rem; color: var(--text-main); border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; }
         .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-size: 1.9rem; font-weight: 500; color: var(--text-muted); }
         .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid var(--glass-border); }
         .btn-secondary:hover { background: rgba(255,255,255,0.2); }
@@ -642,7 +660,7 @@ footer { order: 100 !important; }
         .btn-primary:hover { opacity: 0.9; }
         .btn-danger { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid #ef4444; }
         .btn-danger:hover { background: rgba(239,68,68,0.4); }
-        .status-bar { position: fixed; bottom: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); color: var(--text-main); padding: 10px 20px; border-radius: 50px; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275); z-index: 100; display: flex; align-items: center; gap: 10px; }
+        .status-bar { position: fixed; bottom: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); color: var(--text-main); padding: 10px 20px; border-radius: 50px; font-size: 1.9rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275); z-index: 100; display: flex; align-items: center; gap: 10px; }
         .status-bar.visible { transform: translateY(0); }
         .status-bar:not(.visible) { transform: translateY(100px); }
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -652,12 +670,12 @@ footer { order: 100 !important; }
         .service-fields { flex: 1; display: grid; gap: 0.5rem; }
         .service-actions { display: flex; flex-direction: column; justify-content: center; }
         .hours-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center; }
-        .day-check { display: flex; flex-direction: column; align-items: center; font-size: 0.8rem; gap: 4px; color: var(--text-muted); }
+        .day-check { display: flex; flex-direction: column; align-items: center; font-size: 1.8rem; gap: 4px; color: var(--text-muted); }
         .layout-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; cursor: grab; transition: opacity 0.2s; }
         .layout-item:active { cursor: grabbing; }
-        .drag-handle { cursor: grab; color: var(--text-muted); font-size: 18px; user-select: none; }
-        .layout-label { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
-        .btn-icon { padding: 4px 10px; font-size: 0.8rem; }
+        .drag-handle { cursor: grab; color: var(--text-muted); font-size: 19px; user-select: none; }
+        .layout-label { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1.95rem; }
+        .btn-icon { padding: 4px 10px; font-size: 1.8rem; }
         .centered-content { max-width: 800px; margin: 0 auto; text-align: center; }
         .section-padding { padding: 60px 24px; }
         .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
@@ -665,10 +683,10 @@ footer { order: 100 !important; }
         .gallery-item { position: relative; aspect-ratio: 1; }
         .gallery-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
         .gallery-item .remove-btn { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; line-height: 20px; text-align: center; }
-        @media (max-width: 992px), (max-height: 650px) { .main-container { flex-direction: column; overflow-y: auto; } .editor-pane { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); overflow-y: visible; } .preview-pane { display: none !important; } .preview-pane.mobile-visible { display: flex !important; position: fixed; inset: 0; z-index: 50; } .editor-content { padding: 1.5rem 1rem; } .status-bar { left: 20px; right: 20px; bottom: 10px; justify-content: center; font-size: 0.8rem; padding: 8px 16px; } .mobile-preview-btn { display: flex !important; } }
-        @media (max-width: 576px) { .app-header { flex-direction: column; gap: 0.8rem; padding: 1rem; align-items: stretch; text-align: center; } .app-header div { justify-content: center; } .tabs-nav { flex-wrap: wrap; } .tab-btn { flex: 1 1 calc(33.33% - 0.5rem); min-width: 80px; font-size: 0.8rem; padding: 0.4rem 0.25rem; } .form-row { flex-direction: column !important; } .service-item { flex-direction: column !important; } .service-actions { flex-direction: row !important; justify-content: flex-end; margin-top: 0.5rem; } .mobile-preview-btn { display: flex !important; } }
+        @media (max-width: 992px), (max-height: 650px) { .main-container { flex-direction: column; overflow-y: auto; } .editor-pane { width: 100%; min-width: 100%; border-right: none; border-bottom: 1px solid var(--glass-border); overflow-y: visible; } .preview-pane { display: none !important; } .preview-pane.mobile-visible { display: flex !important; position: fixed; inset: 0; z-index: 50; } .editor-content { padding: 1.5rem 1rem; } .status-bar { left: 20px; right: 20px; bottom: 10px; justify-content: center; font-size: 1.8rem; padding: 8px 16px; } .mobile-preview-btn { display: flex !important; } }
+        @media (max-width: 576px) { .app-header { flex-direction: column; gap: 0.8rem; padding: 1rem; align-items: stretch; text-align: center; } .app-header div { justify-content: center; } .tabs-nav { flex-wrap: wrap; } .tab-btn { flex: 1 1 calc(33.33% - 0.5rem); min-width: 80px; font-size: 1.8rem; padding: 0.4rem 0.25rem; } .form-row { flex-direction: column !important; } .service-item { flex-direction: column !important; } .service-actions { flex-direction: row !important; justify-content: flex-end; margin-top: 0.5rem; } .mobile-preview-btn { display: flex !important; } }
         .mobile-preview-btn { display: none; position: fixed; bottom: 80px; right: 20px; z-index: 60; background: var(--primary); color: white; border: none; border-radius: 50%; width: 56px; height: 56px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); cursor: pointer; align-items: center; justify-content: center; transition: transform 0.2s; } .mobile-preview-btn:hover { transform: scale(1.1); } .mobile-preview-close { display: none; position: fixed; top: 20px; right: 20px; z-index: 61; background: rgba(0,0,0,0.8); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; align-items: center; justify-content: center; } .mobile-preview-close.mobile-visible { display: flex !important; }
-        select.glass-input { appearance: auto; background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 6px; font-size: 0.9rem; width: 100%; }
+        select.glass-input { appearance: auto; background: var(--glass-bg); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 6px; font-size: 1.9rem; width: 100%; }
       `}</style>
 
       {/* Header */}
@@ -714,7 +732,7 @@ footer { order: 100 !important; }
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
                 <h3 className="text-gradient">{t('staffLandingEditor.generalTitle')}</h3>
                 <div className="form-group">
-                  <label>{t('staffLandingEditor.businessNameLabel')}</label>
+                  <label>{t('staffDashboard.businessNameLabel')}</label>
                   <input type="text" className="glass-input" value={(tenant.business_name as string) || ''}
                     onChange={e => handleTenantField('business_name', e.target.value)} />
                 </div>
@@ -724,7 +742,7 @@ footer { order: 100 !important; }
                     onChange={e => handleTenantField('landing_description', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>{t('staffLandingEditor.addressLabel')}</label>
+                  <label>{t('staffDashboard.addressLabel')}</label>
                   <input type="text" className="glass-input" value={(tenant.business_address as string) || ''}
                     onChange={e => handleTenantField('business_address', e.target.value)} />
                 </div>
@@ -903,18 +921,18 @@ footer { order: 100 !important; }
                 <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '1rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('staffLandingEditor.quickThemesTitle')}</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8 }}>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #c8827d, #d69c98)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8, transition: 'transform 0.15s' }}
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #c8827d, #d69c98)', color: 'white', fontSize: 12, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8, transition: 'transform 0.15s' }}
                       onClick={() => applyPresetTheme('#c8827d', '#d69c98', 'default')}>{t('staffLandingEditor.themeDefault')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontSize: 12, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
                       onClick={() => applyPresetTheme('#7C3AED', '#A78BFA', 'velvet')}>{t('staffLandingEditor.themeVelvet')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #B45309, #D97706)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #B45309, #D97706)', color: 'white', fontSize: 12, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
                       onClick={() => applyPresetTheme('#B45309', '#D97706', 'barber')}>{t('staffLandingEditor.themeBarber')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #059669, #10B981)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #059669, #10B981)', color: 'white', fontSize: 12, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
                       onClick={() => applyPresetTheme('#059669', '#10B981', 'zen')}>{t('staffLandingEditor.themeZen')}</button>
-                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', color: 'white', fontSize: 11, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
+                    <button type="button" className="btn" style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', color: 'white', fontSize: 12, padding: '10px 5px', fontWeight: 'bold', cursor: 'pointer', border: 'none', borderRadius: 8 }}
                       onClick={() => applyPresetTheme('#3B82F6', '#60A5FA', 'light')}>{t('staffLandingEditor.themeLight')}</button>
                   </div>
-                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 8, fontSize: 11 }}>{t('staffLandingEditor.quickThemeHint')}</small>
+                  <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 8, fontSize: 12 }}>{t('staffLandingEditor.quickThemeHint')}</small>
                 </div>
 
                 {/* Group: Logo y Hero Image */}
@@ -996,6 +1014,8 @@ footer { order: 100 !important; }
                           </label>
                           <input type="url" className="glass-input" placeholder={t('staffLandingEditor.serviceImagePlaceholder')} value={s.image || ''}
                             onChange={e => updateService(i, 'image', e.target.value)} />
+                          <input type="file" accept="image/*" className="glass-input" style={{ marginTop: 4, padding: 6, fontSize: 13 }}
+                            onChange={e => handleImageUpload('service_image', e.target.files?.[0], i)} />
                         </div>
                         {s.image && (
                           <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1018,29 +1038,29 @@ footer { order: 100 !important; }
             {/* Tab: Horarios */}
             {activeTab === 'hours' && (
               <div className="card glass-panel" style={{ padding: '1.5rem' }}>
-                <h3 className="text-gradient">{t('staffLandingEditor.hoursTitle')}</h3>
+                <h3 className="text-gradient">{t('staffDashboard.hoursTitle')}</h3>
                 <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>{t('staffLandingEditor.hoursHint')}</p>
                 <div className="form-group">
-                  <label>{t('staffLandingEditor.workDaysLabel')}</label>
+                  <label>{t('staffDashboard.workDaysLabel')}</label>
                   <div className="hours-grid">
                     {DAY_LABELS.map((day, i) => (
                       <label key={i} className="day-check" style={{ cursor: 'pointer' }}>
                         <input type="checkbox" checked={hours.workDays.includes(i)}
                           onChange={() => toggleDay(i)}
                           style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{day}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)' }}>{day}</span>
                       </label>
                     ))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>{t('staffLandingEditor.openingHourLabel')}</label>
+                    <label>{t('staffDashboard.openingHourLabel')}</label>
                     <input type="number" className="glass-input" min={0} max={23} value={hours.startHour}
                       onChange={e => { setHours(p => ({ ...p, startHour: Number(e.target.value) })); debounceSave(); }} />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>{t('staffLandingEditor.closingHourLabel')}</label>
+                    <label>{t('staffDashboard.closingHourLabel')}</label>
                     <input type="number" className="glass-input" min={0} max={23} value={hours.endHour}
                       onChange={e => { setHours(p => ({ ...p, endHour: Number(e.target.value) })); debounceSave(); }} />
                   </div>
@@ -1060,14 +1080,14 @@ footer { order: 100 !important; }
                       onChange={e => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = async (ev) => {
-                          try {
-                            const res = await api.post<{ url?: string }>('/api/upload-image', { image: ev.target?.result, filename: file.name });
-                            if (res.url) { setGallery(prev => [...prev, res.url!]); debounceSave(); }
-                          } catch { showStatus(t('staffLandingEditor.statusGeneralError'), false); }
-                        };
-                        reader.readAsDataURL(file);
+                        if (file.size > 5 * 1024 * 1024) {
+                          showStatus(t('staffLandingEditor.statusImageTooLarge'), false);
+                          return;
+                        }
+                        setCropAspect(1);
+                        galleryCropRef.current = true;
+                        setCropTarget({ targetKey: 'gallery' });
+                        setCropFile(file);
                       }} />
                     <button className="btn btn-secondary" onClick={addGalleryUrl}>{t('staffLandingEditor.galleryAddUrlButton')}</button>
                   </div>
@@ -1119,8 +1139,8 @@ footer { order: 100 !important; }
                                 <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(255,255,255,0.2)' }}><User size={20} /></div>
                               )}
                               <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffPhotoLabel')}</label>
-                                <input type="file" accept="image/*" className="glass-input" style={{ fontSize: 11, padding: 5 }}
+                                <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('staffLandingEditor.staffPhotoLabel')}</label>
+                                <input type="file" accept="image/*" className="glass-input" style={{ fontSize: 12, padding: 5 }}
                                   onChange={e => handleImageUpload('photo_url', e.target.files?.[0], undefined, i)} />
                               </div>
                             </div>
@@ -1158,7 +1178,7 @@ footer { order: 100 !important; }
                                           updateStaff(i, 'individual_hours', { ...s.individual_hours!, workDays: wd });
                                         }}
                                         style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{day}</span>
+                                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>{day}</span>
                                     </label>
                                   ))}
                                 </div>
@@ -1188,7 +1208,7 @@ footer { order: 100 !important; }
                     );
                   })}
                 </div>
-                <button className="btn btn-primary" onClick={addStaffUI}>{t('staffLandingEditor.staffNewButton')}</button>
+                <button className="btn btn-primary" onClick={addStaffUI}>{t('staffDashboard.staffNewButton')}</button>
               </div>
             )}
 
@@ -1327,6 +1347,17 @@ footer { order: 100 !important; }
           </div>
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {cropFile && (
+        <ImageCropModal
+          open
+          file={cropFile}
+          aspectRatio={cropAspect}
+          onApply={handleCropApply}
+          onCancel={() => { setCropFile(null); setCropTarget(null); galleryCropRef.current = false; }}
+        />
+      )}
 
       {/* Status Toast */}
       <div className={`status-bar${statusMsg ? ' visible' : ''}`} style={statusMsg ? { transform: 'translateY(0)' } : {}}>

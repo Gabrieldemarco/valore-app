@@ -120,9 +120,9 @@ describe('Landing', () => {
     mockFetch.mockImplementation(mockSuccess);
     renderLanding();
     await waitFor(() => {
-      expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument();
+      expect(screen.getByText('Elegí tu profesional')).toBeInTheDocument();
     });
-    const bookingSection = screen.getByText('Elegí tu peluquero').closest('.step-content') as HTMLElement;
+    const bookingSection = screen.getByText('Elegí tu profesional').closest('.step-content') as HTMLElement;
     expect(within(bookingSection).getByText('Ana López')).toBeInTheDocument();
     expect(within(bookingSection).getByText('Luis Pérez')).toBeInTheDocument();
   });
@@ -131,7 +131,7 @@ describe('Landing', () => {
     const user = userEvent.setup();
     mockFetch.mockImplementation(mockSuccess);
     renderLanding();
-    await waitFor(() => expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Elegí tu profesional')).toBeInTheDocument());
     const anaCards = screen.getAllByText('Ana López');
     await user.click(anaCards[1]);
     await waitFor(() => {
@@ -153,7 +153,7 @@ describe('Landing', () => {
     renderLanding();
 
     // Wait for initial data
-    await waitFor(() => expect(screen.getByText('Elegí tu peluquero')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Elegí tu profesional')).toBeInTheDocument());
     const anaCardsSubmit = screen.getAllByText('Ana López');
     await user.click(anaCardsSubmit[1]);
     await waitFor(() => {

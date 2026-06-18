@@ -15,7 +15,7 @@ export default function googleAuth() {
   const router = Router();
 
   router.get('/auth/google', (req, res) => {
-    const redirectUri = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}&response_type=code&scope=openid%20email%20profile&access_type=offline`;
+    const redirectUri = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=select_account`;
     res.redirect(redirectUri);
   });
 
