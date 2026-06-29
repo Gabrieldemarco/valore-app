@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useGeo } from '../../hooks/useGeo';
-import { logger } from '../../services/logger';
 import '../../styles/index.css';
 
 interface Salon {
@@ -97,11 +96,22 @@ export default function PublicIndex() {
   const [currentGenderFilter, setCurrentGenderFilter] = useState<string>('all');
   const [currentServiceFilter, setCurrentServiceFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [searchDate, setSearchDate] = useState('');
+  const [allServices, setAllServices] = useState<string[]>([]);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [showLocationPopup, setShowLocationPopup] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [appointmentsCount, setAppointmentsCount] = useState<number>(0);
   const featuredGridRef = useRef<HTMLDivElement>(null);
   const trendingGridRef = useRef<HTMLDivElement>(null);
   const newGridRef = useRef<HTMLDivElement>(null);
+  const serviceDropdownRef = useRef<HTMLDivElement>(null);
+  const locationPopupRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     api.get<TenantsResponse>('/api/tenants')
       .then(data => {
@@ -111,16 +121,46 @@ export default function PublicIndex() {
       })
       .catch(() => setError(t('publicIndex.error')))
       .finally(() => setLoading(false));
+
+    api.get<{ count: number }>('/api/appointments/today-count')
+      .then(data => setAppointmentsCount(data.count || 0))
+      .catch(() => setAppointmentsCount(0));
+
+    api.get<{ services: string[] }>('/api/services/all')
+      .then(data => setAllServices(data.services || []))
+      .catch(() => setAllServices([]));
   }, []);
 
   const filterSalons = useCallback(() => {
     let result = allSalons;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
+      const matchingCategories = SERVICE_CATEGORIES.filter(cat =>
+        cat.keywords.some(kw => q.includes(kw) || kw.includes(q))
+      );
       result = result.filter(s =>
         s.business_name?.toLowerCase().includes(q) ||
         s.business_address?.toLowerCase().includes(q) ||
-        s.slug?.toLowerCase().includes(q)
+        s.slug?.toLowerCase().includes(q) ||
+        (s.services || []).some(sv => {
+          const name = typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv;
+          return name.toLowerCase().includes(q);
+        }) ||
+        matchingCategories.some(cat => {
+          const text = [
+            s.business_name,
+            s.business_address,
+            s.landing_description,
+            ...(s.services || []).map(sv => typeof sv === 'object' ? (sv as { name?: string })?.name || '' : sv)
+          ].filter(Boolean).join(' ').toLowerCase();
+          return cat.keywords.some(kw => text.includes(kw));
+        })
+      );
+    }
+    if (searchLocation.trim()) {
+      const loc = searchLocation.toLowerCase().trim();
+      result = result.filter(s =>
+        s.business_address?.toLowerCase().includes(loc)
       );
     }
     if (currentGenderFilter !== 'all') {
@@ -142,7 +182,7 @@ export default function PublicIndex() {
       }
     }
     setFiltered(result);
-  }, [allSalons, searchQuery, currentGenderFilter, currentServiceFilter]);
+  }, [allSalons, searchQuery, searchLocation, currentGenderFilter, currentServiceFilter]);
 
   useEffect(() => { filterSalons(); }, [filterSalons]);
 
@@ -171,6 +211,11 @@ export default function PublicIndex() {
     if (cards[idx]) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
   }, []);
 
+  const handleSearch = useCallback(() => {
+    filterSalons();
+    document.getElementById('salons')?.scrollIntoView({ behavior: 'smooth' });
+  }, [filterSalons]);
+
   const getDotCount = useCallback((ref: React.RefObject<HTMLDivElement | null>, count: number) => {
     if (!ref.current) return Math.min(count, 10);
     const cardWidth = ref.current.querySelector<HTMLElement>('.salon-link')?.offsetWidth || 350;
@@ -197,7 +242,9 @@ export default function PublicIndex() {
   return (
     <>
       <div className="blob-container">
-        <div className="blur-blob"></div>
+        <div className="blur-blob blur-blob--primary"></div>
+        <div className="blur-blob blur-blob--amber"></div>
+        <div className="blur-blob blur-blob--champagne"></div>
       </div>
 
       <header className="header">
@@ -237,10 +284,6 @@ export default function PublicIndex() {
         <div className="hero-content">
           <h1>{countryName ? t('publicIndex.heroTitle', { country: countryName }) : t('publicIndex.heroTitleNoCountry')}</h1>
           <p>{t('publicIndex.heroSubtitle')}</p>
-          <div className="search-box">
-            <input type="text" placeholder={t('publicIndex.searchPlaceholder')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            <button className="btn btn-primary" aria-label={t('publicIndex.searchButton')}>{t('publicIndex.searchButton')}</button>
-          </div>
           <div className="gender-filter-bar">
             {[
               { key: 'all', label: () => t('publicIndex.filterAll') },
@@ -265,6 +308,157 @@ export default function PublicIndex() {
             </linearGradient>
           </defs>
         </svg>
+      </section>
+
+      <section className="search-section">
+        <div className="container">
+          <div className="search-box">
+            <div className="search-input-wrapper" ref={serviceDropdownRef}>
+              <input
+                type="text"
+                placeholder={t('publicIndex.searchPlaceholder')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setShowServiceDropdown(true)}
+                onBlur={() => setTimeout(() => setShowServiceDropdown(false), 200)}
+              />
+              {showServiceDropdown && allServices.length > 0 && (
+                <div className="search-dropdown">
+                  {allServices.map(service => (
+                    <button
+                      key={service}
+                      className="search-dropdown-item"
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        setSearchQuery(service);
+                        setShowServiceDropdown(false);
+                      }}
+                    >
+                      {service}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="search-input-wrapper" ref={locationPopupRef}>
+              <input
+                type="text"
+                placeholder={t('publicIndex.searchLocationPlaceholder')}
+                value={searchLocation}
+                onChange={e => setSearchLocation(e.target.value)}
+                onFocus={() => setShowLocationPopup(true)}
+                onBlur={() => setTimeout(() => setShowLocationPopup(false), 200)}
+              />
+              {showLocationPopup && (
+                <div className="location-popup">
+                  <button
+                    className="location-option"
+                    onMouseDown={async () => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          async (position) => {
+                            const { latitude, longitude } = position.coords;
+                            try {
+                              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`);
+                              const data = await res.json();
+                              const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
+                              const country = data.address?.country || '';
+                              setSearchLocation(city && country ? `${city}, ${country}` : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                            } catch {
+                              setSearchLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                            }
+                            setShowLocationPopup(false);
+                          },
+                          () => {
+                            alert('No se pudo obtener la ubicación');
+                          }
+                        );
+                      } else {
+                        alert('Geolocalización no soportada');
+                      }
+                    }}
+                  >
+                    <span className="location-icon">📍</span> Usar mi ubicación actual
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="search-input-wrapper" ref={datePickerRef}>
+              <input
+                type="text"
+                placeholder={t('publicIndex.searchDatePlaceholder')}
+                value={searchDate ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(searchDate + 'T12:00:00')) : ''}
+                onChange={e => setSearchDate(e.target.value)}
+                onFocus={() => setShowDatePicker(true)}
+                onBlur={() => setTimeout(() => setShowDatePicker(false), 200)}
+                readOnly
+              />
+              {showDatePicker && (
+                <div className="date-picker-popup">
+                  <div className="custom-calendar">
+                    <div className="calendar-header">
+                      <button
+                        className="calendar-nav"
+                        onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
+                      >
+                        ‹
+                      </button>
+                      <span className="calendar-month-year">
+                        {new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(calendarViewDate)}
+                      </span>
+                      <button
+                        className="calendar-nav"
+                        onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div className="calendar-weekdays">
+                      {Array.from({ length: 7 }, (_, i) => (
+                        <span key={i} className="calendar-weekday">
+                          {new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(new Date(2024, 0, i + 1))}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="calendar-days">
+                      {(() => {
+                        const year = calendarViewDate.getFullYear();
+                        const month = calendarViewDate.getMonth();
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        const days = [];
+                        for (let i = 0; i < firstDay; i++) {
+                          days.push(<div key={`empty-${i}`} className="calendar-day empty" />);
+                        }
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                          const isSelected = searchDate === dateStr;
+                          const isToday = dateStr === todayStr;
+                          days.push(
+                            <div
+                              key={d}
+                              className={`calendar-day${isSelected ? ' selected' : ''}${isToday ? ' today' : ''}`}
+                              onClick={() => {
+                                setSearchDate(dateStr);
+                                setShowDatePicker(false);
+                              }}
+                            >
+                              {d}
+                            </div>
+                          );
+                        }
+                        return days;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button className="btn btn-primary" onClick={handleSearch} aria-label={t('publicIndex.searchButton')}>{t('publicIndex.searchButton')}</button>
+          </div>
+        </div>
       </section>
 
       <section className="service-cards-section">
@@ -489,7 +683,13 @@ export default function PublicIndex() {
         )}
         {!loading && !error && filtered.length === 0 && (
           <div className="empty-state glass-panel" style={{ width: '100%' }}>
-            <h3 className="text-gradient">{t('publicIndex.noSalonsFound')}</h3>
+            <h3 className="text-gradient">
+              {currentServiceFilter
+                ? `No se encontraron establecimientos de ${SERVICE_CATEGORIES.find(c => c.key === currentServiceFilter)?.label || currentServiceFilter}`
+                : searchQuery.trim()
+                  ? `No se encontraron resultados para "${searchQuery}"`
+                  : t('publicIndex.noSalonsFound')}
+            </h3>
             <p>{t('publicIndex.noSalonsFoundHint')}</p>
           </div>
         )}
@@ -545,6 +745,9 @@ export default function PublicIndex() {
         <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 20, lineHeight: 1.6 }}>
           {t('publicIndex.footerCTA')}
         </p>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--primary)' }}>
+          {t('publicIndex.appointmentsCounter', { count: appointmentsCount })}
+        </div>
         <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 16, opacity: 0.8, display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
           <Link to="/terms#terms" style={{ color: 'var(--text-muted)', fontWeight: 500, textDecoration: 'none' }}>{t('publicIndex.termsLink')}</Link>
           <span style={{ color: 'rgba(197, 168, 128, 0.2)' }}>|</span>

@@ -1,22 +1,87 @@
 /* index.css - Estilos específicos de index.html (SaaS Landing) */
 
-/* DECORACIÓN DE FONDO DE LUJO (MATE OBSIDIANA, NO GAMING) */
+/* FONDO SOFISTICADO CON MÚLTIPLES CAPAS */
 .blob-container {
   position: absolute;
-  top: 0; left: 0; right: 0; height: 600px;
+  top: 0; left: 0; right: 0; height: 800px;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
 }
 
+/* Capa base: gradiente ambiental sutil */
+.blob-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(207, 168, 107, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 80% at 80% 40%, rgba(223, 194, 147, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 50% 80%, rgba(207, 168, 107, 0.02) 0%, transparent 60%);
+}
+
 .blur-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(150px);
-  opacity: 0.05;
-  background: var(--primary);
-  top: -250px; left: 35%;
-  width: 600px; height: 600px;
+  will-change: transform, top, left;
+}
+
+/* Blob principal: gran mancha dorada */
+.blur-blob--primary {
+  width: 700px; height: 700px;
+  filter: blur(180px);
+  opacity: 0.045;
+  background: radial-gradient(circle at 30% 40%, #cfa86b, #dfc293, transparent);
+  animation: driftPrimary 28s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes driftPrimary {
+  0%   { top: -300px; left: 20%; transform: scale(1) rotate(0deg); }
+  33%  { top: -200px; left: 45%; transform: scale(1.15) rotate(3deg); }
+  66%  { top: -250px; left: 30%; transform: scale(0.9) rotate(-2deg); }
+  100% { top: -180px; left: 50%; transform: scale(1.1) rotate(1deg); }
+}
+
+/* Blob secundario: tono ámbar más cálido */
+.blur-blob--amber {
+  width: 500px; height: 500px;
+  filter: blur(140px);
+  opacity: 0.03;
+  background: radial-gradient(circle at 70% 60%, #b8864e, #d4a86a, transparent);
+  animation: driftAmber 35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes driftAmber {
+  0%   { top: -100px; left: 55%; transform: scale(1); }
+  25%  { top: -180px; left: 35%; transform: scale(1.2); }
+  50%  { top: -150px; left: 60%; transform: scale(0.85); }
+  75%  { top: -220px; left: 40%; transform: scale(1.1); }
+  100% { top: -120px; left: 50%; transform: scale(1); }
+}
+
+/* Blob terciario: champagne apenas visible */
+.blur-blob--champagne {
+  width: 350px; height: 350px;
+  filter: blur(120px);
+  opacity: 0.025;
+  background: radial-gradient(circle at 50% 50%, #f5e6d3, #e8d5b7, transparent);
+  animation: driftChampagne 40s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes driftChampagne {
+  0%   { top: -50px; left: 40%; transform: scale(1); }
+  33%  { top: -120px; left: 55%; transform: scale(1.3); }
+  66%  { top: -80px; left: 30%; transform: scale(0.8); }
+  100% { top: -150px; left: 45%; transform: scale(1.1); }
+}
+
+/* Vignette sutil para profundidad */
+.blob-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 70% at 50% 30%, transparent 40%, rgba(10, 10, 12, 0.3) 100%);
+  pointer-events: none;
 }
 
 .header {
@@ -274,10 +339,11 @@
 }
 
 .search-box {
-  max-width: 600px;
-  padding: 6px 6px 6px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 10px 10px 24px;
   display: flex;
-  gap: 12px;
+  gap: 16px;
   border-radius: 30px;
   align-items: center;
   border: 1px solid rgba(207, 168, 107, 0.22);
@@ -306,6 +372,210 @@
   padding: 12px 30px;
   font-size: 14px;
   white-space: nowrap;
+}
+
+.search-section {
+  position: relative;
+  z-index: 10;
+  padding: 40px 0;
+  margin-bottom: 20px;
+}
+
+.location-icon {
+  filter: sepia(1) saturate(2) hue-rotate(25deg) brightness(0.9);
+  opacity: 0.8;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid rgba(207, 168, 107, 0.3);
+  border-radius: 12px;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 9999;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.search-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--text-main);
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(207, 168, 107, 0.1);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.search-dropdown-item:hover {
+  background: rgba(207, 168, 107, 0.15);
+}
+
+.search-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.location-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid rgba(207, 168, 107, 0.3);
+  border-radius: 12px;
+  margin-top: 8px;
+  padding: 8px;
+  z-index: 9999;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.location-option {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-size: 14px;
+}
+
+.location-option:hover {
+  background: rgba(207, 168, 107, 0.15);
+}
+
+.date-picker-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 270px;
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid rgba(207, 168, 107, 0.3);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  padding: 12px;
+  z-index: 9999;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(207, 168, 107, 0.08);
+}
+
+.custom-calendar {
+  user-select: none;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.calendar-month-year {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #dfc293;
+  text-transform: capitalize;
+}
+
+.calendar-nav {
+  background: none;
+  border: 1px solid rgba(207, 168, 107, 0.25);
+  color: #cfa86b;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.calendar-nav:hover {
+  background: rgba(207, 168, 107, 0.15);
+  border-color: rgba(207, 168, 107, 0.5);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(223, 194, 147, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  text-align: center;
+  padding: 10px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.calendar-day:hover:not(.empty) {
+  background: rgba(207, 168, 107, 0.12);
+  color: #fff;
+}
+
+.calendar-day.empty {
+  cursor: default;
+}
+
+.calendar-day.today {
+  border: 1px solid rgba(207, 168, 107, 0.3);
+  color: #dfc293;
+}
+
+.calendar-day.selected {
+  background: linear-gradient(135deg, #cfa86b, #dfc293);
+  color: #0d0d12;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(207, 168, 107, 0.3);
 }
 
 /* Premium Glassmorphic Gender Filter Bar */
@@ -351,7 +621,6 @@
 /* Service Category Cards */
 .service-cards-section {
   padding: 60px 0 80px;
-  position: relative;
 }
 
 .service-cards-grid {
