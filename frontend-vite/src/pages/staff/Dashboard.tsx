@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, clearApiCache } from '../../api/client';
@@ -11,14 +11,21 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import SalonQR from '../../components/SalonQR';
-import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
+import { CalendarDays, Clock, CheckCheck, TrendingDown, ChevronRight } from 'lucide-react';
 import { exportInvoicePdf, exportAppointmentsPdf } from '../../utils/invoicePdf';
 import RevenueChart from './RevenueChart';
 import TopServicesChart from './TopServicesChart';
 import ImageCropModal from '../../components/ImageCropModal';
+import PhoneInput from '../../components/PhoneInput';
 import { logger } from '../../services/logger';
+import OnboardingTour from '../../components/OnboardingTour';
+import type { TourStep } from '../../components/OnboardingTour';
 import '../../styles/dashboard.css';
 import '../../styles/fullcalendar.css';
+
+const PosSection = lazy(() => import('../../components/staff/PosSection'));
+const ProductsSection = lazy(() => import('../../components/staff/ProductsSection'));
+const WaitlistSection = lazy(() => import('../../components/staff/WaitlistSection'));
 
 interface Appointment {
   id: number;
@@ -71,14 +78,33 @@ interface StaffMember {
   commission_value?: number;
 }
 
+interface ServiceImage {
+  id: number;
+  url: string;
+  sort_order: number;
+}
+
+interface CategoryItem {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  sort_order: number;
+  children: CategoryItem[];
+}
+
 interface ServiceItem {
   id: number;
   name: string;
   duration: number;
   price: number;
   category?: string;
+  category_id?: number | null;
+  category_name?: string | null;
+  category_parent_id?: number | null;
+  description?: string;
   active: boolean;
   image?: string;
+  images?: ServiceImage[];
 }
 
 interface TenantSettings {
@@ -104,13 +130,19 @@ interface ClientSummary {
   first_appointment: string;
 }
 
-type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'clients' | 'analytics' | 'coupons' | 'waitlist' | 'products' | 'pos';
+type Tab = 'list' | 'calendar' | 'billing' | 'staff' | 'services' | 'categories' | 'clients' | 'analytics' | 'coupons' | 'waitlist' | 'products' | 'pos';
 
 interface Toast {
   id: number;
   message: string;
   type: 'success' | 'error';
 }
+
+const formatPrice = (p: number | string | null | undefined): string => {
+  if (p === null || p === undefined) return '';
+  const n = typeof p === 'string' ? parseFloat(p) : p;
+  return n % 1 === 0 ? n.toString() : n.toFixed(2);
+};
 
 export default function StaffDashboard() {
   const { t } = useTranslation();
@@ -146,10 +178,12 @@ export default function StaffDashboard() {
   const [couponsList, setCouponsList] = useState<any[]>([]);
   const [couponModal, setCouponModal] = useState<{ open: boolean; editing: any | null }>({ open: false, editing: null });
   const [couponForm, setCouponForm] = useState({ code: '', discount_type: 'percentage', discount_value: '', min_appointment_amount: '', max_uses: '', expires_at: '' });
-  const [waitlistList, setWaitlistList] = useState<any[]>([]);
-  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [catModal, setCatModal] = useState<{ open: boolean; editing: { id?: number; name: string; parent_id: number | null } | null }>({ open: false, editing: null });
   const [servicesModal, setServicesModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
-  const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', category: '', image: '' });
+  const [servicesForm, setServicesForm] = useState({ name: '', duration: '30', price: '0', category: '', category_id: '', description: '', image: '' });
+  const [serviceImages, setServiceImages] = useState<ServiceImage[]>([]);
+  const [serviceImageUrl, setServiceImageUrl] = useState('');
   const [serviceCropFile, setServiceCropFile] = useState<File | null>(null);
   const [serviceCropAspect, setServiceCropAspect] = useState(16 / 9);
   const [serviceCropTarget, setServiceCropTarget] = useState<string>('service_image');
@@ -185,20 +219,6 @@ export default function StaffDashboard() {
     active: boolean; created_at: string;
   }
   const [productsList, setProductsList] = useState<ProductItem[]>([]);
-  const [productsForm, setProductsForm] = useState({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '', image_url: '' });
-  const [productsModal, setProductsModal] = useState<{ open: boolean; editing: ProductItem | null }>({ open: false, editing: null });
-  const [productCropFile, setProductCropFile] = useState<File | null>(null);
-  const [productCropAspect, setProductCropAspect] = useState(1 / 1);
-  const [productCropTarget, setProductCropTarget] = useState<string>('product_image');
-
-  // ===== POS (VENTAS) =====
-  const [salesList, setSalesList] = useState<any[]>([]);
-  const [posCart, setPosCart] = useState<{ product_id: number; name: string; quantity: number; unit_price: number; total: number }[]>([]);
-  const [posClientName, setPosClientName] = useState('');
-  const [posClientPhone, setPosClientPhone] = useState('');
-  const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'card' | 'mp'>('cash');
-  const [posNotes, setPosNotes] = useState('');
-  const [posSearch, setPosSearch] = useState('');
 
   // ===== GOOGLE CALENDAR SYNC =====
   interface CalendarStatus {
@@ -279,6 +299,25 @@ export default function StaffDashboard() {
     } catch { addToast(t('staffDashboard.toastLoadServicesError'), 'error'); }
   }, []);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await api.get<{ categories: CategoryItem[] }>('/api/tenant/categories');
+      setCategories(data.categories);
+    } catch { /* silencioso */ }
+  }, []);
+
+  const flatCats = useMemo(() => {
+    const result: { id: number; name: string; depth: number }[] = [];
+    const walk = (items: CategoryItem[], depth: number) => {
+      for (const c of items) {
+        result.push({ id: c.id, name: c.name, depth });
+        walk(c.children, depth + 1);
+      }
+    };
+    walk(categories, 0);
+    return result;
+  }, [categories]);
+
   const loadClients = useCallback(async (q?: string) => {
     try {
       setClientsLoading(true);
@@ -295,12 +334,6 @@ export default function StaffDashboard() {
     } catch { addToast(t('staffDashboard.toastProductLoadError'), 'error'); }
   }, []);
 
-  const loadSales = useCallback(async () => {
-    try {
-      const data = await api.get<{ sales: any[] }>('/api/tenant/sales');
-      setSalesList(data.sales);
-    } catch { /* silencioso */ }
-  }, []);
 
   const loadCalendarStatus = useCallback(async () => {
     try {
@@ -408,11 +441,10 @@ export default function StaffDashboard() {
     api.get<{ invoices: Invoice[] }>('/api/tenant/invoices').then(d => setInvoices(d.invoices)).catch(() => {});
     api.get<{ staff: StaffMember[] }>('/api/tenant/staff').then(d => setStaffList(d.staff)).catch(() => {});
     loadServices();
+    loadCategories();
     loadClients();
     loadCoupons();
-    loadWaitlist();
     loadProducts();
-    loadSales();
     loadCalendarStatus();
 
     const params = new URLSearchParams(window.location.search);
@@ -467,7 +499,7 @@ export default function StaffDashboard() {
   }, [selectedAppointment, loadApptClientHistory]);
 
   const updateStatus = useCallback(async (id: number, status: string, internalNotes?: string) => {
-    const labels: Record<string, string> = { completed: 'completar', cancelled: 'cancelar', confirmed: 'confirmar', 'no-show': 'marcar como no-show' };
+    const labels: Record<string, string> = { completed: t('staffDashboard.actionComplete'), cancelled: t('staffDashboard.actionCancel'), confirmed: t('staffDashboard.actionConfirm'), 'no-show': t('staffDashboard.actionNoShow') };
     if (!confirm(t('staffDashboard.confirmStatusUpdate', { action: labels[status] || status }))) return;
     try {
       await api.put(`/api/appointments/${id}/status`, { status, internalNotes });
@@ -534,6 +566,20 @@ export default function StaffDashboard() {
     a.href = url; a.download = `turnos-${filterDate}.csv`; a.click();
     URL.revokeObjectURL(url);
   }, [appointments, filterDate]);
+
+  const staffTourSteps: TourStep[] = useMemo(() => [
+    { target: '', title: 'Bienvenido a Velsoie Studio', content: 'Este es tu panel de gestión. Te guiaremos por las secciones principales para que empieces a recibir reservas en minutos.' },
+    { target: '.dash-stats', title: 'Resumen del día', content: 'Acá ves tus turnos de hoy, pendientes, completados y tasa de cancelación. Todo de un vistazo.', position: 'bottom' },
+    { target: '.dash-tabs', title: 'Navegación principal', content: 'Usá estas pestañas para gestionar turnos, calendario, staff, servicios, clientes y más.', position: 'top' },
+    { target: '.dash-tabs', title: 'Turnos', content: 'En "Turnos" ves la lista completa con filtros por fecha, estado, staff y teléfono. Podés confirmar, completar o cancelar turnos.', position: 'top', beforeEnter: () => setActiveTab('list') },
+    { target: '.dash-tabs', title: 'Calendario', content: 'En "Calendario" tenés una vista visual de todos tus turnos por día, semana o mes.', position: 'top', beforeEnter: () => setActiveTab('calendar') },
+    { target: '.dash-tabs', title: 'Staff', content: 'Acá gestionás tus peluqueros: agregá, editá, configurá horarios y comisiones.', position: 'top', beforeEnter: () => setActiveTab('staff') },
+    { target: '.dash-tabs', title: 'Servicios', content: 'Definí los servicios que ofrecés: nombre, duración, precio y categoría.', position: 'top', beforeEnter: () => setActiveTab('services') },
+    { target: '.dash-tabs', title: 'Clientes', content: 'Historial y datos de tus clientes. Buscalos por nombre o teléfono.', position: 'top', beforeEnter: () => setActiveTab('clients') },
+    { target: '.dash-tabs', title: 'Facturación', content: 'Gestioná tu plan, facturas y métodos de pago.', position: 'top', beforeEnter: () => setActiveTab('billing') },
+    { target: '.dash-tabs', title: 'Analytics', content: 'Métricas de ingresos, turnos por mes, servicios más reservados y rendimiento por peluquero.', position: 'top', beforeEnter: () => setActiveTab('analytics') },
+    { target: '.dash-header', title: 'Configuración', content: 'Ajustá tu perfil, horarios, métodos de notificación y más desde el botón de Configuración.', position: 'bottom' },
+  ], []);
 
   const handleLogout = useCallback(() => { logout(); navigate('/staff/login'); }, [logout, navigate]);
 
@@ -700,31 +746,6 @@ export default function StaffDashboard() {
     } catch { addToast(t('staffDashboard.toastLoadCouponsError'), 'error'); }
   }, []);
 
-  const loadWaitlist = useCallback(async () => {
-    setWaitlistLoading(true);
-    try {
-      const data = await api.get<{ entries: any[] }>('/api/tenant/waitlist');
-      setWaitlistList(data.entries || []);
-    } catch { /* silencioso */ }
-    setWaitlistLoading(false);
-  }, []);
-
-  const notifyWaitlistEntry = useCallback(async (id: number) => {
-    try {
-      await api.put(`/api/tenant/waitlist/${id}/notify`);
-      loadWaitlist();
-      addToast(t('staffDashboard.toastWaitlistNotified'), 'success');
-    } catch { addToast(t('staffDashboard.toastError'), 'error'); }
-  }, [loadWaitlist, addToast]);
-
-  const deleteWaitlistEntry = useCallback(async (id: number) => {
-    try {
-      await api.delete(`/api/tenant/waitlist/${id}`);
-      loadWaitlist();
-      addToast(t('staffDashboard.toastWaitlistDeleted'), 'success');
-    } catch { addToast(t('staffDashboard.toastError'), 'error'); }
-  }, [loadWaitlist, addToast]);
-
   const openCouponCreate = () => {
     setCouponForm({ code: '', discount_type: 'percentage', discount_value: '', min_appointment_amount: '', max_uses: '', expires_at: '' });
     setCouponModal({ open: true, editing: null });
@@ -785,19 +806,29 @@ export default function StaffDashboard() {
   };
 
   const openServiceCreate = () => {
-    setServicesForm({ name: '', duration: '30', price: '0', category: '', image: '' });
+    setServicesForm({ name: '', duration: '30', price: '0', category: '', category_id: '', description: '', image: '' });
+    setServiceImages([]);
+    setServiceImageUrl('');
     setServicesModal({ open: true, editing: null });
   };
 
-  const openServiceEdit = (s: ServiceItem) => {
+  const openServiceEdit = async (s: ServiceItem) => {
     setServicesForm({
       name: s.name,
       duration: String(s.duration),
       price: String(s.price),
       category: s.category || '',
+      category_id: s.category_id ? String(s.category_id) : '',
+      description: s.description || '',
       image: s.image || '',
     });
     setServicesModal({ open: true, editing: s });
+    try {
+      const res = await api.get<{ images: ServiceImage[] }>(`/api/tenant/services/${s.id}/images`);
+      setServiceImages(res.images || []);
+    } catch {
+      setServiceImages([]);
+    }
   };
 
   const saveService = async () => {
@@ -806,11 +837,13 @@ export default function StaffDashboard() {
       return;
     }
     try {
-      const body = {
+      const body: Record<string, any> = {
         name: servicesForm.name,
         duration: parseInt(servicesForm.duration, 10),
         price: parseFloat(servicesForm.price),
         category: servicesForm.category || undefined,
+        category_id: servicesForm.category_id ? parseInt(servicesForm.category_id, 10) : null,
+        description: servicesForm.description || undefined,
         image: servicesForm.image || undefined,
       };
       if (servicesModal.editing) {
@@ -821,9 +854,37 @@ export default function StaffDashboard() {
         addToast(t('staffDashboard.toastServiceCreated'), 'success');
       }
       setServicesModal({ open: false, editing: null });
+      setServiceImages([]);
+      setServiceImageUrl('');
       loadServices();
     } catch (e: any) {
       logger.error('Error saving service:', e); addToast(e?.message || t('staffDashboard.toastServiceSaveError'), 'error');
+    }
+  };
+
+  const addServiceImage = async () => {
+    if (!serviceImageUrl || !servicesModal.editing) {
+      addToast('Seleccioná un servicio primero o ingresá una URL', 'error');
+      return;
+    }
+    try {
+      const res = await api.post<{ image: ServiceImage }>(`/api/tenant/services/${servicesModal.editing.id}/images`, { url: serviceImageUrl });
+      setServiceImages(prev => [...prev, res.image]);
+      setServiceImageUrl('');
+      addToast('Imagen agregada', 'success');
+    } catch (e: any) {
+      addToast(e?.message || 'Error al agregar imagen', 'error');
+    }
+  };
+
+  const deleteServiceImage = async (imageId: number) => {
+    if (!servicesModal.editing) return;
+    try {
+      await api.delete(`/api/tenant/services/${servicesModal.editing.id}/images/${imageId}`);
+      setServiceImages(prev => prev.filter(img => img.id !== imageId));
+      addToast('Imagen eliminada', 'success');
+    } catch (e: any) {
+      addToast(e?.message || 'Error al eliminar imagen', 'error');
     }
   };
 
@@ -844,108 +905,29 @@ export default function StaffDashboard() {
     } catch { addToast(t('staffDashboard.toastServiceToggleError'), 'error'); }
   };
 
-  // ===== PRODUCTOS CRUD =====
-  const openProductCreate = () => {
-    setProductsForm({ name: '', description: '', price: '0', cost: '0', stock: '0', min_stock: '0', category: '', sku: '', image_url: '' });
-    setProductsModal({ open: true, editing: null });
-  };
-
-  const openProductEdit = (p: ProductItem) => {
-    setProductsForm({ name: p.name, description: p.description, price: String(p.price), cost: String(p.cost), stock: String(p.stock), min_stock: String(p.min_stock), category: p.category, sku: p.sku, image_url: p.image_url || '' });
-    setProductsModal({ open: true, editing: p });
-  };
-
-  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setProductCropFile(file);
-    setProductCropAspect(1 / 1);
-    setProductCropTarget('product_image');
-  };
-
-  const handleProductCropApply = async (dataUrl: string) => {
-    if (!productCropFile) return;
+  const saveCategory = async (form: { id?: number; name: string; parent_id: number | null }) => {
+    if (!form.name.trim()) { addToast('El nombre es obligatorio', 'error'); return; }
     try {
-      const res = await api.post<{ success: boolean; url: string; message: string }>('/api/upload-image', { image: dataUrl, filename: `product-${Date.now()}.jpg` });
-      if (res.success && res.url) {
-        setProductsForm(p => ({ ...p, image_url: res.url }));
-        addToast(t('staffDashboard.toastProductImageUploadSuccess'), 'success');
+      if (form.id) {
+        await api.put(`/api/tenant/categories/${form.id}`, { name: form.name, parent_id: form.parent_id });
+        addToast('Categoría actualizada', 'success');
       } else {
-        addToast(t('staffDashboard.toastProductImageUploadError'), 'error');
+        await api.post('/api/tenant/categories', { name: form.name, parent_id: form.parent_id });
+        addToast('Categoría creada', 'success');
       }
-    } catch (err) {
-      logger.error('Error uploading product image:', err);
-      addToast(t('staffDashboard.toastProductImageUploadError'), 'error');
-    }
-    setProductCropFile(null);
+      setCatModal({ open: false, editing: null });
+      loadCategories();
+    } catch (e: any) { addToast(e?.message || 'Error al guardar categoría', 'error'); }
   };
 
-  const saveProduct = async () => {
-    if (!productsForm.name || !productsForm.price) { addToast(t('staffDashboard.toastProductSaveValidation'), 'error'); return; }
+  const deleteCategory = async (id: number) => {
+    if (!confirm('¿Eliminar esta categoría? Los servicios quedarán sin categoría.')) return;
     try {
-      const body = { name: productsForm.name, description: productsForm.description, price: parseFloat(productsForm.price), cost: parseFloat(productsForm.cost), stock: parseInt(productsForm.stock, 10), min_stock: parseInt(productsForm.min_stock, 10), category: productsForm.category, sku: productsForm.sku, image_url: productsForm.image_url };
-      if (productsModal.editing) {
-        await api.put(`/api/tenant/products/${productsModal.editing.id}`, body);
-        addToast(t('staffDashboard.toastProductUpdated'), 'success');
-      } else {
-        await api.post('/api/tenant/products', body);
-        addToast(t('staffDashboard.toastProductCreated'), 'success');
-      }
-      setProductsModal({ open: false, editing: null });
-      setProductCropFile(null);
-      loadProducts();
-    } catch (e: any) { addToast(e?.message || t('staffDashboard.toastProductSaveError'), 'error'); }
-  };
-
-  const deleteProduct = async (id: number, name: string) => {
-    if (!confirm(t('staffDashboard.toastProductDeleteConfirm', { name }))) return;
-    try {
-      await api.delete(`/api/tenant/products/${id}`);
-      addToast(t('staffDashboard.toastProductDeleted'), 'success');
-      loadProducts();
-    } catch {       addToast(t('staffDashboard.toastProductDeleteError'), 'error'); }
-  };
-
-  const addToCart = (p: ProductItem) => {
-    setPosCart(prev => {
-      const existing = prev.find(i => i.product_id === p.id);
-      if (existing) {
-        return prev.map(i => i.product_id === p.id ? { ...i, quantity: i.quantity + 1, total: (i.quantity + 1) * i.unit_price } : i);
-      }
-      return [...prev, { product_id: p.id, name: p.name, quantity: 1, unit_price: p.price, total: p.price }];
-    });
-  };
-
-  const removeFromCart = (productId: number) => {
-    setPosCart(prev => prev.filter(i => i.product_id !== productId));
-  };
-
-  const updateCartQty = (productId: number, qty: number) => {
-    if (qty < 1) return;
-    setPosCart(prev => prev.map(i => i.product_id === productId ? { ...i, quantity: qty, total: qty * i.unit_price } : i));
-  };
-
-  const posTotal = posCart.reduce((sum, i) => sum + i.total, 0);
-
-  const checkout = async () => {
-    if (posCart.length === 0) { addToast('Agregá productos al carrito', 'error'); return; }
-    try {
-      await api.post('/api/tenant/sales', {
-        items: posCart,
-        total: posTotal,
-        payment_method: posPaymentMethod,
-        client_name: posClientName,
-        client_phone: posClientPhone,
-        notes: posNotes,
-      });
-      addToast('Venta registrada', 'success');
-      setPosCart([]);
-      setPosClientName('');
-      setPosClientPhone('');
-      setPosNotes('');
-      loadSales();
-      loadProducts();
-    } catch (e: any) { addToast(e?.message || 'Error al registrar venta', 'error'); }
+      await api.delete(`/api/tenant/categories/${id}`);
+      addToast('Categoría eliminada', 'success');
+      loadCategories();
+      loadServices();
+    } catch (e: any) { addToast(e?.message || 'Error al eliminar', 'error'); }
   };
 
   return (
@@ -978,6 +960,8 @@ export default function StaffDashboard() {
         </div>
       </div>
 
+      <OnboardingTour tourId="staff-dashboard" steps={staffTourSteps} enabled={!!staffToken} onComplete={() => {}} />
+
       <div className="dash-container" style={{ maxWidth: 700, margin: '0 auto 24px' }}>
         <PushNotificationToggle />
       </div>
@@ -1005,7 +989,7 @@ export default function StaffDashboard() {
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.contactWhatsAppLabel')}</label>
-                <input type="tel" className="glass-input" value={settings.business_phone} onChange={e => setSettings(p => ({ ...p, business_phone: e.target.value }))} placeholder={t('staffDashboard.contactWhatsAppPlaceholder')} />
+                <PhoneInput value={settings.business_phone} onChange={v => setSettings(p => ({ ...p, business_phone: v }))} placeholder={t('staffDashboard.contactWhatsAppPlaceholder')} className="glass-input" />
                 <small>{t('staffDashboard.contactWhatsAppHint')}</small>
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 16, borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: 16 }}>
@@ -1067,8 +1051,8 @@ export default function StaffDashboard() {
                         <thead>
                           <tr>
                             <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>{t('staffDashboard.blockedDatesDelete')}</th>
-                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>Fecha</th>
-                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>Motivo</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>{t('staffDashboard.blockedDatesDateHeader')}</th>
+                            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8' }}>{t('staffDashboard.blockedDatesReasonHeader')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1162,7 +1146,7 @@ export default function StaffDashboard() {
                           {calendarSyncing ? t('staffDashboard.calendarSyncSyncing') : t('staffDashboard.calendarSyncSyncNow')}
                         </button>
                         <button className="dash-btn dash-btn-danger fs-14" onClick={async () => {
-                          if (!confirm('¿Desconectar Google Calendar?')) return;
+                          if (!confirm(t('staffDashboard.calendarDisconnectConfirm'))) return;
                           try {
                             await api.delete('/api/calendar/disconnect');
                             setCalendarStatus({ connected: false });
@@ -1237,9 +1221,9 @@ export default function StaffDashboard() {
         </div>
 
         <div className="dash-tabs glass-panel">
-          {(['list', 'calendar', 'staff', 'services', 'clients', 'billing', 'analytics', 'coupons', 'waitlist', 'products', 'pos'] as Tab[]).map(tab => (
+          {(['list', 'calendar', 'staff', 'services', 'categories', 'clients', 'billing', 'analytics', 'coupons', 'waitlist', 'products', 'pos'] as Tab[]).map(tab => (
             <button key={tab} className={`dash-tab${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : tab === 'coupons' ? t('staffDashboard.tabCoupons') : tab === 'waitlist' ? t('staffDashboard.tabWaitlist') : tab === 'products' ? t('staffDashboard.tabProducts') : tab === 'pos' ? t('staffDashboard.tabPOS') : t('staffDashboard.tabAnalytics')}
+              {tab === 'list' ? t('staffDashboard.tabList') : tab === 'calendar' ? t('staffDashboard.tabCalendar') : tab === 'staff' ? t('staffDashboard.tabStaff') : tab === 'services' ? t('staffDashboard.tabServices') : tab === 'categories' ? t('staffDashboard.tabCategories', 'Categorías') : tab === 'clients' ? t('staffDashboard.tabClients') : tab === 'billing' ? t('staffDashboard.tabBilling') : tab === 'coupons' ? t('staffDashboard.tabCoupons') : tab === 'waitlist' ? t('staffDashboard.tabWaitlist') : tab === 'products' ? t('staffDashboard.tabProducts') : tab === 'pos' ? t('staffDashboard.tabPOS') : t('staffDashboard.tabAnalytics')}
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
@@ -1484,7 +1468,7 @@ export default function StaffDashboard() {
               <div className="glass-panel" style={{ marginBottom: 20, padding: 20, border: '1px solid rgba(197,168,128,0.35)' }}>
                 <h3 className="text-gradient" style={{ margin: '0 0 8px' }}>{t('staffDashboard.billingYourPlan')}</h3>
                 <p id="planStatusText" style={{ margin: '0 0 14px', color: 'var(--text-muted)' }}>
-                  {plan.plan && plan.status ? t('staffDashboard.billingPlanInfo', { plan: plan.plan, status: plan.status }) : t('staffDashboard.billingPlanInfo', { plan: 'No disponible', status: 'No disponible' })}
+                  {plan.plan && plan.status ? t('staffDashboard.billingPlanInfo', { plan: plan.plan, status: plan.status }) : t('staffDashboard.notAvailable')}
                 </p>
                 {plan.status !== 'active' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
@@ -1497,7 +1481,7 @@ export default function StaffDashboard() {
               <div className="glass-panel" style={{ marginBottom: 20, padding: 20, border: '1px solid rgba(197,168,128,0.35)' }}>
                 <h3 className="text-gradient" style={{ margin: '0 0 8px' }}>{t('staffDashboard.billingYourPlan')}</h3>
                 <p style={{ margin: '0 0 14px', color: 'var(--text-muted)' }}>
-                  {t('staffDashboard.billingPlanInfo', { plan: 'No disponible', status: 'No disponible' })}
+                  {t('staffDashboard.notAvailable')}
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
                   <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro')}>{t('staffDashboard.billingPlanPro')}</button>
@@ -1630,9 +1614,9 @@ export default function StaffDashboard() {
                     {servicesList.map(s => (
                       <tr key={s.id}>
                         <td style={{ padding: 12, fontWeight: 600 }}>{s.name}</td>
-                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{s.category || '-'}</td>
+                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{s.category_name || s.category || '-'}</td>
                         <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{s.duration} {t('landingServices.minutes')}</td>
-                        <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{t('landingServices.pricePrefix')}{s.price}</td>
+                        <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{t('landingServices.pricePrefix')}{formatPrice(s.price)}</td>
                         <td style={{ padding: 12, textAlign: 'center' }}>
                           <button
                             onClick={() => toggleServiceActive(s)}
@@ -1650,6 +1634,25 @@ export default function StaffDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'categories' && (
+          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.categoriesTitle', 'Categorías')}</h3>
+              <button className="dash-btn dash-btn-success" onClick={() => setCatModal({ open: true, editing: { name: '', parent_id: null } })}>{t('staffDashboard.categoriesNewButton', 'Nueva categoría')}</button>
+            </div>
+            {categories.length === 0 ? (
+              <div className="dash-empty-state glass-panel">
+                <h3 className="text-gradient">{t('staffDashboard.categoriesEmptyTitle', 'Sin categorías')}</h3>
+                <p>{t('staffDashboard.categoriesEmptyMessage', 'Creá categorías para organizar tus servicios.')}</p>
+              </div>
+            ) : (
+              <div className="dash-category-tree">
+                {categories.map(cat => <CategoryTreeItem key={cat.id} cat={cat} depth={0} onEdit={c => setCatModal({ open: true, editing: { id: c.id, name: c.name, parent_id: c.parent_id } })} onDelete={deleteCategory} t={t} />)}
               </div>
             )}
           </div>
@@ -1705,208 +1708,21 @@ export default function StaffDashboard() {
         )}
 
         {activeTab === 'waitlist' && (
-          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.waitlistTitle')}</h3>
-              <button className="dash-btn dash-btn-secondary" onClick={loadWaitlist} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                ↻ {t('staffDashboard.waitlistRefresh')}
-              </button>
-            </div>
-            {waitlistLoading ? (
-              <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
-            ) : waitlistList.length === 0 ? (
-              <div className="dash-empty-state glass-panel">
-                <h4>{t('staffDashboard.waitlistEmptyTitle')}</h4>
-                <p>{t('staffDashboard.waitlistEmptyMessage')}</p>
-              </div>
-            ) : (
-              <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableClient')}</th>
-                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTablePhone')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableService')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStaff')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStatus')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableDate')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {waitlistList.map(e => (
-                      <tr key={e.id}>
-                        <td style={{ padding: 12, fontWeight: 600 }}>{e.client_name}</td>
-                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{e.client_phone}</td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>{e.service_name || '-'}</td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>{e.staff_name || '-'}</td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>
-                          <span className={`dash-appointment-status ${e.status === 'waiting' ? 'dash-status-pending' : e.status === 'notified' ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
-                            {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
-                          </span>
-                        </td>
-                        <td  className="fs-14">
-                          {new Date(e.created_at).toLocaleDateString()}
-                        </td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>
-                          {e.status === 'waiting' && (
-                            <button className="dash-btn dash-btn-success" fs-13 onClick={() => notifyWaitlistEntry(e.id)}>
-                              {t('staffDashboard.waitlistNotify')}
-                            </button>
-                          )}
-                          <button className="dash-btn dash-btn-danger" className="fs-13" onClick={() => deleteWaitlistEntry(e.id)}>
-                            {t('staffDashboard.waitlistDelete')}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <Suspense fallback={<div className="dash-loading"><div className="dash-loading-spinner"></div></div>}>
+            <WaitlistSection addToast={addToast} />
+          </Suspense>
         )}
 
         {activeTab === 'products' && (
-          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.tabProducts')}</h3>
-              <button className="dash-btn dash-btn-success" onClick={openProductCreate}>{t('staffDashboard.productsNewButton')}</button>
-            </div>
-            {productsList.length === 0 ? (
-              <div className="dash-empty-state glass-panel">
-                <h4>{t('staffDashboard.servicesEmptyTitle')}</h4>
-                <p>{t('staffDashboard.servicesEmptyMessage')}</p>
-              </div>
-            ) : (
-              <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableName')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableImage')}</th>
-                      <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Categoría</th>
-                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Precio</th>
-                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Costo</th>
-                      <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>Stock</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableActive')}</th>
-                      <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productsList.map(p => (
-                      <tr key={p.id}>
-                        <td style={{ padding: 12, fontWeight: 600 }}>{p.name}</td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>
-                          {p.image_url ? (
-                            <img src={p.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)', opacity: 0.4 }}>—</span>
-                          )}
-                        </td>
-                        <td style={{ padding: 12, color: 'var(--text-muted)' }}>{p.category || '-'}</td>
-                        <td style={{ padding: 12, textAlign: 'right' }}>${p.price}</td>
-                        <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
-                        <td style={{ padding: 12, textAlign: 'right' }}>
-                          <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
-                          {p.min_stock > 0 && <span  className="fs-12" style={{ color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
-                        </td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>
-                          <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
-                            {p.active ? t('staffDashboard.servicesYes') : t('staffDashboard.servicesNo')}
-                          </span>
-                        </td>
-                        <td style={{ padding: 12, textAlign: 'center' }}>
-                          <button className="dash-btn dash-btn-success" onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
-                          <button className="dash-btn dash-btn-danger" onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <Suspense fallback={<div className="dash-loading"><div className="dash-loading-spinner"></div></div>}>
+            <ProductsSection products={productsList} addToast={addToast} refreshProducts={loadProducts} />
+          </Suspense>
         )}
 
         {activeTab === 'pos' && (
-          <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 className="text-gradient" style={{ margin: 0 }}>Punto de Venta</h3>
-            </div>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-              <div style={{ flex: '2 1 400px' }}>
-                <input type="text" className="glass-input" placeholder="Buscar producto..." value={posSearch} onChange={e => setPosSearch(e.target.value)} style={{ marginBottom: 12, width: '100%' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
-                  {productsList.filter(p => p.active && (p.stock < 1 || p.name.toLowerCase().includes(posSearch.toLowerCase()))).length === 0 && posSearch ? (
-                    <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1' }}>Sin resultados</p>
-                  ) : productsList.filter(p => p.active && (!posSearch || p.name.toLowerCase().includes(posSearch.toLowerCase()))).map(p => (
-                    <div key={p.id} onClick={() => p.stock > 0 && addToCart(p)} style={{
-                      background: p.stock > 0 ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.08)',
-                      borderRadius: 10, padding: 12, cursor: p.stock > 0 ? 'pointer' : 'not-allowed',
-                      border: '1px solid rgba(99,102,241,0.15)', opacity: p.stock > 0 ? 1 : 0.5,
-                    }}>
-                      {p.image_url && (
-                        <img src={p.image_url} alt="" style={{ width: '100%', height: 80, borderRadius: 6, objectFit: 'cover', marginBottom: 8 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      )}
-                      <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{p.name}</div>
-                      <div  className="fs-17" style={{ fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
-                      <div  className="fs-12" style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>Stock: {p.stock}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: '1 1 300px' }}>
-                <div className="glass-panel" style={{ padding: 16, marginBottom: 12 }}>
-                  <h4 style={{ margin: '0 0 12px', color: '#e2e8f0' }}>Carrito ({posCart.length})</h4>
-                  {posCart.length === 0 ? (
-                    <p  className="fs-14">Carrito vacío</p>
-                  ) : (
-                    <div style={{ maxHeight: 250, overflowY: 'auto' }}>
-                      {posCart.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
-                          <div style={{ flex: 1 }}>
-                            <div  className="fs-14" style={{ fontWeight: 600 }}>{item.name}</div>
-                            <div  className="fs-12" style={{ color: '#94a3b8' }}>${item.unit_price} c/u</div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <button className="dash-btn" fs-13 onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
-                            <span  className="fs-14" style={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
-                            <button className="dash-btn" fs-13 onClick={() => updateCartQty(item.product_id, item.quantity + 1)}>+</button>
-                          </div>
-                          <div  className="fs-14" style={{ fontWeight: 700, minWidth: 60, textAlign: 'right' }}>${item.total.toFixed(2)}</div>
-                          <button className="dash-btn dash-btn-danger" fs-11 onClick={() => removeFromCart(item.product_id)}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(148,163,184,0.2)' }}>
-                    <span style={{ fontWeight: 700 }}>Total</span>
-                    <span  className="fs-21" style={{ fontWeight: 700, color: '#c8827d' }}>${posTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <input type="text" className="glass-input" placeholder="Cliente (opcional)" value={posClientName} onChange={e => setPosClientName(e.target.value)} style={{ width: '100%', marginBottom: 6 }} />
-                  <input type="tel" className="glass-input" placeholder="Teléfono (opcional)" value={posClientPhone} onChange={e => setPosClientPhone(e.target.value)} style={{ width: '100%' }} />
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <select className="glass-input" value={posPaymentMethod} onChange={e => setPosPaymentMethod(e.target.value as any)} style={{ width: '100%' }}>
-                    <option value="cash">Efectivo</option>
-                    <option value="card">Tarjeta</option>
-                    <option value="mp">Mercado Pago</option>
-                  </select>
-                </div>
-
-                <textarea className="glass-input" placeholder="Notas (opcional)" value={posNotes} onChange={e => setPosNotes(e.target.value)} style={{ width: '100%', minHeight: 50, marginBottom: 12 }} />
-
-                <button className="btn btn-primary" style={{ width: '100%', padding: 14 }} onClick={checkout} disabled={posCart.length === 0}>
-                  Cobrar ${posTotal.toFixed(2)}
-                </button>
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={<div className="dash-loading"><div className="dash-loading-spinner"></div></div>}>
+            <PosSection products={productsList} addToast={addToast} refreshProducts={loadProducts} />
+          </Suspense>
         )}
 
         {activeTab === 'analytics' && (
@@ -2185,11 +2001,11 @@ export default function StaffDashboard() {
 
       {/* Services Modal */}
       {servicesModal.open && (
-        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setServicesModal({ open: false, editing: null })}>
-          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => { setServicesModal({ open: false, editing: null }); setServiceImages([]); setServiceImageUrl(''); }}>
+          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <div className="dash-modal-header">
               <h3 className="text-gradient">{servicesModal.editing ? t('staffDashboard.servicesModalEditTitle') : t('staffDashboard.servicesModalNewTitle')}</h3>
-              <button onClick={() => setServicesModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
+              <button onClick={() => { setServicesModal({ open: false, editing: null }); setServiceImages([]); setServiceImageUrl(''); }} className="dash-close-btn">✕</button>
             </div>
             <div className="dash-modal-body">
               <div className="dash-form-group">
@@ -2202,11 +2018,20 @@ export default function StaffDashboard() {
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.servicesModalPriceLabel')}</label>
-                <input type="number" className="glass-input" value={servicesForm.price} onChange={e => setServicesForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
+                <input type="number" className="glass-input" value={servicesForm.price} onChange={e => setServicesForm(p => ({ ...p, price: e.target.value }))} min="0" step="any" />
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.servicesModalCategoryLabel')}</label>
-                <input type="text" className="glass-input" value={servicesForm.category} onChange={e => setServicesForm(p => ({ ...p, category: e.target.value }))} placeholder={t('staffDashboard.servicesModalCategoryPlaceholder')} />
+                <select className="glass-input" value={servicesForm.category_id} onChange={e => setServicesForm(p => ({ ...p, category_id: e.target.value }))}>
+                  <option value="">{t('staffDashboard.servicesModalCategoryPlaceholder')}</option>
+                  {flatCats.map(c => (
+                    <option key={c.id} value={String(c.id)}>{'── '.repeat(c.depth)}{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.servicesModalDescriptionLabel', 'Descripción')}</label>
+                <textarea className="glass-input" value={servicesForm.description} onChange={e => setServicesForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.servicesModalDescriptionPlaceholder', 'Ej: No incluye diseño')} rows={2} style={{ resize: 'vertical' }} />
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.servicesModalImageLabel')}</label>
@@ -2218,9 +2043,57 @@ export default function StaffDashboard() {
                   </div>
                 )}
               </div>
+              {servicesModal.editing && (
+                <div className="dash-form-group">
+                  <label>{t('staffDashboard.servicesModalGalleryLabel', 'Galería de imágenes')}</label>
+                  <div className="service-gallery-staff">
+                    {serviceImages.map(img => (
+                      <div key={img.id} className="service-gallery-item">
+                        <img src={img.url} alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <button className="service-gallery-remove" onClick={() => deleteServiceImage(img.id)}>×</button>
+                      </div>
+                    ))}
+                    <div className="service-gallery-add">
+                      <input type="text" className="glass-input" value={serviceImageUrl} onChange={e => setServiceImageUrl(e.target.value)} placeholder="URL de imagen" style={{ fontSize: 13, padding: '6px 8px' }} />
+                      <button className="dash-btn dash-btn-primary" onClick={addServiceImage} style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}>+ {t('staffDashboard.servicesModalAddImage', 'Agregar')}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button className="dash-btn dash-btn-danger" onClick={() => setServicesModal({ open: false, editing: null })}>{t('staffDashboard.servicesModalCancel')}</button>
+                <button className="dash-btn dash-btn-danger" onClick={() => { setServicesModal({ open: false, editing: null }); setServiceImages([]); setServiceImageUrl(''); }}>{t('staffDashboard.servicesModalCancel')}</button>
                 <button className="dash-btn dash-btn-success" onClick={saveService}>{servicesModal.editing ? t('staffDashboard.servicesModalSave') : t('staffDashboard.servicesModalCreate')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {catModal.open && (
+        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setCatModal({ open: false, editing: null })}>
+          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="dash-modal-header">
+              <h3 className="text-gradient">{catModal.editing?.id ? 'Editar categoría' : 'Nueva categoría'}</h3>
+              <button onClick={() => setCatModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
+            </div>
+            <div className="dash-modal-body">
+              <div className="dash-form-group">
+                <label>Nombre</label>
+                <input type="text" className="glass-input" value={catModal.editing?.name || ''} onChange={e => setCatModal(p => ({ ...p, editing: p.editing ? { ...p.editing, name: e.target.value } : null }))} placeholder="Ej: Cortes" autoFocus />
+              </div>
+              <div className="dash-form-group">
+                <label>Categoría padre (opcional)</label>
+                <select className="glass-input" value={catModal.editing?.parent_id ?? ''} onChange={e => setCatModal(p => ({ ...p, editing: p.editing ? { ...p.editing, parent_id: e.target.value ? parseInt(e.target.value, 10) : null } : null }))}>
+                  <option value="">— Ninguna (raíz) —</option>
+                  {categories.filter(c => c.id !== catModal.editing?.id).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button className="dash-btn dash-btn-danger" onClick={() => setCatModal({ open: false, editing: null })}>Cancelar</button>
+                <button className="dash-btn dash-btn-success" onClick={() => catModal.editing && saveCategory(catModal.editing)}>{catModal.editing?.id ? 'Guardar' : 'Crear'}</button>
               </div>
             </div>
           </div>
@@ -2271,71 +2144,6 @@ export default function StaffDashboard() {
         </div>
       )}
 
-      {productsModal.open && (
-        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setProductsModal({ open: false, editing: null })}>
-          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
-            <div className="dash-modal-header">
-              <h3 className="text-gradient">{productsModal.editing ? t('staffDashboard.productsModalEditTitle') : t('staffDashboard.productsModalNewTitle')}</h3>
-              <button onClick={() => setProductsModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
-            </div>
-            <div className="dash-modal-body">
-              <div className="dash-form-group">
-                <label>{t('staffDashboard.productsModalNameLabel')}</label>
-                <input type="text" className="glass-input" value={productsForm.name} onChange={e => setProductsForm(p => ({ ...p, name: e.target.value }))} placeholder={t('staffDashboard.productsModalNamePlaceholder')} />
-              </div>
-              <div className="dash-form-group">
-                <label>{t('staffDashboard.productsModalDescriptionLabel')}</label>
-                <textarea className="glass-input" value={productsForm.description} onChange={e => setProductsForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.productsModalDescriptionPlaceholder')} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalPriceLabel')}</label>
-                  <input type="number" className="glass-input" value={productsForm.price} onChange={e => setProductsForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
-                </div>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalCostLabel')}</label>
-                  <input type="number" className="glass-input" value={productsForm.cost} onChange={e => setProductsForm(p => ({ ...p, cost: e.target.value }))} min="0" step="0.01" />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalStockLabel')}</label>
-                  <input type="number" className="glass-input" value={productsForm.stock} onChange={e => setProductsForm(p => ({ ...p, stock: e.target.value }))} min="0" />
-                </div>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalMinStockLabel')}</label>
-                  <input type="number" className="glass-input" value={productsForm.min_stock} onChange={e => setProductsForm(p => ({ ...p, min_stock: e.target.value }))} min="0" />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalSKULabel')}</label>
-                  <input type="text" className="glass-input" value={productsForm.sku} onChange={e => setProductsForm(p => ({ ...p, sku: e.target.value }))} placeholder={t('staffDashboard.productsModalSKUPlaceholder')} />
-                </div>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.productsModalCategoryLabel')}</label>
-                  <input type="text" className="glass-input" value={productsForm.category} onChange={e => setProductsForm(p => ({ ...p, category: e.target.value }))} placeholder={t('staffDashboard.productsModalCategoryPlaceholder')} />
-                </div>
-              </div>
-              <div className="dash-form-group">
-                <label>{t('staffDashboard.productsModalImageLabel')}</label>
-                <input type="text" className="glass-input" value={productsForm.image_url} onChange={e => setProductsForm(p => ({ ...p, image_url: e.target.value }))} placeholder={t('staffDashboard.productsModalImagePlaceholder')} />
-                <input type="file" accept="image/*" style={{ marginTop: 6, padding: 6, fontSize: 13 }} className="glass-input" onChange={handleProductImageUpload} />
-                {productsForm.image_url && (
-                  <div style={{ marginTop: 6 }}>
-                    <img src={productsForm.image_url} alt="" style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-                <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>{t('staffDashboard.productsModalCancel')}</button>
-                <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? t('staffDashboard.productsModalSave') : t('staffDashboard.productsModalCreate')}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showNewAppointment && (
         <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setShowNewAppointment(false)}>
           <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
@@ -2350,7 +2158,7 @@ export default function StaffDashboard() {
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.newApptPhoneLabel')}</label>
-                <input type="tel" className="glass-input" value={newApptForm.clientPhone} onChange={e => { setNewApptForm(p => ({ ...p, clientPhone: e.target.value })); setSelectedSuggested(null); }} placeholder={t('staffDashboard.newApptPhonePlaceholder')} />
+                <PhoneInput value={newApptForm.clientPhone} onChange={v => { setNewApptForm(p => ({ ...p, clientPhone: v })); setSelectedSuggested(null); }} placeholder={t('staffDashboard.newApptPhonePlaceholder')} className="glass-input" />
                 {suggestedClients.length > 0 && (
                   <div style={{ position: 'relative', marginTop: 4 }}>
                     <div style={{ position: 'absolute', zIndex: 10, width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--border)', borderRadius: 8, maxHeight: 180, overflowY: 'auto' }}>
@@ -2378,7 +2186,7 @@ export default function StaffDashboard() {
                 <select className="glass-input" value={newApptForm.serviceId} onChange={e => setNewApptForm(p => ({ ...p, serviceId: e.target.value }))}>
                   <option value="">{t('staffDashboard.newApptServicePlaceholder')}</option>
                   {servicesList.filter(s => s.active).map(s => (
-                    <option key={s.id} value={s.id}>{s.name} ({t('landingServices.pricePrefix')}{s.price} - {s.duration}{t('landingServices.minutes')})</option>
+                    <option key={s.id} value={s.id}>{s.name} ({t('landingServices.pricePrefix')}{formatPrice(s.price)} - {s.duration}{t('landingServices.minutes')})</option>
                   ))}
                 </select>
               </div>
@@ -2621,16 +2429,36 @@ export default function StaffDashboard() {
           onCancel={() => setServiceCropFile(null)}
         />
       )}
-      {productCropFile && (
-        <ImageCropModal
-          open={true}
-          file={productCropFile}
-          aspectRatio={productCropAspect}
-          onApply={(dataUrl) => handleProductCropApply(dataUrl)}
-          onCancel={() => setProductCropFile(null)}
-        />
-      )}
       {showQR && settings.slug && <SalonQR slug={settings.slug} services={servicesList} onClose={() => setShowQR(false)} />}
+    </div>
+  );
+}
+
+function CategoryTreeItem({ cat, depth, onEdit, onDelete, t }: {
+  cat: CategoryItem; depth: number; onEdit: (c: CategoryItem) => void; onDelete: (id: number) => void; t: (k: string, fallback?: string) => string;
+}) {
+  const [open, setOpen] = useState(true);
+  const hasChildren = cat.children && cat.children.length > 0;
+  return (
+    <div className="dash-category-tree-item" style={{ paddingLeft: depth * 24 }}>
+      <div className="dash-category-row">
+        {hasChildren && (
+          <button className="dash-category-toggle" onClick={() => setOpen(o => !o)}>
+            <ChevronRight size={14} className={`dash-category-arrow ${open ? 'rotated' : ''}`} />
+          </button>
+        )}
+        {!hasChildren && <span style={{ width: 14, display: 'inline-block' }} />}
+        <span className="dash-category-name">{cat.name}</span>
+        <div className="dash-category-actions">
+          <button className="dash-btn dash-btn-success" style={{ fontSize: 12, padding: '2px 8px' }} onClick={() => onEdit(cat)}>{t('staffDashboard.staffEditButton')}</button>
+          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12, padding: '2px 8px' }} onClick={() => onDelete(cat.id)}>{t('staffDashboard.staffDeleteButton')}</button>
+        </div>
+      </div>
+      {hasChildren && open && (
+        <div className="dash-category-children">
+          {cat.children.map((child: CategoryItem) => <CategoryTreeItem key={child.id} cat={child} depth={depth + 1} onEdit={onEdit} onDelete={onDelete} t={t} />)}
+        </div>
+      )}
     </div>
   );
 }

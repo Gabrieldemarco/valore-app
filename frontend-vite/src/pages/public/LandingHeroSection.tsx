@@ -31,7 +31,7 @@ export default function LandingHeroSection({
 }: LandingHeroSectionProps) {
   const { t } = useTranslation();
   return (
-    <section className="hero">
+    <div className="hero">
       {heroImage && (
         <div
           className="hero-image"
@@ -56,6 +56,6 @@ export default function LandingHeroSection({
           <span>{t('landingHero.trust2')}</span>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

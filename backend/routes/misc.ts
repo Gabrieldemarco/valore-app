@@ -15,6 +15,35 @@ import logger from '../services/logger';
  */
 export default function(apiLimiter) {
   const router = Router();
+  router.use('/', apiLimiter);
+
+  // ========== PUBLIC METRICS ==========
+  router.get('/appointments/today-count', async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const result = await queryOne(
+        'SELECT COUNT(*)::int as count FROM appointments WHERE appointment_date::date = $1 AND status NOT IN (\'cancelled\', \'no-show\')',
+        [today]
+      );
+      res.json({ count: result?.count || 0 });
+    } catch (err: any) {
+      logger.error('Error al cargar contador de citas', { error: err.message });
+      res.status(500).json({ error: 'Error al cargar contador' });
+    }
+  });
+
+  router.get('/services/all', async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT DISTINCT name FROM services WHERE active = true ORDER BY name'
+      );
+      const services = result.rows.map((r: any) => r.name);
+      res.json({ services });
+    } catch (err: any) {
+      logger.error('Error al cargar servicios', { error: err.message });
+      res.status(500).json({ error: 'Error al cargar servicios' });
+    }
+  });
 
   // ========== AGENDA PERSONAL (CLIENTES) ==========
   router.get('/agenda', authenticate(['client']), async (req, res) => {
@@ -64,7 +93,7 @@ export default function(apiLimiter) {
   // ========== CLIENT PROFILE ==========
   router.get('/client/me', authenticate(['client']), async (req, res) => {
     try {
-      const user = await queryOne('SELECT id, username, name, phone, created_at FROM users WHERE id = $1', [req.user.id]);
+      const user = await queryOne('SELECT id, username, name, phone, email, created_at FROM users WHERE id = $1', [req.user.id]);
       if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
       res.json({ user });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar perfil' }); }

@@ -54,7 +54,7 @@
     "filterDamas": "Women",
     "filterUnisex": "Unisex",
     "featuredTitle": "Featured Salons",
-    "featuredSubtitle": "The best hair salons and boutique salons",
+    "featuredSubtitle": "The best beauty and wellness centers",
     "trendingTitle": "Trending",
     "trendingSubtitle": "The most popular salons right now",
     "newSalonsTitle": "New Salons",
@@ -112,6 +112,8 @@
     "loadError": "Error loading",
     "bookError": "Error booking",
     "bookSuccess": "Appointment booked successfully",
+    "reviewsTitle": "Reviews",
+    "reviewsCount": "reviews",
     "monthNames": [
       "January",
       "February",
@@ -145,7 +147,9 @@
     "title": "Services",
     "subtitle": "Choose the service that best suits you",
     "minutes": "min",
-    "pricePrefix": "$"
+    "pricePrefix": "$",
+    "bookButton": "Book service",
+    "otherCategory": "Other"
   },
   "landingTeam": {
     "galleryTitle": "Gallery",
@@ -549,8 +553,12 @@
     "servicesModalNamePlaceholder": "e.g. Haircut",
     "servicesModalDurationLabel": "Duration (minutes) *",
     "servicesModalPriceLabel": "Price ($) *",
+    "servicesModalDescriptionLabel": "Description",
+    "servicesModalDescriptionPlaceholder": "e.g. Price does not include design",
     "servicesModalImageLabel": "Image URL",
     "servicesModalImagePlaceholder": "https://...",
+    "servicesModalGalleryLabel": "Image Gallery",
+    "servicesModalAddImage": "Add",
     "servicesModalCancel": "Cancel",
     "servicesModalSave": "Save Changes",
     "servicesModalCreate": "Create Service",
@@ -898,6 +906,13 @@
     "copyLinkButton": "Copy link",
     "shareText": "Book your appointment at this salon",
     "shareTitle": "Velsoie"
+  },
+  "onboardingTour": {
+    "dontShowAgain": "Don't show again",
+    "trigger": "Help",
+    "back": "Back",
+    "next": "Next",
+    "done": "Finish"
   },
   "installApp": {
     "iosText": "📲 Install the app on your iPhone: tap Share ⎋ and then \"Add to Home Screen\"",

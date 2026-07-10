@@ -1274,7 +1274,63 @@
     .fs-16 { font-size: 16px; }
     .fs-17 { font-size: 17px; }
     .fs-21 { font-size: 21px; }
-  
 
+    /* Category Tree */
+    .dash-category-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
+    .dash-category-tree-item {
+      padding: 4px 0;
+    }
 
+    .dash-category-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    .dash-category-row:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .dash-category-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(207, 168, 107, 0.6);
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .dash-category-toggle .dash-category-arrow {
+      transition: transform 0.3s;
+    }
+
+    .dash-category-toggle .dash-category-arrow.rotated {
+      transform: rotate(90deg);
+    }
+
+    .dash-category-name {
+      flex: 1;
+      font-weight: 600;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .dash-category-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dash-category-children {
+      margin-top: 2px;
+    }

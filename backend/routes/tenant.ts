@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
 const config = require('../config');
-import { query, queryOne, pool } from '../database';
+import { query, queryOne, pool, getClient } from '../database';
 import logger from '../services/logger';
 import { AppError } from '../services/errors';
 import { getOrCreateSubscriptionInvoice } from '../services/billing';
@@ -61,9 +61,33 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     const appointmentStatus = status && validStatuses.includes(status) ? status : 'confirmed';
 
     const clientToken = crypto.randomUUID();
+    const client = await getClient();
 
     try {
-      const result = await query(
+      await client.query('BEGIN');
+
+      // Lock overlapping active appointments
+      const slotDate = new Date(appointmentDate);
+      const slotEnd = new Date(slotDate.getTime() + service.duration * 60000);
+      const lockResult = await client.query(
+        `SELECT id FROM appointments
+         WHERE tenant_id = $1
+         AND appointment_date < $3
+         AND appointment_date + (service_duration * interval '1 minute') > $2
+         AND status NOT IN ('cancelled', 'no-show')
+         ${validStaffId ? 'AND (staff_id = $4 OR staff_id IS NULL)' : 'AND staff_id IS NULL'}
+         FOR UPDATE`,
+        validStaffId
+          ? [tenantId, slotDate.toISOString(), slotEnd.toISOString(), validStaffId]
+          : [tenantId, slotDate.toISOString(), slotEnd.toISOString()]
+      );
+
+      if (lockResult.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      const result = await client.query(
         `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, status, client_token)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
         [tenantId, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, appointmentDate, notes?.trim() || null, validStaffId, appointmentStatus, clientToken]
@@ -71,17 +95,22 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       const newAppointment = result.rows[0];
 
       if (validStaffId) {
-        const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
-        if (staffMember) {
-          newAppointment.staff_name = staffMember.name;
-          newAppointment.staff_email = staffMember.email;
+        const staffRow = await client.query('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
+        if (staffRow.rows[0]) {
+          newAppointment.staff_name = staffRow.rows[0].name;
+          newAppointment.staff_email = staffRow.rows[0].email;
         }
       }
 
+      await client.query('COMMIT');
+
       return newAppointment;
     } catch (dbErr: any) {
+      await client.query('ROLLBACK');
       if (dbErr.code === '23505') return null;
       throw dbErr;
+    } finally {
+      client.release();
     }
   }
 
@@ -440,13 +469,13 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
           if (isNaN(price) || price < 0) return `Precio inválido: ${s.name}`;
           if (s.id && s.id !== 'new') {
             await query(
-              `UPDATE services SET name=$1,duration=$2,price=$3,active=true,image=$4 WHERE id=$5 AND tenant_id=$6`,
-              [s.name.trim(), duration, price, s.image || '', s.id, tenantId]
+              `UPDATE services SET name=$1,duration=$2,price=$3,active=true,image=$4,category=$5,description=$6 WHERE id=$7 AND tenant_id=$8`,
+              [s.name.trim(), duration, price, s.image || '', s.category?.trim() || '', s.description?.trim() || '', s.id, tenantId]
             );
           } else {
             await query(
-              `INSERT INTO services (tenant_id,name,duration,price,active,image) VALUES ($1,$2,$3,$4,true,$5)`,
-              [tenantId, s.name.trim(), duration, price, s.image || '']
+              `INSERT INTO services (tenant_id,name,duration,price,active,image,category,description) VALUES ($1,$2,$3,$4,true,$5,$6,$7)`,
+              [tenantId, s.name.trim(), duration, price, s.image || '', s.category?.trim() || '', s.description?.trim() || '']
             );
           }
         }
@@ -563,7 +592,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquería no encontrada' });
 
       const servicesResult = await query(
-        `SELECT id, name, duration, price, active, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name`,
+        `SELECT id, name, duration, price, category, description, active, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY name`,
         [req.user.tenant_id]
       );
 
@@ -688,12 +717,99 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  // ========== CATEGORIES ==========
+
+  router.get('/tenant/categories', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, name, parent_id, sort_order FROM service_categories WHERE tenant_id = $1 ORDER BY sort_order, name',
+        [req.user.tenant_id]
+      );
+      const rows = result.rows;
+      const map = new Map<number, any>();
+      const roots: any[] = [];
+      for (const r of rows) { r.children = []; map.set(r.id, r); }
+      for (const r of rows) {
+        if (r.parent_id && map.has(r.parent_id)) map.get(r.parent_id).children.push(r);
+        else roots.push(r);
+      }
+      res.json({ categories: roots });
+    } catch (err: any) {
+      logger.error('Error al cargar categorías:', err?.message || err, err?.stack || '');
+      res.status(500).json({ error: 'Error al cargar categorías: ' + (err?.message || 'desconocido') });
+    }
+  });
+
+  router.post('/tenant/categories', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { name, parent_id } = req.body;
+      if (!name?.trim()) return res.status(400).json({ error: 'Nombre requerido' });
+      const existing = await queryOne(
+        'SELECT id FROM service_categories WHERE tenant_id = $1 AND LOWER(name) = LOWER($2) AND parent_id IS NOT DISTINCT FROM $3',
+        [req.user.tenant_id, name.trim(), parent_id || null]
+      );
+      if (existing) return res.status(409).json({ error: 'Ya existe una categoría con ese nombre' });
+      const result = await query(
+        `INSERT INTO service_categories (tenant_id, name, parent_id) VALUES ($1, $2, $3) RETURNING id, name, parent_id, sort_order`,
+        [req.user.tenant_id, name.trim(), parent_id || null]
+      );
+      res.status(201).json({ category: result.rows[0] });
+    } catch (err: any) {
+      logger.error(`Error al crear categoría: message="${err?.message}" code=${err?.code}`);
+      res.status(500).json({ error: 'Error al crear categoría: ' + (err?.message || err?.code || 'desconocido') });
+    }
+  });
+
+  router.put('/tenant/categories/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, parent_id, sort_order } = req.body;
+      const existing = await queryOne('SELECT id FROM service_categories WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
+      if (!existing) return res.status(404).json({ error: 'Categoría no encontrada' });
+      if (parent_id) {
+        if (parseInt(parent_id) === parseInt(id)) return res.status(400).json({ error: 'Una categoría no puede ser su propio padre' });
+        const parent = await queryOne('SELECT id FROM service_categories WHERE id = $1 AND tenant_id = $2', [parent_id, req.user.tenant_id]);
+        if (!parent) return res.status(404).json({ error: 'Categoría padre no encontrada' });
+      }
+      const result = await query(
+        `UPDATE service_categories SET name = COALESCE($1, name), parent_id = $2, sort_order = COALESCE($3, sort_order) WHERE id = $4 AND tenant_id = $5 RETURNING id, name, parent_id, sort_order`,
+        [name?.trim() || null, parent_id !== undefined ? (parent_id || null) : undefined, sort_order ?? null, id, req.user.tenant_id]
+      );
+      res.json({ category: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al actualizar categoría' });
+    }
+  });
+
+  router.delete('/tenant/categories/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await queryOne('SELECT id FROM service_categories WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
+      if (!existing) return res.status(404).json({ error: 'Categoría no encontrada' });
+
+      await query('UPDATE services SET category_id = NULL, category = $1 WHERE category_id = $2 AND tenant_id = $3',
+        [req.body.fallbackCategory?.trim() || '', id, req.user.tenant_id]);
+
+      await query('DELETE FROM service_categories WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
+      res.json({ message: 'Categoría eliminada' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar categoría' });
+    }
+  });
+
   // ========== SERVICES ==========
 
   router.get('/tenant/services', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
       const result = await query(
-        'SELECT id, name, duration, price, category, active, image FROM services WHERE tenant_id = $1 ORDER BY category, name',
+        `SELECT s.id, s.name, s.duration, s.price, s.category, s.category_id, s.description, s.active, s.image,
+                sc.name AS category_name, sc.parent_id AS category_parent_id
+         FROM services s
+         LEFT JOIN service_categories sc ON sc.id = s.category_id
+         WHERE s.tenant_id = $1
+         ORDER BY sc.sort_order, sc.name, s.name`,
         [req.user.tenant_id]
       );
       res.json({ services: result.rows });
@@ -711,16 +827,21 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.post('/tenant/services', authenticateStaff, checkTenantActive, createServiceValidation, validate, async (req, res) => {
     try {
-      const { name, duration, price, category, image } = req.body;
+      const { name, duration, price, category, category_id, description, image } = req.body;
       const existing = await queryOne(
         'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
         [name, req.user.tenant_id]
       );
       if (existing) return res.status(409).json({ error: 'Ya existe un servicio con ese nombre' });
+      const catId = category_id || null;
+      if (catId) {
+        const cat = await queryOne('SELECT id FROM service_categories WHERE id = $1 AND tenant_id = $2', [catId, req.user.tenant_id]);
+        if (!cat) return res.status(400).json({ error: 'Categoría no válida' });
+      }
       const result = await query(
-        `INSERT INTO services (tenant_id, name, duration, price, category, active, image)
-         VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id, name, duration, price, category, active, image`,
-        [req.user.tenant_id, name, parseInt(duration, 10), parseFloat(price), category?.trim() || '', image || null]
+        `INSERT INTO services (tenant_id, name, duration, price, category, category_id, description, active, image)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8) RETURNING id, name, duration, price, category, category_id, description, active, image`,
+        [req.user.tenant_id, name, parseInt(duration, 10), parseFloat(price), category?.trim() || '', catId, description?.trim() || '', image || null]
       );
       res.status(201).json({ message: 'Servicio creado', service: result.rows[0] });
     } catch (err: any) {
@@ -738,7 +859,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.put('/tenant/services/:id', authenticateStaff, checkTenantActive, updateServiceValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, duration, price, category, active, image } = req.body;
+      const { name, duration, price, category, category_id, description, active, image } = req.body;
       if (name) {
         const existing = await queryOne(
           'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2 AND id != $3',
@@ -746,16 +867,25 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         );
         if (existing) return res.status(409).json({ error: 'Ya existe otro servicio con ese nombre' });
       }
+      if (category_id !== undefined) {
+        const catId = category_id || null;
+        if (catId) {
+          const cat = await queryOne('SELECT id FROM service_categories WHERE id = $1 AND tenant_id = $2', [catId, req.user.tenant_id]);
+          if (!cat) return res.status(400).json({ error: 'Categoría no válida' });
+        }
+      }
       const result = await query(
         `UPDATE services SET
            name = COALESCE($1, name),
            duration = COALESCE($2::INTEGER, duration),
            price = COALESCE($3::NUMERIC, price),
            category = COALESCE($4, category),
-           active = COALESCE($5::BOOLEAN, active),
-           image = COALESCE($6, image)
-         WHERE id = $7 AND tenant_id = $8 RETURNING id, name, duration, price, category, active, image`,
-         [name, duration ? parseInt(duration, 10) : null, price !== undefined ? parseFloat(price) : null, category !== undefined ? category : null, active, image !== undefined ? image : null, id, req.user.tenant_id]
+           category_id = $10,
+           description = COALESCE($5, description),
+           active = COALESCE($6::BOOLEAN, active),
+           image = COALESCE($7, image)
+         WHERE id = $8 AND tenant_id = $9 RETURNING id, name, duration, price, category, category_id, description, active, image`,
+         [name, duration ? parseInt(duration, 10) : null, price !== undefined ? parseFloat(price) : null, category !== undefined ? category : null, description !== undefined ? description : null, active, image !== undefined ? image : null, id, req.user.tenant_id, category_id !== undefined ? (category_id || null) : undefined]
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
       res.json({ message: 'Servicio actualizado', service: result.rows[0] });
@@ -777,6 +907,79 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al eliminar servicio' });
+    }
+  });
+
+  // ========== SERVICE IMAGES ==========
+
+  router.get('/tenant/services/:id/images', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, url, sort_order FROM service_images WHERE service_id = $1 ORDER BY sort_order, id',
+        [req.params.id]
+      );
+      res.json({ images: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar imágenes' });
+    }
+  });
+
+  router.post('/tenant/services/:id/images', authenticateStaff, checkTenantActive, [
+    body('url').notEmpty().withMessage('URL requerida'),
+  ], validate, async (req, res) => {
+    try {
+      const { url } = req.body;
+      const { rows } = await query(
+        `INSERT INTO service_images (service_id, url, sort_order)
+         VALUES ($1, $2, COALESCE((SELECT MAX(sort_order) FROM service_images WHERE service_id = $3), 0) + 1)
+         RETURNING id, url, sort_order`,
+        [req.params.id, url, req.params.id]
+      );
+      res.status(201).json({ image: rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al agregar imagen' });
+    }
+  });
+
+  router.delete('/tenant/services/:serviceId/images/:imageId', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      await query('DELETE FROM service_images WHERE id = $1', [req.params.imageId]);
+      res.json({ message: 'Imagen eliminada' });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al eliminar imagen' });
+    }
+  });
+
+  // ========== REVIEWS (staff) ==========
+
+  router.get('/tenant/reviews', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const result = await query(
+        'SELECT id, client_name, rating, comment, approved, created_at FROM reviews WHERE tenant_id = $1 ORDER BY created_at DESC',
+        [req.user.tenant_id]
+      );
+      res.json({ reviews: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar reseñas' });
+    }
+  });
+
+  router.put('/tenant/reviews/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+    try {
+      const { approved, reply } = req.body;
+      const result = await query(
+        `UPDATE reviews SET approved = COALESCE($1, approved) WHERE id = $2 AND tenant_id = $3 RETURNING id, client_name, rating, comment, approved, created_at`,
+        [approved !== undefined ? approved : null, req.params.id, req.user.tenant_id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Reseña no encontrada' });
+      res.json({ review: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al actualizar reseña' });
     }
   });
 

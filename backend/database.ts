@@ -45,7 +45,7 @@ const query = async (text: string, params?: any[]) => {
     });
     return res;
   } catch (err: any) {
-    logger.error('❌ Query error:', err.message);
+    logger.error(`❌ Query error: message="${err?.message}" code=${err?.code} detail="${err?.detail}"`);
     throw err;
   } finally {
     client.release();
@@ -60,6 +60,14 @@ const query = async (text: string, params?: any[]) => {
 const queryOne = async (text: string, params?: any[]) => {
   const res = await query(text, params);
   return res.rows[0] || null;
+};
+
+/**
+ * Obtiene un cliente del pool para transacciones.
+ * El caller debe liberarlo con client.release() cuando termine.
+ */
+const getClient = async () => {
+  return pool.connect();
 };
 
 // INIT DB (igual lógica, pero más robusta)
@@ -273,8 +281,36 @@ async function initDB() {
       ON tenants(status, landing_enabled, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_staff_tenant_active_role_name 
       ON staff(tenant_id, active, role, name);
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date_only 
-      ON appointments(tenant_id, (appointment_date::date));
+      -- Migration 023: Prevent double-booking and client password reset
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_appointments_unique_active
+      ON appointments(tenant_id, staff_id, appointment_date)
+      WHERE status NOT IN ('cancelled', 'no-show');
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
+
+      -- Migration 024: Reviews & Service Images
+      CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+        client_name TEXT,
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        approved BOOLEAN DEFAULT false,
+        reply TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS service_images (
+        id SERIAL PRIMARY KEY,
+        service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
+        url TEXT NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS captcha_enabled BOOLEAN DEFAULT false;
 
       -- Migration 022: Google Calendar Sync
       CREATE TABLE IF NOT EXISTS google_calendar_tokens (
@@ -332,6 +368,20 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(tenant_id, date)
       );
+
+      -- Migration 027: Service Categories (parent/child)
+      CREATE TABLE IF NOT EXISTS service_categories (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        parent_id INTEGER REFERENCES service_categories(id) ON DELETE CASCADE,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_service_categories_tenant ON service_categories(tenant_id);
+      CREATE INDEX IF NOT EXISTS idx_service_categories_parent ON service_categories(parent_id);
+      ALTER TABLE services ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
     `);
 
     if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true') {
@@ -393,5 +443,6 @@ export {
   pool,
   initDB,
   query,
-  queryOne
+  queryOne,
+  getClient,
 };

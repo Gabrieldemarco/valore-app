@@ -1,7 +1,7 @@
 {
-  "name": "Velsoie - Reservá en las mejores peluquerías",
+  "name": "Velsoie - Reservá servicios de belleza y bienestar",
   "short_name": "Velsoie",
-  "description": "Encontrá tu próximo turno en segundos. Reservá online en las mejores peluquerías.",
+  "description": "Encontrá profesionales de belleza y bienestar cerca tuyo y reservá turno online.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0c",

@@ -42,7 +42,7 @@
     "salonCollectionSub": "Color, estilo y estética premium",
     "groomingCollection": "Grooming Collection",
     "groomingCollectionSub": "Barberías y experiencias de autor",
-    "heroTitle": "Reserva servicios de cuidado personal",
+    "heroTitle": "Reservá servicios de belleza y bienestar",
     "heroTitleNoCountry": "Reserva servicios de cuidado personal",
     "heroSubtitle": "Encuentra los mejores establecimientos y profesionales de belleza y bienestar en todo el mundo",
     "searchPlaceholder": "Todos los tratamientos",
@@ -54,7 +54,7 @@
     "filterDamas": "Damas",
     "filterUnisex": "Unisex",
     "featuredTitle": "Salones Destacados",
-    "featuredSubtitle": "Las mejores peluquerías y salones boutique",
+    "featuredSubtitle": "Los mejores centros de belleza y bienestar",
     "trendingTitle": "Tendencias",
     "trendingSubtitle": "Los salones más populares del momento",
     "newSalonsTitle": "Nuevos Salones",
@@ -114,6 +114,8 @@
     "loadError": "Error al cargar",
     "bookError": "Error al reservar",
     "bookSuccess": "Turno reservado con éxito",
+    "reviewsTitle": "Reseñas",
+    "reviewsCount": "opiniones",
     "monthNames": [
       "Enero",
       "Febrero",
@@ -147,7 +149,9 @@
     "title": "Servicios",
     "subtitle": "Elegí el servicio que mejor se adapte a vos",
     "minutes": "min",
-    "pricePrefix": "$"
+    "pricePrefix": "$",
+    "bookButton": "Agendar servicio",
+    "otherCategory": "Otros"
   },
   "landingTeam": {
     "galleryTitle": "Galería",
@@ -545,8 +549,12 @@
     "servicesModalNamePlaceholder": "Ej: Corte de cabello",
     "servicesModalDurationLabel": "Duración (minutos) *",
     "servicesModalPriceLabel": "Precio ($) *",
+    "servicesModalDescriptionLabel": "Descripción",
+    "servicesModalDescriptionPlaceholder": "Ej: No incluye diseño",
     "servicesModalImageLabel": "URL de Imagen",
     "servicesModalImagePlaceholder": "https://...",
+    "servicesModalGalleryLabel": "Galería de imágenes",
+    "servicesModalAddImage": "Agregar",
     "servicesModalCancel": "Cancelar",
     "servicesModalSave": "Guardar Cambios",
     "servicesModalCreate": "Crear Servicio",
@@ -902,6 +910,13 @@
     "copyLinkButton": "Copiar enlace",
     "shareText": "Reservá tu turno en esta peluquería",
     "shareTitle": "Velsoie"
+  },
+  "onboardingTour": {
+    "dontShowAgain": "No mostrar más",
+    "trigger": "Ayuda",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "done": "Finalizar"
   },
   "installApp": {
     "iosText": "📲 Instalá la app en tu iPhone: tocá Compartir ⎋ y luego \"Agregar a pantalla de inicio\"",

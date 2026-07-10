@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, clearApiCache } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import PhoneInput from '../../components/PhoneInput';
 import { logger } from '../../services/logger';
+import OnboardingTour from '../../components/OnboardingTour';
+import type { TourStep } from '../../components/OnboardingTour';
 import '../../styles/dashboard.css';
 
 interface Appointment {
@@ -85,13 +88,14 @@ export default function ClientDashboard() {
     setLoading(true);
     try {
       const [profileRes, apptsRes, agendaRes] = await Promise.allSettled([
-        api.get<{ user: { name: string; phone: string } }>('/api/client/me'),
-        api.get<{ appointments: Appointment[] }>('/api/tenant/client-appointments'),
-        api.get<AgendaEvent[]>('/api/agenda'),
+        api.get<{ user: { name: string; phone: string; email: string } }>('/api/client/me', 'client'),
+        api.get<{ appointments: Appointment[] }>('/api/tenant/client-appointments', 'client'),
+        api.get<AgendaEvent[]>('/api/agenda', 'client'),
       ]);
       if (profileRes.status === 'fulfilled') {
         setProfileName(profileRes.value.user?.name || '');
         setProfilePhone(profileRes.value.user?.phone || '');
+        if (profileRes.value.user?.email) localStorage.setItem('clientEmail', profileRes.value.user.email);
       }
       if (apptsRes.status === 'fulfilled') setAppointments(apptsRes.value.appointments || []);
       if (agendaRes.status === 'fulfilled') setAgendaEvents(agendaRes.value || []);
@@ -102,7 +106,7 @@ export default function ClientDashboard() {
   const saveProfile = async () => {
     setProfileMsg(''); setProfileError('');
     try {
-      const res = await api.put<{ user: { name: string; phone: string } }>('/api/client/me', { name: profileName, phone: profilePhone });
+      const res = await api.put<{ user: { name: string; phone: string } }>('/api/client/me', { name: profileName, phone: profilePhone }, 'client');
       if (res.user?.name) {
         localStorage.setItem('clientDisplayName', res.user.name);
         localStorage.setItem('clientName', res.user.name);
@@ -137,15 +141,15 @@ export default function ClientDashboard() {
     if (!agendaForm.titulo || !agendaForm.fecha) return;
     try {
       if (editingAgenda) {
-        await api.put(`/api/agenda/${editingAgenda.id}`, agendaForm);
+        await api.put(`/api/agenda/${editingAgenda.id}`, agendaForm, 'client');
       } else {
-        await api.post('/api/agenda', agendaForm);
+        await api.post('/api/agenda', agendaForm, 'client');
       }
       setAgendaForm({ titulo: '', fecha: '', descripcion: '' });
       setShowAgendaForm(false);
       setEditingAgenda(null);
       clearApiCache();
-      const data = await api.get<AgendaEvent[]>('/api/agenda');
+      const data = await api.get<AgendaEvent[]>('/api/agenda', 'client');
       setAgendaEvents(data || []);
     } catch (err) { logger.error(err); }
   };
@@ -153,9 +157,9 @@ export default function ClientDashboard() {
   const deleteAgendaEvent = async (id: number) => {
     if (!confirm(t('clientDashboard.confirmDeleteEvent'))) return;
     try {
-      await api.delete(`/api/agenda/${id}`);
+      await api.delete(`/api/agenda/${id}`, 'client');
       clearApiCache();
-      const data = await api.get<AgendaEvent[]>('/api/agenda');
+      const data = await api.get<AgendaEvent[]>('/api/agenda', 'client');
       setAgendaEvents(data || []);
     } catch (err) { logger.error(err); }
   };
@@ -165,6 +169,15 @@ export default function ClientDashboard() {
     setEditingAgenda(ev);
     setShowAgendaForm(true);
   };
+
+  const clientTourSteps: TourStep[] = [
+    { target: '', title: 'Bienvenido a tu cuenta', content: 'Este es tu panel de cliente. Acá podés ver tus turnos, editar tu perfil y explorar nuevos negocios.' },
+    { target: '.glass-panel:nth-child(2)', title: 'Próximos turnos', content: 'Todos tus turnos confirmados y pendientes aparecen acá. Nunca pierdas uno.', position: 'bottom' },
+    { target: '.glass-panel:nth-child(3)', title: 'Mi Perfil', content: 'Actualizá tu nombre y teléfono para que los salones puedan contactarte.', position: 'bottom' },
+    { target: '.glass-panel:nth-child(4)', title: 'Explorar Negocios', content: 'Descubrí nuevos salones y reservá turnos directamente desde acá.', position: 'bottom' },
+    { target: '.glass-panel:nth-child(5)', title: 'Historial', content: 'Revisá tus turnos anteriores, completados y cancelados.', position: 'bottom' },
+    { target: '.glass-panel:nth-child(6)', title: 'Agenda Personal', content: 'Creá tus propios eventos y recordatorios personales.', position: 'bottom' },
+  ];
 
   const upcomingAppts = appointments.filter(a => a.status === 'confirmed' || a.status === 'pending');
   const pastAppts = appointments.filter(a => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show');
@@ -186,6 +199,8 @@ export default function ClientDashboard() {
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>{t('clientDashboard.logout')}</button>
         </div>
       </div>
+
+      <OnboardingTour tourId="client-dashboard" steps={clientTourSteps} enabled={!!clientToken} onComplete={() => {}} />
 
       <div className="glass-panel" style={{ padding: 24, marginBottom: 24 }}>
         <h3 style={{ margin: '0 0 16px' }}>{t('clientDashboard.upcomingTitle')}</h3>
@@ -232,7 +247,7 @@ export default function ClientDashboard() {
           </div>
           <div style={{ flex: '1 1 200px' }}>
             <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>Teléfono</label>
-            <input type="tel" className="glass-input" value={profilePhone} onChange={e => setProfilePhone(e.target.value)} placeholder="099 123 456" style={{ width: '100%' }} />
+            <PhoneInput value={profilePhone} onChange={setProfilePhone} placeholder="099 123 456" className="glass-input" style={{ width: '100%' }} />
           </div>
           <button className="btn btn-primary btn-sm" onClick={saveProfile}>Guardar</button>
         </div>

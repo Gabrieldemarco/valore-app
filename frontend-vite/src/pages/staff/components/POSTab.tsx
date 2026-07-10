@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import PhoneInput from '../../../components/PhoneInput';
 
 interface ProductItem {
   id: number; name: string; description: string; price: number; cost: number;
@@ -95,7 +96,7 @@ export default function POSTab({
 
           <div style={{ marginBottom: 12 }}>
             <input type="text" className="glass-input" placeholder={t('staffDashboard.posClientPlaceholder')} value={posClientName} onChange={e => setPosClientName(e.target.value)} style={{ width: '100%', marginBottom: 6 }} />
-            <input type="tel" className="glass-input" placeholder={t('staffDashboard.posPhonePlaceholder')} value={posClientPhone} onChange={e => setPosClientPhone(e.target.value)} style={{ width: '100%' }} />
+            <PhoneInput value={posClientPhone} onChange={setPosClientPhone} placeholder={t('staffDashboard.posPhonePlaceholder')} className="glass-input" style={{ width: '100%' }} />
           </div>
 
           <div style={{ marginBottom: 12 }}>

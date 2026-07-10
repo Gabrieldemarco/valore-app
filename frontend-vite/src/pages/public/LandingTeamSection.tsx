@@ -40,7 +40,7 @@ export default function LandingTeamSection({
   return (
     <>
       {gallery.length > 0 && (
-        <section id="galeria">
+        <>
           <h2 className="section-title">{t('landingTeam.galleryTitle')}</h2>
           <p className="section-subtitle">{t('landingTeam.gallerySubtitle')}</p>
           <div className="gallery-grid">
@@ -55,11 +55,11 @@ export default function LandingTeamSection({
               </div>
             ))}
           </div>
-        </section>
+        </>
       )}
 
       {team.length > 0 && (
-        <section id="equipo">
+        <>
           <h2 className="section-title">{t('landingTeam.title')}</h2>
           <p className="section-subtitle">{t('landingTeam.subtitle')}</p>
           <div className="team-grid">
@@ -93,7 +93,7 @@ export default function LandingTeamSection({
               );
             })}
           </div>
-        </section>
+        </>
       )}
     </>
   );

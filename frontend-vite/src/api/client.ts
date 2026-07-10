@@ -23,16 +23,20 @@ interface RequestOptions {
   method?: string;
   body?: unknown;
   headers?: Record<string, string>;
+  role?: 'staff' | 'client' | 'superAdmin';
 }
 
-function getToken(): string | null {
+function getToken(role?: 'staff' | 'client' | 'superAdmin'): string | null {
+  if (role) {
+    return localStorage.getItem(`${role === 'superAdmin' ? 'superAdmin' : role}Token`);
+  }
   return localStorage.getItem('staffToken') || localStorage.getItem('clientToken') || localStorage.getItem('superAdminToken');
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers: extraHeaders = {} } = options;
+  const { method = 'GET', body, headers: extraHeaders = {}, role } = options;
   const headers: Record<string, string> = { ...extraHeaders };
-  const token = getToken();
+  const token = getToken(role);
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (body) headers['Content-Type'] = 'application/json';
 
@@ -69,8 +73,8 @@ export function clearApiCache(): void {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
-  put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  get: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { role }),
+  post: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'POST', body, role }),
+  put: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'PUT', body, role }),
+  delete: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'DELETE', role }),
 };

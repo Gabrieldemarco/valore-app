@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import crypto from 'crypto';
 import NodeCache from 'memory-cache';
-import { query, queryOne } from '../database';
+import { query, queryOne, getClient } from '../database';
 import logger from '../services/logger';
 import { sendClientConfirmation, notifyStaff } from '../services/notifications';
 import { createPreference as mpCreatePreference, isConfigured as mpConfigured } from '../services/mercadopago-client';
@@ -47,7 +47,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     return { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode };
   }
 
-  async function resolveServiceAndStaff(serviceId, staffId, tenantId, res) {
+  async function resolveServiceAndStaff(serviceId, staffId, tenantId, res, appointmentDate?) {
     const service = await queryOne(
       'SELECT * FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
       [serviceId, tenantId]
@@ -67,6 +67,26 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         return null;
       }
       validStaffId = staffMember.id;
+    } else if (appointmentDate) {
+      const slotDate = new Date(appointmentDate);
+      const slotEnd = new Date(slotDate.getTime() + service.duration * 60000);
+      const autoAssign = await query(
+        `SELECT s.id, COUNT(a.id) AS appointment_count
+         FROM staff s
+         LEFT JOIN appointments a ON a.staff_id = s.id
+           AND a.appointment_date < $3
+           AND a.appointment_date + (a.service_duration * interval '1 minute') > $2
+           AND a.status NOT IN ('cancelled', 'no-show')
+         WHERE s.tenant_id = $1 AND s.active = true
+         GROUP BY s.id
+         HAVING COUNT(a.id) = 0
+         ORDER BY (SELECT COUNT(*) FROM appointments WHERE staff_id = s.id AND appointment_date > NOW() AND status != 'cancelled') ASC
+         LIMIT 1`,
+        [tenantId, slotDate.toISOString(), slotEnd.toISOString()]
+      );
+      if (autoAssign.rows.length > 0) {
+        validStaffId = autoAssign.rows[0].id;
+      }
     }
     return { service, validStaffId };
   }
@@ -167,10 +187,35 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     if (cached) return res.json(cached);
     try {
       const services = await query(
-        'SELECT id, name, duration, price, category, image FROM services WHERE tenant_id = $1 AND active = true ORDER BY category, name',
+        `SELECT s.id, s.name, s.duration, s.price, s.category, s.category_id, s.description, s.image,
+                sc.name AS category_name, sc.parent_id AS category_parent_id
+         FROM services s
+         LEFT JOIN service_categories sc ON sc.id = s.category_id
+         WHERE s.tenant_id = $1 AND s.active = true
+         ORDER BY sc.sort_order, sc.name, s.name`,
         [req.tenant.id]
       );
-      const body = { tenant: req.tenant, services: services.rows };
+
+      const serviceIds = services.rows.map(s => s.id);
+      const images = serviceIds.length > 0
+        ? (await query(
+            `SELECT si.id, si.service_id, si.url, si.sort_order FROM service_images si WHERE si.service_id = ANY($1) ORDER BY si.sort_order, si.id`,
+            [serviceIds]
+          )).rows
+        : [];
+
+      const imagesByService: Record<number, any[]> = {};
+      for (const img of images) {
+        if (!imagesByService[img.service_id]) imagesByService[img.service_id] = [];
+        imagesByService[img.service_id].push({ id: img.id, url: img.url, sort_order: img.sort_order });
+      }
+
+      const servicesWithImages = services.rows.map(s => ({
+        ...s,
+        images: imagesByService[s.id] || [],
+      }));
+
+      const body = { tenant: req.tenant, services: servicesWithImages };
       NodeCache.put(cacheKey, body, 60000);
       res.json(body);
     } catch (err: any) {
@@ -238,7 +283,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       if (!validated) return;
       const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode } = validated;
 
-      const resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res);
+      const resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res, appointmentDate);
       if (!resolved) return;
       const { service, validStaffId } = resolved;
 
@@ -279,29 +324,59 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       const { clientToken, appointmentStatus, recurringGroup, appointmentDates } = buildAppointmentDates(appointmentDate, recurring, service);
 
       const newAppointments: any[] = [];
+      const client = await getClient();
 
       try {
+        await client.query('BEGIN');
+
         for (let i = 0; i < appointmentDates.length; i++) {
           const ad = appointmentDates[i];
           const isFirst = i === 0;
-          const result = await query(
+
+          // Lock overlapping active appointments for this tenant
+          const slotDate = new Date(ad.date);
+          const slotEnd = new Date(slotDate.getTime() + service.duration * 60000);
+          const lockResult = await client.query(
+            `SELECT id FROM appointments
+             WHERE tenant_id = $1
+             AND appointment_date < $3
+             AND appointment_date + (service_duration * interval '1 minute') > $2
+             AND status NOT IN ('cancelled', 'no-show')
+             ${validStaffId ? 'AND (staff_id = $4 OR staff_id IS NULL)' : 'AND staff_id IS NULL'}
+             FOR UPDATE`,
+            validStaffId
+              ? [req.tenant.id, slotDate.toISOString(), slotEnd.toISOString(), validStaffId]
+              : [req.tenant.id, slotDate.toISOString(), slotEnd.toISOString()]
+          );
+
+          if (lockResult.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Horario ya reservado' });
+          }
+
+          const insertResult = await client.query(
             `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule, coupon_code, discount_amount)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
             [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null, isFirst ? validCouponCode : null, isFirst ? discountAmount : 0]
           );
-          const appt = result.rows[0];
+          const appt = insertResult.rows[0];
           if (validStaffId) {
-            const staffMember = await queryOne('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
-            if (staffMember) {
-              appt.staff_name = staffMember.name;
-              appt.staff_email = staffMember.email;
+            const staffRow = await client.query('SELECT name, email FROM staff WHERE id = $1', [validStaffId]);
+            if (staffRow.rows[0]) {
+              appt.staff_name = staffRow.rows[0].name;
+              appt.staff_email = staffRow.rows[0].email;
             }
           }
           newAppointments.push(appt);
         }
+
+        await client.query('COMMIT');
       } catch (dbErr: any) {
+        await client.query('ROLLBACK');
         if (dbErr.code === '23505') return res.status(409).json({ error: 'Horario ya reservado' });
         throw dbErr;
+      } finally {
+        client.release();
       }
 
       const newAppointment = newAppointments[0];
@@ -447,9 +522,39 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         req.tenant.landing_enabled = true;
       }
       const services = await query(
-        `SELECT id,name,duration,price,image FROM services WHERE tenant_id=$1 AND active=true ORDER BY name`,
+        `SELECT s.id,s.name,s.duration,s.price,s.category,s.category_id,s.description,s.image,
+                sc.name AS category_name, sc.parent_id AS category_parent_id
+         FROM services s
+         LEFT JOIN service_categories sc ON sc.id = s.category_id
+         WHERE s.tenant_id=$1 AND s.active=true
+         ORDER BY sc.sort_order, sc.name, s.name`,
         [req.tenant.id]
       );
+
+      const serviceIds = services.rows.map(s => s.id);
+      const images = serviceIds.length > 0
+        ? (await query(
+            `SELECT si.id, si.service_id, si.url, si.sort_order FROM service_images si WHERE si.service_id = ANY($1) ORDER BY si.sort_order, si.id`,
+            [serviceIds]
+          )).rows
+        : [];
+
+      const imagesByService: Record<number, any[]> = {};
+      for (const img of images) {
+        if (!imagesByService[img.service_id]) imagesByService[img.service_id] = [];
+        imagesByService[img.service_id].push({ id: img.id, url: img.url, sort_order: img.sort_order });
+      }
+
+      const servicesWithImages = services.rows.map(s => ({
+        ...s,
+        images: imagesByService[s.id] || [],
+      }));
+
+      const reviews = await query(
+        `SELECT id, client_name, rating, comment, created_at FROM reviews WHERE tenant_id=$1 AND approved=true ORDER BY created_at DESC`,
+        [req.tenant.id]
+      );
+
       res.json({
         tenant: {
           slug: req.tenant.slug,
@@ -478,7 +583,8 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           landing_secondary_font: req.tenant.landing_secondary_font,
           captcha_enabled: req.tenant.captcha_enabled || false,
         },
-        services: services.rows,
+        services: servicesWithImages,
+        reviews: reviews.rows,
       });
     } catch (err: any) {
       logger.error('Landing error:', err.message);
@@ -730,6 +836,41 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al salir de lista de espera' });
+    }
+  });
+
+  // ========== REVIEWS (público) ==========
+
+  router.get('/:slug/reviews', identifyTenant, requireActivePublicTenant, async (req, res) => {
+    try {
+      const reviews = await query(
+        `SELECT id, client_name, rating, comment, created_at FROM reviews WHERE tenant_id=$1 AND approved=true ORDER BY created_at DESC`,
+        [req.tenant.id]
+      );
+      res.json({ reviews: reviews.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar reseñas' });
+    }
+  });
+
+  router.post('/:slug/reviews', publicLimiter, identifyTenant, requireActivePublicTenant, [
+    body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre requerido').escape(),
+    body('rating').isInt({ min: 1, max: 5 }).withMessage('Puntuación debe ser entre 1 y 5'),
+    body('comment').optional().trim().isLength({ max: 1000 }).escape(),
+  ], validate, async (req, res) => {
+    try {
+      const { clientName, rating, comment } = req.body;
+      const result = await query(
+        `INSERT INTO reviews (tenant_id, client_name, rating, comment, approved)
+         VALUES ($1, $2, $3, $4, false)
+         RETURNING id, client_name, rating, comment, created_at`,
+        [req.tenant.id, clientName.trim(), rating, comment?.trim() || '']
+      );
+      res.status(201).json({ message: 'Reseña enviada para revisión', review: result.rows[0] });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al enviar reseña' });
     }
   });
 

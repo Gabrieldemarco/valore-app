@@ -47,12 +47,32 @@ interface LayoutBlock {
   content?: string;
 }
 
+interface ServiceImage {
+  id: number;
+  url: string;
+  sort_order: number;
+}
+
 interface ServiceItem {
   id: number;
   name: string;
   duration: number;
   price: number | string | null;
+  category: string;
+  category_id: number | null;
+  category_name: string | null;
+  category_parent_id: number | null;
+  description: string | null;
   image: string | null;
+  images?: ServiceImage[];
+}
+
+interface ReviewItem {
+  id: number;
+  client_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
 }
 
 interface TeamItem {
@@ -90,6 +110,7 @@ function fixImageUrl(url: string | null | undefined): string {
 const DEFAULT_LAYOUT: LayoutBlock[] = [
   { id: 'hero', type: 'hero', enabled: true },
   { id: 'servicios', type: 'services', enabled: true },
+  { id: 'resenas', type: 'reviews', enabled: true },
   { id: 'galeria', type: 'gallery', enabled: true },
   { id: 'equipo', type: 'team', enabled: true },
   { id: 'reservar', type: 'booking', enabled: true },
@@ -114,6 +135,7 @@ export default function Landing() {
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -144,10 +166,25 @@ export default function Landing() {
 
   // ── UI state ──
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [serviceLightboxImages, setServiceLightboxImages] = useState<ServiceImage[]>([]);
+  const [serviceLightboxIdx, setServiceLightboxIdx] = useState<number | null>(null);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
 
   const today = new Date().toISOString().split('T')[0];
+
+  // ── Derived data ──
+  const gallery: string[] = Array.isArray(tenant?.landing_gallery) ? tenant.landing_gallery as string[] : [];
+  const team: TeamItem[] = staff.length > 0 ? staff : (Array.isArray(tenant?.landing_team) ? tenant.landing_team as TeamItem[] : []);
+  const social = tenant?.landing_social_links || {};
+  const hasSocial = Object.values(social).some(Boolean);
+
+  const layout = useMemo(() => {
+    const l = tenant?.landing_layout;
+    const saved = Array.isArray(l) && l.length > 0 ? (l as LayoutBlock[]) : [];
+    const savedIds = new Set(saved.map(b => b.id));
+    return [...saved, ...DEFAULT_LAYOUT.filter(b => !savedIds.has(b.id))];
+  }, [tenant?.landing_layout]);
 
   // ── Data fetching ──
   useEffect(() => {
@@ -161,13 +198,14 @@ export default function Landing() {
       return;
     }
     Promise.all([
-      api.get<{ tenant: TenantData; services: ServiceItem[] }>(`/p/${tenantSlug}/landing`),
+      api.get<{ tenant: TenantData; services: ServiceItem[]; reviews: ReviewItem[] }>(`/p/${tenantSlug}/landing`),
       api.get<{ staff: StaffMember[] }>(`/p/${tenantSlug}/staff`).catch(() => ({ staff: [] })),
     ])
       .then(([landing, staffRes]) => {
         setTenant(landing.tenant);
         setServices(landing.services || []);
         setStaff(staffRes.staff || []);
+        setReviews(landing.reviews || []);
       })
       .catch(() => setError(t('landing.loadError')))
       .finally(() => setLoading(false));
@@ -179,15 +217,18 @@ export default function Landing() {
     if (!token) return;
     const storedName = localStorage.getItem('clientDisplayName') || localStorage.getItem('clientName');
     const storedPhone = localStorage.getItem('clientPhone');
+    const storedEmail = localStorage.getItem('clientEmail');
     if (storedName) setClientName(storedName);
     if (storedPhone) setClientPhone(storedPhone);
-    if (!storedName || !storedPhone) {
+    if (storedEmail) setClientEmail(storedEmail);
+    if (!storedName || !storedPhone || !storedEmail) {
       fetch('/api/client/me', { headers: { 'Authorization': 'Bearer ' + token } })
         .then(r => r.json())
         .then(data => {
           const displayName = data.user?.name || data.user?.username;
           if (displayName) { setClientName(displayName); localStorage.setItem('clientDisplayName', displayName); }
           if (data.user?.phone) { setClientPhone(data.user.phone); localStorage.setItem('clientPhone', data.user.phone); }
+          if (data.user?.email) { setClientEmail(data.user.email); localStorage.setItem('clientEmail', data.user.email); }
         })
         .catch(() => {});
     }
@@ -256,15 +297,20 @@ export default function Landing() {
   }, [tenant]);
 
   useEffect(() => {
-    if (lightboxIdx === null) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxIdx(null);
-      if (e.key === 'ArrowRight') setLightboxIdx(i => i !== null && i < gallery.length - 1 ? i + 1 : i);
-      if (e.key === 'ArrowLeft') setLightboxIdx(i => i !== null && i > 0 ? i - 1 : i);
+      if (e.key === 'Escape') { setLightboxIdx(null); setServiceLightboxIdx(null); }
+      if (lightboxIdx !== null) {
+        if (e.key === 'ArrowRight') setLightboxIdx(i => i !== null && i < gallery.length - 1 ? i + 1 : i);
+        if (e.key === 'ArrowLeft') setLightboxIdx(i => i !== null && i > 0 ? i - 1 : i);
+      }
+      if (serviceLightboxIdx !== null) {
+        if (e.key === 'ArrowRight') setServiceLightboxIdx(i => i !== null && i < serviceLightboxImages.length - 1 ? i + 1 : i);
+        if (e.key === 'ArrowLeft') setServiceLightboxIdx(i => i !== null && i > 0 ? i - 1 : i);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxIdx]);
+  }, [lightboxIdx, serviceLightboxIdx, gallery.length, serviceLightboxImages.length]);
 
   useEffect(() => {
     if (tenant?.business_name) document.title = `${tenant.business_name} | Velsoie`;
@@ -343,19 +389,6 @@ export default function Landing() {
     }
   };
 
-  // ── Derived data ──
-  const gallery: string[] = Array.isArray(tenant?.landing_gallery) ? tenant.landing_gallery as string[] : [];
-  const team: TeamItem[] = staff.length > 0 ? staff : (Array.isArray(tenant?.landing_team) ? tenant.landing_team as TeamItem[] : []);
-  const social = tenant?.landing_social_links || {};
-  const hasSocial = Object.values(social).some(Boolean);
-
-  const layout = useMemo(() => {
-    const l = tenant?.landing_layout;
-    const saved = Array.isArray(l) && l.length > 0 ? (l as LayoutBlock[]) : [];
-    const savedIds = new Set(saved.map(b => b.id));
-    return [...saved, ...DEFAULT_LAYOUT.filter(b => !savedIds.has(b.id))];
-  }, [tenant?.landing_layout]);
-
   // ── Section renderer ──
   const renderSection = (block: LayoutBlock) => {
     if (!block.enabled) return null;
@@ -386,9 +419,42 @@ export default function Landing() {
                 setStep(2);
                 document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
               }}
+              onOpenServiceLightbox={(imgs, idx) => {
+                setServiceLightboxImages(imgs);
+                setServiceLightboxIdx(idx);
+              }}
             />
           </section>
         );
+
+      case 'reviews':
+        return reviews.length > 0 ? (
+          <section key={block.id} id="resenas">
+            <h2 className="section-title">{t('landing.reviewsTitle', 'Reseñas')}</h2>
+            <div className="reviews-summary">
+              <span className="reviews-average">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className={`star ${i < Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) ? 'filled' : ''}`}>&#9733;</span>
+                ))}
+                <span className="reviews-score">{(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)}</span>
+                <span className="reviews-count">({reviews.length} {t('landing.reviewsCount', 'opiniones')})</span>
+              </span>
+            </div>
+            <div className="reviews-list">
+              {reviews.slice(0, 6).map(r => (
+                <div key={r.id} className="review-card">
+                  <div className="review-stars">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className={`star ${i < r.rating ? 'filled' : ''}`}>&#9733;</span>
+                    ))}
+                  </div>
+                  <p className="review-comment">{r.comment}</p>
+                  <span className="review-author">- {r.client_name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null;
 
       case 'gallery':
         return gallery.length > 0 ? (
@@ -425,6 +491,10 @@ export default function Landing() {
             <LandingBookingSection
             staff={staff}
             services={services}
+            onOpenServiceLightbox={(imgs, idx) => {
+              setServiceLightboxImages(imgs);
+              setServiceLightboxIdx(idx);
+            }}
             slots={slots}
             slotsTimeout={slotsTimeout}
             step={step}
@@ -514,7 +584,7 @@ export default function Landing() {
         return (
           <section key={block.id} id={block.id}>
             {block.title && <h2 className="section-title">{block.title}</h2>}
-            <div className="custom-block-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.content || '') }} />
+            <div className="custom-block-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.content || '', { ADD_TAGS: ['iframe'], ADD_ATTR: ['src', 'width', 'height', 'style', 'allowfullscreen', 'loading', 'frameborder', 'allow', 'title', 'referrerpolicy'] }) }} />
           </section>
         );
 
@@ -606,6 +676,16 @@ export default function Landing() {
           <img src={fixImageUrl(gallery[lightboxIdx])} alt="" className="lightbox-image" onClick={e => e.stopPropagation()} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
           <button className="lightbox-next" onClick={e => { e.stopPropagation(); setLightboxIdx(lightboxIdx < gallery.length - 1 ? lightboxIdx + 1 : 0); }}>&rsaquo;</button>
           <div className="lightbox-counter">{lightboxIdx + 1} / {gallery.length}</div>
+        </div>
+      )}
+
+      {serviceLightboxIdx !== null && serviceLightboxImages.length > 0 && (
+        <div className="lightbox-overlay" onClick={() => setServiceLightboxIdx(null)}>
+          <button className="lightbox-close" onClick={() => setServiceLightboxIdx(null)}>&times;</button>
+          <button className="lightbox-prev" onClick={e => { e.stopPropagation(); setServiceLightboxIdx(serviceLightboxIdx > 0 ? serviceLightboxIdx - 1 : serviceLightboxImages.length - 1); }}>&lsaquo;</button>
+          <img src={fixImageUrl(serviceLightboxImages[serviceLightboxIdx].url)} alt="" className="lightbox-image" onClick={e => e.stopPropagation()} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
+          <button className="lightbox-next" onClick={e => { e.stopPropagation(); setServiceLightboxIdx(serviceLightboxIdx < serviceLightboxImages.length - 1 ? serviceLightboxIdx + 1 : 0); }}>&rsaquo;</button>
+          <div className="lightbox-counter">{serviceLightboxIdx + 1} / {serviceLightboxImages.length}</div>
         </div>
       )}
     </div>

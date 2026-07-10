@@ -6,9 +6,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Home, Sparkles, Image, Users, Calendar, RotateCcw, Trash2, X, User, GripVertical, Clock } from 'lucide-react';
 import { logger } from '../../services/logger';
 import ImageCropModal from '../../components/ImageCropModal';
+import PhoneInput from '../../components/PhoneInput';
 
 
 type EditorTab = 'general' | 'branding' | 'services' | 'hours' | 'gallery' | 'team' | 'social' | 'css' | 'layout';
+
+interface CategoryItem {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  children: CategoryItem[];
+}
 
 interface Service {
   id?: number | null;
@@ -16,6 +24,7 @@ interface Service {
   duration: number;
   price: number;
   deposit_amount?: number | null;
+  category_id?: number | null;
   image?: string;
   _deleted?: boolean;
 }
@@ -116,6 +125,7 @@ export default function LandingEditor() {
   // State
   const [tenant, setTenant] = useState<Record<string, unknown>>({});
   const [services, setServices] = useState<Service[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [gallery, setGallery] = useState<string[]>([]);
   const [team, setTeam] = useState<unknown[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -175,6 +185,7 @@ export default function LandingEditor() {
       setTenant(data.tenant);
       setPreviewSlug(data.tenant.slug as string);
       setServices(data.services.map(s => ({ ...s, _deleted: false })));
+      try { const cats = await api.get<{ categories: CategoryItem[] }>('/api/tenant/categories'); setCategories(cats.categories); } catch {}
       setGallery((data.tenant.landing_gallery as string[]) || []);
       setTeam((data.tenant.landing_team as unknown[]) || []);
       setSocial((data.tenant.landing_social_links as Record<string, string>) || {});
@@ -762,8 +773,8 @@ footer { order: 100 !important; }
                 </div>
                 <div className="form-group">
                   <label>{t('staffLandingEditor.phoneLabel')}</label>
-                  <input type="tel" className="glass-input" value={(tenant.business_phone as string) || ''}
-                    onChange={e => handleTenantField('business_phone', e.target.value)} />
+                  <PhoneInput value={(tenant.business_phone as string) || ''}
+                    onChange={v => handleTenantField('business_phone', v)} className="glass-input" />
                 </div>
                 <div className="form-group">
                   <label>
@@ -997,7 +1008,7 @@ footer { order: 100 !important; }
                             <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
                               {t('staffLandingEditor.servicePriceLabel')}
                             </label>
-                            <input type="number" className="glass-input" placeholder={t('staffLandingEditor.servicePricePlaceholder')} value={s.price}
+                            <input type="number" className="glass-input" placeholder={t('staffLandingEditor.servicePricePlaceholder')} value={Number(s.price) || 0}
                               onChange={e => updateService(i, 'price', e.target.value)} />
                           </div>
                           <div className="form-group" style={{ width: '100px', marginBottom: 0 }}>
@@ -1007,6 +1018,21 @@ footer { order: 100 !important; }
                             <input type="number" className="glass-input" placeholder={t('staffLandingEditor.serviceDepositPlaceholder')} value={s.deposit_amount ?? ''}
                               onChange={e => updateService(i, 'deposit_amount', e.target.value)} />
                           </div>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
+                            Categoría
+                          </label>
+                          <select className="glass-input" value={s.category_id ?? ''} onChange={e => updateService(i, 'category_id', e.target.value ? parseInt(e.target.value, 10) : null)}>
+                            <option value="">Sin categoría</option>
+                            {(function flatten(items: CategoryItem[], depth = 0): { id: number; name: string; depth: number }[] {
+                              const r: { id: number; name: string; depth: number }[] = [];
+                              for (const c of items) { r.push({ id: c.id, name: c.name, depth }); r.push(...flatten(c.children, depth + 1)); }
+                              return r;
+                            })(categories).map(c => (
+                              <option key={c.id} value={c.id}>{'── '.repeat(c.depth)}{c.name}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>

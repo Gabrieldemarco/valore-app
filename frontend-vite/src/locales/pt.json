@@ -54,7 +54,7 @@
     "filterDamas": "Feminino",
     "filterUnisex": "Unissex",
     "featuredTitle": "Salões em Destaque",
-    "featuredSubtitle": "Os melhores salões de beleza e boutique",
+    "featuredSubtitle": "Os melhores centros de beleza e bem-estar",
     "trendingTitle": "Tendências",
     "trendingSubtitle": "Os salões mais populares do momento",
     "newSalonsTitle": "Novos Salões",
@@ -112,6 +112,8 @@
     "loadError": "Erro ao carregar",
     "bookError": "Erro ao agendar",
     "bookSuccess": "Agendamento realizado com sucesso",
+    "reviewsTitle": "Avaliações",
+    "reviewsCount": "avaliações",
     "monthNames": [
       "Janeiro",
       "Fevereiro",
@@ -145,7 +147,9 @@
     "title": "Serviços",
     "subtitle": "Escolha o serviço que melhor se adapta a você",
     "minutes": "min",
-    "pricePrefix": "$"
+    "pricePrefix": "$",
+    "bookButton": "Agendar serviço",
+    "otherCategory": "Outros"
   },
   "landingTeam": {
     "galleryTitle": "Galeria",
@@ -549,8 +553,12 @@
     "servicesModalNamePlaceholder": "Ex: Corte de cabelo",
     "servicesModalDurationLabel": "Duração (minutos) *",
     "servicesModalPriceLabel": "Preço ($) *",
+    "servicesModalDescriptionLabel": "Descrição",
+    "servicesModalDescriptionPlaceholder": "Ex: Não inclui design",
     "servicesModalImageLabel": "URL da Imagem",
     "servicesModalImagePlaceholder": "https://...",
+    "servicesModalGalleryLabel": "Galeria de Imagens",
+    "servicesModalAddImage": "Adicionar",
     "servicesModalCancel": "Cancelar",
     "servicesModalSave": "Salvar Alterações",
     "servicesModalCreate": "Criar Serviço",
@@ -898,6 +906,13 @@
     "copyLinkButton": "Copiar link",
     "shareText": "Agende seu horário neste salão",
     "shareTitle": "Velsoie"
+  },
+  "onboardingTour": {
+    "dontShowAgain": "Não mostrar novamente",
+    "trigger": "Ajuda",
+    "back": "Voltar",
+    "next": "Próximo",
+    "done": "Finalizar"
   },
   "installApp": {
     "iosText": "📲 Instale o app no seu iPhone: toque em Compartilhar ⎋ e depois em \"Adicionar à tela de início\"",

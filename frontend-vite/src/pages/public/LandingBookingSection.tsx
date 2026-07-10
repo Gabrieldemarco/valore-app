@@ -1,14 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import PhoneInput from '../../components/PhoneInput';
+import { ChevronRight, Clock, DollarSign } from 'lucide-react';
 
 const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
+
+interface ServiceImage {
+  id: number;
+  url: string;
+  sort_order: number;
+}
 
 interface ServiceItem {
   id: number;
   name: string;
   duration: number;
   price: number | string | null;
+  category: string;
+  category_id: number | null;
+  category_name: string | null;
+  category_parent_id: number | null;
+  description: string | null;
   image: string | null;
+  images?: ServiceImage[];
 }
 
 interface StaffMember {
@@ -24,10 +38,197 @@ interface SlotItem {
   available: boolean;
 }
 
+interface CatNode {
+  id: number | string;
+  name: string;
+  children: { id: number; name: string; services: ServiceItem[] }[];
+  services: ServiceItem[];
+}
+
+function BookingAccordion({ services, selectedService, fixImageUrl, t, onSelect, onOpenServiceLightbox }: {
+  services: ServiceItem[];
+  selectedService: number | null;
+  fixImageUrl: (url: string | null | undefined) => string;
+  t: (key: string, fallback?: string) => string;
+  onSelect: (id: number) => void;
+  onOpenServiceLightbox?: (images: ServiceImage[], idx: number) => void;
+}) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggle = (key: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const catMap = new Map<number, CatNode>();
+  const legacyCats: Record<string, ServiceItem[]> = {};
+
+  for (const s of services) {
+    if (s.category_id) {
+      if (!catMap.has(s.category_id)) {
+        catMap.set(s.category_id, { id: s.category_id, name: s.category_name || s.category, children: [], services: [] });
+      }
+      const node = catMap.get(s.category_id)!;
+      const parentId = s.category_parent_id;
+      if (parentId) {
+        if (!catMap.has(parentId)) {
+          catMap.set(parentId, { id: parentId, name: '', children: [], services: [] });
+        }
+        catMap.get(parentId)!.name = catMap.get(parentId)!.name || s.category_name || parentId.toString();
+        let childGroup = node.children.find(c => c.id === s.category_id);
+        if (!childGroup) {
+          childGroup = { id: s.category_id, name: s.category_name || s.category, services: [] };
+          node.children.push(childGroup);
+        }
+        childGroup.services.push(s);
+      } else {
+        node.services.push(s);
+      }
+    } else {
+      const cat = s.category?.trim() || t('landingServices.otherCategory', 'Otros');
+      if (!legacyCats[cat]) legacyCats[cat] = [];
+      legacyCats[cat].push(s);
+    }
+  }
+
+  const allGroups: { key: string; label: string; node: CatNode }[] = [];
+  for (const node of catMap.values()) {
+    if (node.name) allGroups.push({ key: `cat-${node.id}`, label: node.name, node });
+  }
+  for (const [catName, items] of Object.entries(legacyCats)) {
+    allGroups.push({
+      key: `legacy-${catName}`,
+      label: catName,
+      node: { id: catName, name: catName, children: [], services: items },
+    });
+  }
+
+  allGroups.sort((a, b) => a.label.localeCompare(b.label));
+
+  return (
+    <div className="services-accordion booking-accordion">
+      {allGroups.map(group => {
+        const isOpen = expanded.has(group.key);
+        const node = group.node;
+        const hasChildren = node.children.length > 0;
+        const hasDirectServices = node.services.length > 0;
+
+        return (
+          <div key={group.key} className={`accordion-item ${isOpen ? 'open' : ''}`}>
+            <button className="accordion-header" onClick={() => toggle(group.key)}>
+              <ChevronRight size={16} className={`accordion-arrow ${isOpen ? 'rotated' : ''}`} />
+              <span className="accordion-title">{group.label}</span>
+              <span className="accordion-count">{node.services.length + node.children.reduce((s, c) => s + c.services.length, 0)}</span>
+            </button>
+            <div className={`accordion-body ${isOpen ? 'open' : ''}`}>
+              <div className="accordion-body-inner">
+                {hasChildren && (
+                  <div className="booking-subcategories">
+                    {node.children.map(sub => (
+                      <div key={`sub-${sub.id}`} className="subcategory-group">
+                        <h4 className="subcategory-title">{sub.name}</h4>
+                        <div className="booking-services">
+                          {sub.services.map(s => (
+                            <div key={s.id}
+                              className={`booking-service-card ${selectedService === s.id ? 'selected' : ''}`}
+                              onClick={() => onSelect(s.id)}>
+                              <div className="booking-service-card-image">
+                                {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
+                                {s.images && s.images.length > 0 && (
+                                  <div className="service-thumbnails">
+                                    {s.images.slice(0, 3).map((img, i) => (
+                                      <div key={img.id} className="service-thumb"
+                                        onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
+                                        <img src={fixImageUrl(img.url)} alt="" />
+                                      </div>
+                                    ))}
+                                    {s.images.length > 3 && (
+                                      <div className="service-thumb more"
+                                        onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
+                                        <span>+{s.images.length - 3}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="booking-service-info">
+                                <div className="booking-service-name">{s.name}</div>
+                                <div className="booking-service-meta">
+                                  <span className="booking-service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
+                                  <span className="booking-service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+                                </div>
+                                {s.description && <p className="service-description">{s.description}</p>}
+                                <button className="service-book-btn"
+                                  onClick={e => { e.stopPropagation(); onSelect(s.id); }}>
+                                  {t('landingServices.bookButton', 'Agendar servicio')}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {hasDirectServices && (
+                  <div className="booking-services">
+                    {node.services.map(s => (
+                      <div key={s.id}
+                        className={`booking-service-card ${selectedService === s.id ? 'selected' : ''}`}
+                        onClick={() => onSelect(s.id)}>
+                        <div className="booking-service-card-image">
+                          {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
+                          {s.images && s.images.length > 0 && (
+                            <div className="service-thumbnails">
+                              {s.images.slice(0, 3).map((img, i) => (
+                                <div key={img.id} className="service-thumb"
+                                  onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
+                                  <img src={fixImageUrl(img.url)} alt="" />
+                                </div>
+                              ))}
+                              {s.images.length > 3 && (
+                                <div className="service-thumb more"
+                                  onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
+                                  <span>+{s.images.length - 3}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="booking-service-info">
+                          <div className="booking-service-name">{s.name}</div>
+                          <div className="booking-service-meta">
+                            <span className="booking-service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
+                            <span className="booking-service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+                          </div>
+                          {s.description && <p className="service-description">{s.description}</p>}
+                          <button className="service-book-btn"
+                            onClick={e => { e.stopPropagation(); onSelect(s.id); }}>
+                            {t('landingServices.bookButton', 'Agendar servicio')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface LandingBookingSectionProps {
   staff: StaffMember[];
   services: ServiceItem[];
   slots: SlotItem[];
+  onOpenServiceLightbox?: (images: ServiceImage[], idx: number) => void;
   slotsTimeout: boolean;
   step: number;
   selectedStaff: number | null;
@@ -85,8 +286,14 @@ interface LandingBookingSectionProps {
   onJoinWaitlist: () => void;
 }
 
+const formatPrice = (p: number | string | null): string => {
+  if (p === null || p === undefined) return '';
+  const n = typeof p === 'string' ? parseFloat(p) : p;
+  return n % 1 === 0 ? n.toString() : n.toFixed(2);
+};
+
 export default function LandingBookingSection({
-  staff, services, slots, slotsTimeout,
+  staff, services, slots, slotsTimeout, onOpenServiceLightbox,
   step, selectedStaff, selectedService, selectedDate, selectedTime,
   clientName, clientPhone, clientEmail, clientNotes,
   couponCode, couponDiscount,
@@ -142,7 +349,7 @@ export default function LandingBookingSection({
   };
 
   return (
-    <section id="reservar" className="booking-section">
+    <>
       <h2 className="section-title">{t('booking.title')}</h2>
       <p className="section-subtitle">{t('booking.subtitle')}</p>
 
@@ -191,7 +398,7 @@ export default function LandingBookingSection({
         </div>
 
         <form className="booking-form" onSubmit={e => { e.preventDefault(); onSubmit(); }}>
-          {/* ── Step 1: Elegí peluquero ── */}
+          {/* ── Step 1: Elegí peluquero (opcional) ── */}
           {step === 1 && !isQuickBook && (
             <div className="step-content">
               <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>
@@ -206,7 +413,7 @@ export default function LandingBookingSection({
                       key={s.id}
                       className={`team-card ${selectedStaff === s.id ? 'selected' : ''}`}
                       style={{ cursor: 'pointer', border: selectedStaff === s.id ? '2px solid var(--primary)' : '1px solid var(--glass-border)' }}
-                      onClick={() => { onSetSelectedStaff(s.id); onSetStep(2); }}
+                      onClick={() => { onSetSelectedStaff(s.id); }}
                     >
                       {s.photo_url && (
                         <img
@@ -223,6 +430,14 @@ export default function LandingBookingSection({
                   ))}
                 </div>
               )}
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <button type="button" className="btn btn-primary" onClick={() => onSetStep(2)}>
+                  {t('booking.nextButton') || 'Siguiente'}
+                </button>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                  {selectedStaff ? null : (t('booking.skipStaffHint') || 'Podés elegir un profesional o continuar para asignación automática')}
+                </p>
+              </div>
             </div>
           )}
 
@@ -242,30 +457,20 @@ export default function LandingBookingSection({
             </div>
           )}
 
-          {/* ── Step 2: Elegí servicio ── */}
+          {/* ── Step 2: Elegí servicio (acordeón) ── */}
           {step === 2 && !isQuickBook && (
             <div className="step-content">
               <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>
                 {t('booking.selectService')}
               </label>
-              <div className="booking-services">
-                {services.map(s => (
-                  <div
-                    key={s.id}
-                    className={`booking-service-card ${selectedService === s.id ? 'selected' : ''}`}
-                    onClick={() => { onSetSelectedService(s.id); onSetStep(3); }}
-                  >
-                    {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
-                    <div className="booking-service-info">
-                      <div className="booking-service-name">{s.name}</div>
-                      <div className="booking-service-meta">
-                        <span className="booking-service-duration">{s.duration} {t('landingServices.minutes')}</span>
-                        <span className="booking-service-price">{t('landingServices.pricePrefix')}{s.price}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <BookingAccordion
+                services={services}
+                selectedService={selectedService}
+                fixImageUrl={fixImageUrl}
+                t={t}
+                onOpenServiceLightbox={onOpenServiceLightbox}
+                onSelect={(id) => { onSetSelectedService(id); onSetStep(3); }}
+              />
             </div>
           )}
 
@@ -391,7 +596,7 @@ export default function LandingBookingSection({
                       <div className="booking-summary-icon">✂️</div>
                       <div className="booking-summary-details">
                         <div className="booking-summary-title">{sv.name}</div>
-                        <div className="booking-summary-sub">{sv.duration} {t('landingServices.minutes')} &middot; {t('landingServices.pricePrefix')}{sv.price}</div>
+                        <div className="booking-summary-sub">{sv.duration} {t('landingServices.minutes')} &middot; {t('landingServices.pricePrefix')}{formatPrice(sv.price)}</div>
                       </div>
                       <div className="booking-summary-right">
                         <div>{selectedDate}</div>
@@ -408,7 +613,7 @@ export default function LandingBookingSection({
                 </div>
                 <div className="form-group">
                   <label>{t('booking.phoneLabel')}</label>
-                  <input type="tel" value={clientPhone} onChange={e => onSetClientPhone(e.target.value)} required placeholder={t('booking.phonePlaceholder')} />
+                  <PhoneInput value={clientPhone} onChange={onSetClientPhone} required placeholder={t('booking.phonePlaceholder')} />
                 </div>
               </div>
               <div className="form-group">
@@ -501,6 +706,6 @@ export default function LandingBookingSection({
           {errMsg && <div className="result error">{errMsg}</div>}
         </form>
       </div>
-    </section>
+    </>
   );
 }

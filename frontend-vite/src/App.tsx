@@ -1,12 +1,14 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const PublicIndex = lazy(() => import('./pages/public/PublicIndex'));
 const Landing = lazy(() => import('./pages/public/Landing'));
 const AppointmentManage = lazy(() => import('./pages/public/AppointmentManage'));
 const Terms = lazy(() => import('./pages/public/Terms'));
+const VerifyEmail = lazy(() => import('./pages/public/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const StaffLogin = lazy(() => import('./pages/staff/Login'));
 const StaffRegister = lazy(() => import('./pages/staff/Register'));
@@ -19,6 +21,8 @@ const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ClientLogin = lazy(() => import('./pages/client/Login'));
 const ClientRegister = lazy(() => import('./pages/client/Register'));
 const ClientDashboard = lazy(() => import('./pages/client/Dashboard'));
+const ClientForgotPassword = lazy(() => import('./pages/client/ForgotPassword'));
+const ClientResetPassword = lazy(() => import('./pages/client/ResetPassword'));
 
 function Loading() {
   return (
@@ -32,35 +36,42 @@ function Loading() {
   );
 }
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={<PublicIndex />} />
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/p/:slug" element={<Landing />} />
-            <Route path="/p/:slug/manage/:token" element={<AppointmentManage />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/staff/login" element={<StaffLogin />} />
-            <Route path="/staff/register" element={<StaffRegister />} />
-            <Route path="/staff/forgot-password" element={<ForgotPassword />} />
-            <Route path="/staff/reset-password" element={<ResetPassword />} />
-            <Route path="/staff/dashboard" element={<StaffDashboard />} />
-            <Route path="/staff/landing-editor" element={<LandingEditor />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/client/login" element={<ClientLogin />} />
-            <Route path="/client/register" element={<ClientRegister />} />
-            <Route path="/client/dashboard" element={<ClientDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-        </ErrorBoundary>
-      </BrowserRouter>
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <BrowserRouter>
+          <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<PublicIndex />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/p/:slug" element={<Landing />} />
+              <Route path="/p/:slug/manage/:token" element={<AppointmentManage />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/staff/login" element={<StaffLogin />} />
+              <Route path="/staff/register" element={<StaffRegister />} />
+              <Route path="/staff/forgot-password" element={<ForgotPassword />} />
+              <Route path="/staff/reset-password" element={<ResetPassword />} />
+              <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              <Route path="/staff/landing-editor" element={<LandingEditor />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/client/login" element={<ClientLogin />} />
+              <Route path="/client/register" element={<ClientRegister />} />
+              <Route path="/client/forgot-password" element={<ClientForgotPassword />} />
+              <Route path="/client/reset-password" element={<ClientResetPassword />} />
+              <Route path="/client/dashboard" element={<ClientDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+          </ErrorBoundary>
+        </BrowserRouter>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

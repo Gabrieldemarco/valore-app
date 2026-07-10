@@ -24,19 +24,51 @@ export default function(loginLimiter, passwordResetLimiter) {
     body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
     body('name').optional().trim().isLength({ max: 100 }).escape(),
     body('phone').optional().trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
+    body('email').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
   ], validate, async (req, res) => {
     try {
-      const { username, password, name, phone } = req.body;
+      const { username, password, name, phone, email } = req.body;
       if (!username || !password) return res.status(400).json({ error: 'Faltan datos' });
       if (password.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
       const exists = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
       if (exists) return res.status(400).json({ error: 'Usuario ya existe' });
+      if (email) {
+        const emailExists = await queryOne('SELECT id FROM users WHERE email = $1', [email]);
+        if (emailExists) return res.status(400).json({ error: 'Email ya registrado' });
+      }
       const hashedPassword = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
+      const verificationToken = email ? crypto.randomBytes(32).toString('hex') : null;
+      const expiresAt = email ? new Date(Date.now() + 86400000) : null;
       const result = await query(
-        `INSERT INTO users (username, password, role, name, phone) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, name, role`,
-        [username, hashedPassword, 'client', name || username, phone || null]
+        `INSERT INTO users (username, password, role, name, phone, email, verification_token, verification_token_expires) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, name, role`,
+        [username, hashedPassword, 'client', name || username, phone || null, email || null, verificationToken, expiresAt]
       );
-      res.status(201).json({ message: 'Usuario creado', user: result.rows[0] });
+
+      if (email && verificationToken) {
+        try {
+          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          const verifyLink = `${baseUrl}/verify-email?token=${verificationToken}`;
+          const transporter = createEmailTransporter();
+          await transporter.sendMail({
+            from: `"Velsoie" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: 'Verificá tu email',
+            html: `
+              <h2>¡Bienvenido, ${name || username}!</h2>
+              <p>Gracias por registrarte. Hacé clic en el siguiente enlace para verificar tu email (válido por 24 horas):</p>
+              <a href="${verifyLink}" style="background:#667eea; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Verificar email</a>
+              <p>Si no te registraste, podés ignorar este mensaje.</p>
+              <br>
+              <p>Saludos,<br>Equipo Velsoie</p>
+            `,
+          });
+          logger.info('Correo de verificación enviado', { email });
+        } catch (err: any) {
+          logger.error('Error enviando correo de verificación', { error: err.message });
+        }
+      }
+
+      res.status(201).json({ message: 'Usuario creado' + (email ? ' Revisá tu email para verificar la cuenta.' : ''), user: result.rows[0] });
     } catch (err: any) {
       logger.error(err);
       res.status(500).json({ error: 'Error al registrar' });
@@ -253,6 +285,123 @@ export default function(loginLimiter, passwordResetLimiter) {
           html: `<p>Hola ${staff.name}, tu contraseña ha sido cambiada exitosamente.</p><p>Si no fuiste tú, contactanos inmediatamente.</p>`,
         });
         logger.info('Correo de confirmacion enviado', { email: staff.email });
+      } catch (err: any) {
+        logger.error('Error enviando correo de confirmacion', { error: err.message });
+      }
+
+      res.json({ message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' });
+    } catch (err: any) {
+      logger.error('Error en reset-password', { error: err.message });
+      res.status(500).json({ error: 'Error interno' });
+    }
+  });
+
+  router.post('/verify-email', [
+    body('token').notEmpty().withMessage('Token requerido'),
+  ], validate, async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      const user = await queryOne(
+        `SELECT id FROM users WHERE verification_token = $1 AND verification_token_expires > NOW() AND email_verified = false`,
+        [token]
+      );
+
+      if (!user) {
+        return res.status(400).json({ error: 'Enlace inválido o expirado.' });
+      }
+
+      await query(
+        `UPDATE users SET email_verified = true, verification_token = NULL, verification_token_expires = NULL WHERE id = $1`,
+        [user.id]
+      );
+
+      res.json({ message: 'Email verificado exitosamente. Ya puedes iniciar sesión.' });
+    } catch (err: any) {
+      logger.error('Error en verify-email', { error: err.message });
+      res.status(500).json({ error: 'Error interno' });
+    }
+  });
+
+  router.post('/forgot-password', passwordResetLimiter, [
+    body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
+  ], validate, async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const user = await queryOne('SELECT id, username, email FROM users WHERE email = $1', [email]);
+
+      if (!user) {
+        return res.json({ message: 'Si el email está registrado, recibirás un enlace de recuperación.' });
+      }
+
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 3600000);
+
+      await query(
+        'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+        [resetToken, expiresAt, user.id]
+      );
+
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const resetLink = `${baseUrl}/client/reset-password?token=${resetToken}`;
+
+      const transporter = createEmailTransporter();
+
+      await transporter.sendMail({
+        from: `"Velsoie" <${process.env.SMTP_USER}>`,
+        to: user.email,
+        subject: 'Recuperá tu contraseña',
+        html: `
+          <h2>Hola, ${user.username}</h2>
+          <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+          <p>Hacé clic en el siguiente enlace para crear una nueva contraseña (válido por 1 hora):</p>
+          <a href="${resetLink}" style="background:#667eea; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Restablecer contraseña</a>
+          <p>Si no solicitaste esto, podés ignorar este mensaje.</p>
+          <br>
+          <p>Saludos,<br>Equipo Velsoie</p>
+        `,
+      });
+
+      logger.info('Correo de recuperacion enviado', { email: user.email });
+      res.json({ message: 'Si el email está registrado, recibirás un enlace de recuperación.' });
+    } catch (err: any) {
+      logger.error('Error en forgot-password', { error: err.message });
+      res.status(500).json({ error: 'Error interno. Intentá más tarde.' });
+    }
+  });
+
+  router.post('/reset-password', passwordResetLimiter, [
+    body('token').notEmpty().withMessage('Token requerido'),
+    body('newPassword').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+  ], validate, async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      const user = await queryOne(
+        `SELECT id, email, username FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()`,
+        [token]
+      );
+
+      if (!user) {
+        return res.status(400).json({ error: 'Enlace inválido o expirado. Solicita un nuevo restablecimiento.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, config.BCRYPT_ROUNDS);
+      await query(
+        `UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2`,
+        [hashedPassword, user.id]
+      );
+
+      try {
+        const transporter = createEmailTransporter();
+        await transporter.sendMail({
+          from: `"Velsoie" <${process.env.SMTP_USER}>`,
+          to: user.email,
+          subject: 'Contraseña restablecida',
+          html: `<p>Hola ${user.username}, tu contraseña ha sido cambiada exitosamente.</p><p>Si no fuiste tú, contactanos inmediatamente.</p>`,
+        });
+        logger.info('Correo de confirmacion enviado', { email: user.email });
       } catch (err: any) {
         logger.error('Error enviando correo de confirmacion', { error: err.message });
       }

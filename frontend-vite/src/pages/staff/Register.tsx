@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 
+import PhoneInput from '../../components/PhoneInput';
 import '../../styles/auth.css';
 
 export default function StaffRegister() {
@@ -14,6 +15,10 @@ export default function StaffRegister() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setForm(prev => ({ ...prev, phone: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,7 +82,7 @@ export default function StaffRegister() {
 
           <div className="form-group">
             <label>{t('staffRegister.phoneLabel')}</label>
-            <input name="phone" type="tel" value={form.phone} onChange={handleChange} className="glass-input" placeholder={t('staffRegister.phonePlaceholder')} />
+            <PhoneInput value={form.phone} onChange={handlePhoneChange} placeholder={t('staffRegister.phonePlaceholder')} className="glass-input" />
           </div>
 
           <div className="form-group">
