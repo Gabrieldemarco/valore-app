@@ -18,7 +18,7 @@ const mockTenantLanding = {
     landing_social_links: {},
     landing_custom_css: null,
     landing_layout: null,
-    brand_primary_color: '#2563eb',
+    brand_primary_color: 'var(--info)',
     brand_secondary_color: null,
     brand_logo_url: null,
     business_phone: '+59899123456',

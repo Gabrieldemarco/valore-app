@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Image, X } from 'lucide-react';
 import LandingEditorProvider from './landing-editor/LandingEditorProvider';
 import { useLandingEditor } from './landing-editor/landingEditorContext';
@@ -30,9 +29,9 @@ const TAB_COMPONENTS: Record<EditorTab, React.FC> = {
 };
 
 function EditorInner() {
-  const { t, activeTab, setActiveTab, tenant, saving, saveChanges, statusMsg, statusLoading, showMobilePreview, setShowMobilePreview, previewSlug, cropFile, cropAspect, cropTarget } = useLandingEditor();
+  const { t, activeTab, setActiveTab, tenant, saving, saveChanges, statusMsg, statusLoading, showMobilePreview, setShowMobilePreview, previewSlug, cropFile, cropAspect } = useLandingEditor();
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const iframeSrc = previewSlug ? `/p/${previewSlug}?t=${Date.now()}` : '';
+  const iframeSrc = previewSlug ? `/p/${previewSlug}?t=${Date.now()}` : ''; // eslint-disable-line react-hooks/purity
 
   const tabs: { key: EditorTab; label: string }[] = [
     { key: 'general', label: t('staffLandingEditor.tabGeneral') },
@@ -49,7 +48,7 @@ function EditorInner() {
   const trialDaysLeft = (() => {
     const end = tenant.trial_end_date as string;
     if (tenant.plan === 'free' && end) {
-      return Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)); // eslint-disable-line react-hooks/purity
     }
     return null;
   })();
@@ -60,8 +59,8 @@ function EditorInner() {
     <div style={{ background: 'var(--bg-deep)', color: 'var(--text-main)', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <header className="app-header">
         <div className="flex-row-gap">
-          <span style={{ fontSize: '1.55rem' }}>{t('staffLandingEditor.headerIcon')}</span>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>{t('staffLandingEditor.headerTitle')}</h1>
+          <span className="text-1-55">{t('staffLandingEditor.headerIcon')}</span>
+          <h1 className="text-1-25 font-700 m-0">{t('staffLandingEditor.headerTitle')}</h1>
         </div>
         <div className="flex-row-gap-lg">
           {trialDaysLeft !== null && (
@@ -70,7 +69,7 @@ function EditorInner() {
               borderRadius: '20px', fontSize: '13px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
               background: trialDaysLeft > 5 ? 'rgba(197,168,128,0.08)' : trialDaysLeft > 0 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
               border: trialDaysLeft > 5 ? '1px solid rgba(197,168,128,0.3)' : trialDaysLeft > 0 ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(239,68,68,0.4)',
-              color: trialDaysLeft > 5 ? 'var(--primary)' : trialDaysLeft > 0 ? '#f59e0b' : '#fca5a5',
+              color: trialDaysLeft > 5 ? 'var(--primary)' : trialDaysLeft > 0 ? 'var(--warning-dark)' : 'var(--danger-light)',
             }}>
               {trialDaysLeft > 5 ? t('staffLandingEditor.trialMany', { days: trialDaysLeft })
                 : trialDaysLeft > 0 ? t('staffLandingEditor.trialFew', { days: trialDaysLeft })
@@ -99,15 +98,15 @@ function EditorInner() {
         <section className={`preview-pane${showMobilePreview ? ' mobile-visible' : ''}`}>
           <div className="preview-toolbar">
             <span>{t('staffLandingEditor.previewLabel')}</span>
-            <span style={{ opacity: 0.7 }}>{t('staffLandingEditor.previewUpdated')}</span>
+            <span className="opacity-70">{t('staffLandingEditor.previewUpdated')}</span>
           </div>
-          <iframe ref={iframeRef} title={t('staffLandingEditor.preview', 'Preview')} src={iframeSrc} style={{ width: '100%', height: '100%', border: 'none', background: 'var(--bg-deep)' }} />
+          <iframe ref={iframeRef} title={t('staffLandingEditor.preview')} src={iframeSrc} className="w-full h-full border-none bg-deep" />
         </section>
 
-        <button className="mobile-preview-btn" onClick={() => setShowMobilePreview(!showMobilePreview)} aria-label={t('staffLandingEditor.togglePreview', 'Toggle preview')}>
+        <button className="mobile-preview-btn" onClick={() => setShowMobilePreview(!showMobilePreview)} aria-label={t('staffLandingEditor.togglePreview')}>
           <Image size={24} />
         </button>
-        <button className={`mobile-preview-close${showMobilePreview ? ' mobile-visible' : ''}`} onClick={() => setShowMobilePreview(false)} aria-label={t('staffLandingEditor.closePreview', 'Close preview')}>
+        <button className={`mobile-preview-close${showMobilePreview ? ' mobile-visible' : ''}`} onClick={() => setShowMobilePreview(false)} aria-label={t('staffLandingEditor.closePreview')}>
           <X size={20} />
         </button>
       </div>
@@ -131,10 +130,9 @@ function EditorInner() {
 }
 
 export default function LandingEditor() {
-  const { t } = useTranslation();
   return (
     <LandingEditorProvider>
-      {({ activeTab, setActiveTab }) => <EditorInner />}
+      {() => <EditorInner />}
     </LandingEditorProvider>
   );
 }

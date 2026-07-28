@@ -38,7 +38,7 @@ export default function SettingsPanel() {
 
   return (
     <div className="dash-container">
-      <div className="glass-panel p-32 block" style={{ marginBottom: 32 }}>
+      <div className="glass-panel p-32 block mb-32">
         <div className="dash-panel-header">
           <h3 className="text-gradient">{t('staffDashboard.settingsTitle')}</h3>
           <button onClick={() => {}} className="dash-close-btn">✕</button>
@@ -120,7 +120,7 @@ export default function SettingsPanel() {
               {blockedDates.length === 0 ? (
                 <p className="fs-14">{t('staffDashboard.blockedDatesEmpty')}</p>
               ) : (
-                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <div className="overflow-y-auto max-h-300">
                   <table className="table-full">
                     <thead>
                       <tr>
@@ -168,7 +168,7 @@ export default function SettingsPanel() {
               <summary className="section-header">{t('staffDashboard.captchaTitle')}</summary>
               <div className="dash-form-group">
                 <label className="flex-center flex-gap-8 cursor-pointer">
-                  <input type="checkbox" checked={!!settings.captcha_enabled} onChange={e => setSettings(p => ({ ...p, captcha_enabled: e.target.checked }))} style={{ width: 18, height: 18 }} />
+                  <input type="checkbox" checked={!!settings.captcha_enabled} onChange={e => setSettings(p => ({ ...p, captcha_enabled: e.target.checked }))} className="w-18 h-18" />
                   {t('staffDashboard.captchaEnabledLabel')}
                 </label>
                 <small>{t('staffDashboard.captchaHint')}</small>
@@ -203,7 +203,7 @@ export default function SettingsPanel() {
               {calendarStatus.connected ? (
                 <div>
                   <p className="text-primary mb-8">
-                    ✅ {t('staffDashboard.calendarSyncConnected')}
+                    <span className="connected-dot"></span> {t('staffDashboard.calendarSyncConnected')}
                     {calendarStatus.google_email && <span> — {t('staffDashboard.calendarSyncConnectedAs', { email: calendarStatus.google_email })}</span>}
                   </p>
                   {calendarStatus.last_sync && (
@@ -216,7 +216,7 @@ export default function SettingsPanel() {
                       setCalendarSyncing(true);
                       try {
                         await api.post('/api/calendar/sync');
-                      } catch {}
+                      } catch { /* sync failed */ }
                       setCalendarSyncing(false);
                     }}>
                       {calendarSyncing ? t('staffDashboard.calendarSyncSyncing') : t('staffDashboard.calendarSyncSyncNow')}
@@ -225,7 +225,7 @@ export default function SettingsPanel() {
                       if (!confirm(t('staffDashboard.calendarDisconnectConfirm'))) return;
                       try {
                         await api.delete('/api/calendar/disconnect');
-                      } catch {}
+                      } catch { /* disconnect failed */ }
                     }}>
                       {t('staffDashboard.calendarSyncDisconnect')}
                     </button>

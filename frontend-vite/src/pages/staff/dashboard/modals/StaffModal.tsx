@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import type { StaffMember } from '../dashboardContext';
 
@@ -39,8 +38,8 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
   };
 
   return (
-    <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={onClose}>
-      <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+    <div className="dash-modal-overlay flex" onClick={onClose}>
+      <div className="dash-modal-content glass-panel max-w-500" onClick={e => e.stopPropagation()}>
         <div className="dash-modal-header">
           <h3 className="text-gradient">{editing ? t('staffDashboard.staffModalEditTitle') : t('staffDashboard.staffModalNewTitle')}</h3>
           <button onClick={onClose} className="dash-close-btn">✕</button>
@@ -60,8 +59,8 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.staffModalPhotoLabel')}</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="text" className="glass-input" value={form.photo_url} onChange={e => setForm(p => ({ ...p, photo_url: e.target.value }))} placeholder={t('staffDashboard.staffModalPhotoPlaceholder')} style={{ flex: 1 }} />
+            <div className="flex-center gap-8">
+              <input type="text" className="glass-input flex-1" value={form.photo_url} onChange={e => setForm(p => ({ ...p, photo_url: e.target.value }))} placeholder={t('staffDashboard.staffModalPhotoPlaceholder')} />
               <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: 'none' }} id="staffPhotoInput" />
               <button type="button" className="dash-btn dash-btn-secondary" onClick={() => document.getElementById('staffPhotoInput')?.click()} disabled={uploading}>
                 {uploading ? '⏳' : '📷'}{uploading ? t('staffDashboard.uploading') : t('staffDashboard.upload')}
@@ -70,7 +69,7 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.staffModalBioLabel')}</label>
-            <textarea className="glass-input" value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder={t('staffDashboard.staffModalBioPlaceholder')} rows={3} style={{ resize: 'vertical' }} />
+            <textarea className="glass-input resize-y" value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder={t('staffDashboard.staffModalBioPlaceholder')} rows={3} />
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.staffModalCommissionType')}</label>
@@ -87,7 +86,7 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
             </div>
           )}
           <div className="dash-form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label className="flex-center gap-8">
               <input type="checkbox" checked={form.useIndividualHours} onChange={e => setForm(p => ({ ...p, useIndividualHours: e.target.checked }))} />
               {t('staffDashboard.staffModalCustomHours')}
             </label>
@@ -108,7 +107,7 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
               </div>
               <div className="dash-form-group">
                 <label>{t('staffDashboard.staffModalWorkDays')}</label>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div className="flex flex-wrap gap-6">
                   {[
                     { v: 0, l: t('staffDashboard.dayDom') }, { v: 1, l: t('staffDashboard.dayLun') }, { v: 2, l: t('staffDashboard.dayMar') }, { v: 3, l: t('staffDashboard.dayMie') },
                     { v: 4, l: t('staffDashboard.dayJue') }, { v: 5, l: t('staffDashboard.dayVie') }, { v: 6, l: t('staffDashboard.daySab') }
@@ -123,7 +122,7 @@ export default function StaffModal({ editing, onClose }: { editing: StaffMember 
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="flex-end gap-12 mt-8">
             <button className="dash-btn dash-btn-danger" onClick={onClose}>{t('staffDashboard.staffModalCancel')}</button>
             <button className="dash-btn dash-btn-success" onClick={handleSave}>{editing ? t('staffDashboard.staffModalSave') : t('staffDashboard.staffModalCreate')}</button>
           </div>

@@ -16,13 +16,13 @@ export default function PushNotificationToggle() {
       border: '1px solid rgba(255,255,255,0.1)',
       marginBottom: 16,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div className="flex-between gap-12">
         <div>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('common.pushNotifications', 'Notificaciones push')}</div>
-          <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+          <div className="font-600 mb-4">{t('common.pushNotifications')}</div>
+          <div className="text-sm opacity-70">
             {subscribed
-              ? t('pushNotifications.subscribedText', 'Recibís alertas de nuevos turnos al instante')
-              : t('pushNotifications.unsubscribedText', 'Activá para recibir alertas cuando reserven un turno')}
+              ? t('pushNotifications.subscribedText')
+              : t('pushNotifications.unsubscribedText')}
           </div>
         </div>
         <button
@@ -37,23 +37,23 @@ export default function PushNotificationToggle() {
             fontSize: '0.9rem',
             background: subscribed
               ? 'rgba(239,68,68,0.2)'
-              : 'linear-gradient(135deg, #7c3aed, #2563eb)',
+              : 'linear-gradient(135deg, var(--preset-velvet), var(--info))',
             color: subscribed ? 'var(--danger)' : '#fff',
             opacity: loading ? 0.6 : 1,
             whiteSpace: 'nowrap',
           }}
         >
-          {loading ? <Loader size={16} className="spin-icon" /> : subscribed ? t('pushNotifications.deactivateButton', 'Desactivar') : t('pushNotifications.activateButton', 'Activar')}
+          {loading ? <Loader size={16} className="spin-icon" /> : subscribed ? t('pushNotifications.deactivateButton') : t('pushNotifications.activateButton')}
         </button>
       </div>
       {error && (
-        <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: 8 }}>
+        <div className="text-danger text-sm mt-8">
           {error}
         </div>
       )}
       {permission === 'denied' && (
-        <div style={{ color: 'var(--warning)', fontSize: '0.85rem', marginTop: 8 }}>
-          {t('pushNotifications.blockedWarning', 'Notificaciones bloqueadas en el navegador. Cambiá esto en la configuración de tu navegador.')}
+        <div className="text-warning text-sm mt-8">
+          {t('pushNotifications.blockedWarning')}
         </div>
       )}
     </div>

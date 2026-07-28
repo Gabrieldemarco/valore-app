@@ -745,7 +745,7 @@
   padding: 14px 18px;
   background: none;
   border: none;
-  color: #f4f4f5;
+  color: var(--text-main);
   cursor: pointer;
   font-size: 15px;
   font-weight: 600;
@@ -806,10 +806,10 @@
 .landing-view .service-book-btn {
   margin-top: 10px;
   padding: 8px 18px;
-  background: linear-gradient(135deg, #cfa86b, #dfc293);
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
   border: none;
   border-radius: 8px;
-  color: #0d0d12;
+  color: var(--text-dark);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1005,7 +1005,7 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #34d399);
+  background: linear-gradient(135deg, var(--accent), var(--success));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1345,14 +1345,14 @@
 
 .landing-view .result.success {
   background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-  border: 1px solid #10b981;
+  color: var(--success);
+  border: 1px solid var(--success);
 }
 
 .landing-view .result.error {
   background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid #ef4444;
+  color: var(--danger-light);
+  border: 1px solid var(--danger-border);
 }
 
 .landing-view .error-page {
@@ -1801,8 +1801,8 @@
 
 /* ===== LIGHT THEME OVERRIDES - Landing ===== */
 [data-theme="light"] .landing-view {
-  background: #faf6f3;
-  color: #1a1a1e;
+  background: var(--bg-deep);
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .hero::before {
@@ -1812,12 +1812,12 @@
 [data-theme="light"] .landing-view .hero-title,
 [data-theme="light"] .landing-view .hero-subtitle,
 [data-theme="light"] .landing-view .hero-category-badge {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .section-title,
 [data-theme="light"] .landing-view .section-subtitle {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .service-card {
@@ -1832,7 +1832,7 @@
 [data-theme="light"] .landing-view .service-card-name,
 [data-theme="light"] .landing-view .service-card-price,
 [data-theme="light"] .landing-view .service-card-duration {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .team-card {
@@ -1843,7 +1843,7 @@
 [data-theme="light"] .landing-view .team-card-name,
 [data-theme="light"] .landing-view .team-card-role,
 [data-theme="light"] .landing-view .team-card-bio {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .booking-container {
@@ -1856,7 +1856,7 @@
 }
 
 [data-theme="light"] .landing-view .accordion-header {
-  color: #1a1a1e;
+  color: var(--text-main);
   background: rgba(255, 255, 255, 0.5);
 }
 
@@ -1865,7 +1865,7 @@
 }
 
 [data-theme="light"] .landing-view .accordion-body {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .landing-view .custom-calendar {
@@ -1874,12 +1874,12 @@
 
 [data-theme="light"] .landing-view .cal-nav {
   background: rgba(200, 130, 125, 0.08);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .cal-day {
   background: rgba(255, 255, 255, 0.5);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .cal-day:hover {
@@ -1893,7 +1893,7 @@
 [data-theme="light"] .landing-view .slot-btn {
   background: rgba(200, 130, 125, 0.08);
   border-color: rgba(200, 130, 125, 0.2);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .booking-service-card {
@@ -1908,17 +1908,17 @@
 [data-theme="light"] .landing-view .booking-actions .btn-secondary {
   background: rgba(200, 130, 125, 0.08);
   border-color: rgba(200, 130, 125, 0.2);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .cal-today-btn {
   background: rgba(200, 130, 125, 0.08);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .footer {
   background: rgba(250, 246, 243, 0.95);
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .landing-view .reviews-average {
@@ -1940,13 +1940,13 @@
 
 [data-theme="light"] .landing-view .review-author,
 [data-theme="light"] .landing-view .review-text {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .landing-view .result.success {
-  color: #16a34a;
+  color: var(--success-green);
 }
 
 [data-theme="light"] .landing-view .result.error {
-  color: #dc2626;
+  color: var(--error-red);
 }

@@ -120,7 +120,7 @@ const BookingDatePicker: React.FC<BookingDatePickerProps> = ({
             onSetCalYear(now.getFullYear());
           }}
         >
-          {t("booking.today", "Hoy")}
+          {t('booking.today')}
         </button>
       </div>
     </div>

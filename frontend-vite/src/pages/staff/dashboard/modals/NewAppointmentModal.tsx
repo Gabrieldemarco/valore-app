@@ -9,7 +9,7 @@ import type { ClientSummary } from '../dashboardContext';
 
 export default function NewAppointmentModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
-  const { servicesList, staffList, filterDate, loadAppointments, loadClients } = useDashboard();
+  const { servicesList, staffList, filterDate } = useDashboard();
   const { saveNewAppointment } = useDashboardCRUD();
 
   const [form, setForm] = useState({
@@ -20,10 +20,10 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
   const [selectedSuggested, setSelectedSuggested] = useState<ClientSummary | null>(null);
 
   useEffect(() => {
-    if (form.clientPhone.length < 3) { setSuggestedClients([]); return; }
+    if (form.clientPhone.length < 3) { setSuggestedClients([]); return; } // eslint-disable-line react-hooks/set-state-in-effect
     const timer = setTimeout(() => {
       api.get<{ clients: ClientSummary[] }>(`/api/tenant/clients?q=${encodeURIComponent(form.clientPhone)}`)
-        .then(d => setSuggestedClients(d.clients)).catch(() => {});
+        .then(d => setSuggestedClients(d.clients)).catch(() => {/* silent */});
     }, 300);
     return () => clearTimeout(timer);
   }, [form.clientPhone]);
@@ -34,8 +34,8 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
   };
 
   return (
-    <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={onClose}>
-      <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+    <div className="dash-modal-overlay flex" onClick={onClose}>
+      <div className="dash-modal-content glass-panel max-w-500" onClick={e => e.stopPropagation()}>
         <div className="dash-modal-header">
           <h3 className="text-gradient">{t('staffDashboard.newAppointmentModalTitle')}</h3>
           <button onClick={onClose} className="dash-close-btn">✕</button>
@@ -49,7 +49,7 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
             <label>{t('staffDashboard.newApptPhoneLabel')}</label>
             <PhoneInput value={form.clientPhone} onChange={v => { setForm(p => ({ ...p, clientPhone: v })); setSelectedSuggested(null); }} placeholder={t('staffDashboard.newApptPhonePlaceholder')} className="glass-input" />
             {suggestedClients.length > 0 && (
-              <div style={{ position: 'relative', marginTop: 4 }}>
+              <div className="relative mt-4">
                 <div style={{ position: 'absolute', zIndex: 10, width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--border)', borderRadius: 8, maxHeight: 180, overflowY: 'auto' }}>
                   {suggestedClients.map(c => (
                     <div key={c.client_phone} onClick={() => {
@@ -58,7 +58,7 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
                       setSuggestedClients([]);
                     }} className="fs-14" style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
                       <span><strong>{c.client_name}</strong> - {c.client_phone}</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{c.total_appointments} {t('staffDashboard.clientsTableAppointments')}</span>
+                      <span className="text-muted">{c.total_appointments} {t('staffDashboard.clientsTableAppointments')}</span>
                     </div>
                   ))}
                 </div>
@@ -100,9 +100,9 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.newApptNotesLabel')}</label>
-            <textarea className="glass-input" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder={t('staffDashboard.newApptNotesPlaceholder')} rows={2} style={{ resize: 'vertical' }} />
+            <textarea className="glass-input resize-y" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder={t('staffDashboard.newApptNotesPlaceholder')} rows={2} />
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="flex-end gap-12 mt-8">
             <button className="dash-btn dash-btn-danger" onClick={onClose}>{t('staffDashboard.newApptCancel')}</button>
             <button className="dash-btn dash-btn-success" onClick={handleSave}>{t('staffDashboard.newApptCreate')}</button>
           </div>

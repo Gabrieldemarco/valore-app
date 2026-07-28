@@ -13,7 +13,7 @@ export default function CalendarTab() {
   const { appointments, setSelectedAppointment } = useDashboard();
 
   return (
-    <div className="glass-panel" style={{ padding: 28, marginTop: 16, minHeight: 550 }}>
+    <div className="glass-panel" style={{ padding: '28px', marginTop: '16px', minHeight: 550 }}>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
         initialView="dayGridMonth"
@@ -42,7 +42,7 @@ export default function CalendarTab() {
             start,
             backgroundColor: c.bg,
             borderColor: c.border,
-            textColor: '#e2e8f0',
+            textColor: 'var(--border-color)',
             extendedProps: { appt: a },
           };
         })}

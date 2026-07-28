@@ -34,7 +34,7 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
   const dismissed = localStorage.getItem(DFlag(tourId));
 
   useEffect(() => {
-    if (enabled && !dismissed) setShowButton(true);
+    if (enabled && !dismissed) setShowButton(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, [enabled, tourId, dismissed]);
 
   const updatePosition = useCallback(() => {
@@ -99,18 +99,6 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
     }, 450);
   }, [currentStep, steps, updatePosition]);
 
-  useEffect(() => {
-    if (!visible) return;
-    scrollAndUpdate();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeTour(); };
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [visible, scrollAndUpdate, updatePosition]);
-
   const closeTour = useCallback((completed = false) => {
     if (completedRef.current) return;
     completedRef.current = true;
@@ -121,6 +109,18 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
     }
     onComplete();
   }, [dontShowAgain, onComplete, tourId]);
+
+  useEffect(() => {
+    if (!visible) return;
+    scrollAndUpdate(); // eslint-disable-line react-hooks/set-state-in-effect
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeTour(); };
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [visible, scrollAndUpdate, updatePosition, closeTour]);
 
   const openTour = useCallback(() => {
     completedRef.current = false;
@@ -158,7 +158,7 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
   return (
     <>
       {showButton && !visible && (
-        <button onClick={openTour} title={t('onboardingTour.trigger', 'Ayuda')} style={{
+        <button onClick={openTour} title={t('onboardingTour.trigger')} style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 99999,
           width: 44, height: 44, borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--accent), var(--accent))',
@@ -217,7 +217,7 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
             pointerEvents: 'auto',
             width: 280,
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <div className="flex-center gap-8 mb-10">
               <span style={{
                 background: 'linear-gradient(135deg, var(--accent), var(--accent))',
                 color: 'var(--bg-deep)', borderRadius: '50%', width: 22, height: 22,
@@ -239,36 +239,36 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
               {step.content}
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="flex-between">
               <label style={{
                 display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
                 color: 'rgba(255,255,255,0.45)', fontSize: 11, userSelect: 'none',
               }}>
                 <input type="checkbox" checked={dontShowAgain}
                   onChange={e => setDontShowAgain(e.target.checked)}
-                  style={{ accentColor: 'var(--accent)' }} />
-                {t('onboardingTour.dontShowAgain', 'No mostrar más')}
+                  className="accent-accent" />
+                {t('onboardingTour.dontShowAgain')}
               </label>
 
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <div className="flex-center gap-6">
                 {!isFirst && (
                   <button onClick={prev} style={{
                     background: 'transparent', border: '1px solid rgba(207,168,107,0.2)',
                     color: 'var(--accent)', borderRadius: 6, padding: '6px 12px',
                     cursor: 'pointer', fontSize: 12, fontWeight: 500,
-                  }}>{t('onboardingTour.back', 'Atrás')}</button>
+                  }}>{t('onboardingTour.back')}</button>
                 )}
                 <button onClick={next} style={{
                   background: 'linear-gradient(135deg, var(--accent), var(--accent))',
                   border: 'none', color: 'var(--bg-deep)', borderRadius: 6,
                   padding: '6px 16px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 }}>
-                  {isLast ? t('onboardingTour.done', 'Finalizar') : t('onboardingTour.next', 'Siguiente')}
+                  {isLast ? t('onboardingTour.done') : t('onboardingTour.next')}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 12 }}>
+            <div className="flex-center-center mt-12 gap-5">
               {steps.map((_, i) => (
                 <div key={i} style={{
                   width: i === currentStep ? 16 : 5, height: 5,

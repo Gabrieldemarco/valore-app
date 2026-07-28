@@ -30,7 +30,7 @@ export default function ServiceModal({ editing, onClose }: { editing: ServiceIte
     setLoadedImages(true);
     api.get<{ images: ServiceImage[] }>(`/api/tenant/services/${editing.id}/images`).then(res => {
       setImages(res.images || []);
-    }).catch(() => {});
+    }).catch(() => {/* silent */});
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +63,8 @@ export default function ServiceModal({ editing, onClose }: { editing: ServiceIte
   };
 
   return (
-    <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={onClose}>
-      <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+    <div className="dash-modal-overlay flex" onClick={onClose}>
+      <div className="dash-modal-content glass-panel max-w-520" onClick={e => e.stopPropagation()}>
         <div className="dash-modal-header">
           <h3 className="text-gradient">{editing ? t('staffDashboard.servicesModalEditTitle') : t('staffDashboard.servicesModalNewTitle')}</h3>
           <button onClick={onClose} className="dash-close-btn">✕</button>
@@ -92,22 +92,22 @@ export default function ServiceModal({ editing, onClose }: { editing: ServiceIte
             </select>
           </div>
           <div className="dash-form-group">
-            <label>{t('staffDashboard.servicesModalDescriptionLabel', 'Descripción')}</label>
-            <textarea className="glass-input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.servicesModalDescriptionPlaceholder', 'Ej: No incluye diseño')} rows={2} style={{ resize: 'vertical' }} />
+            <label>{t('staffDashboard.servicesModalDescriptionLabel')}</label>
+            <textarea className="glass-input resize-y" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.servicesModalDescriptionPlaceholder')} rows={2} />
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.servicesModalImageLabel')}</label>
             <input type="text" className="glass-input" value={form.image} onChange={e => setForm(p => ({ ...p, image: e.target.value }))} placeholder={t('staffDashboard.servicesModalImagePlaceholder')} />
-            <input type="file" accept="image/*" style={{ marginTop: 6, padding: 6, fontSize: 13 }} className="glass-input" onChange={handleImageUpload} />
+            <input type="file" accept="image/*" className="glass-input mt-6 p-6 fs-13" onChange={handleImageUpload} />
             {form.image && (
-              <div style={{ marginTop: 6 }}>
-                <img src={form.image} alt="" style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className="mt-6">
+                <img src={form.image} alt="" className="w-60 h-60 object-cover-6" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             )}
           </div>
           {editing && (
             <div className="dash-form-group">
-              <label>{t('staffDashboard.servicesModalGalleryLabel', 'Galería de imágenes')}</label>
+              <label>{t('staffDashboard.servicesModalGalleryLabel')}</label>
               <div className="service-gallery-staff">
                 {images.map(img => (
                   <div key={img.id} className="service-gallery-item">
@@ -116,13 +116,13 @@ export default function ServiceModal({ editing, onClose }: { editing: ServiceIte
                   </div>
                 ))}
                 <div className="service-gallery-add">
-                  <input type="text" className="glass-input" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder={t('staffDashboard.servicesModalImageUrlPlaceholder', 'URL de imagen')} style={{ fontSize: 13, padding: '6px 8px' }} />
-                  <button className="dash-btn dash-btn-primary" onClick={handleAddImage} style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}>+ {t('staffDashboard.servicesModalAddImage', 'Agregar')}</button>
+                  <input type="text" className="glass-input" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder={t('staffDashboard.servicesModalImageUrlPlaceholder')} style={{ fontSize: 13, padding: '6px 8px' }} />
+                  <button className="dash-btn dash-btn-primary" onClick={handleAddImage} style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}>+ {t('staffDashboard.servicesModalAddImage')}</button>
                 </div>
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="flex-end gap-12 mt-8">
             <button className="dash-btn dash-btn-danger" onClick={onClose}>{t('staffDashboard.servicesModalCancel')}</button>
             <button className="dash-btn dash-btn-success" onClick={handleSave}>{editing ? t('staffDashboard.servicesModalSave') : t('staffDashboard.servicesModalCreate')}</button>
           </div>

@@ -1,16 +1,15 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 import { SECTION_LABELS } from '../landingEditorUtils';
 import { GripVertical, X, Home, Sparkles, Image, Users, Calendar, Clock } from 'lucide-react';
 
 function sectionIcon(id: string) {
   switch (id) {
-    case 'hero': return <Home size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
-    case 'servicios': return <Sparkles size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
-    case 'galeria': return <Image size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
-    case 'equipo': return <Users size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
-    case 'reservar': return <Calendar size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
-    case 'hours': return <Clock size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />;
+    case 'hero': return <Home size={16} className="mr-6 vertical-align-middle" />;
+    case 'servicios': return <Sparkles size={16} className="mr-6 vertical-align-middle" />;
+    case 'galeria': return <Image size={16} className="mr-6 vertical-align-middle" />;
+    case 'equipo': return <Users size={16} className="mr-6 vertical-align-middle" />;
+    case 'reservar': return <Calendar size={16} className="mr-6 vertical-align-middle" />;
+    case 'hours': return <Clock size={16} className="mr-6 vertical-align-middle" />;
     default: return null;
   }
 }
@@ -20,12 +19,12 @@ export default function LayoutTab() {
 
   return (
     <>
-      <div className="card glass-panel" style={{ padding: '1.5rem' }}>
+      <div className="card glass-panel p-24">
         <h3 className="text-gradient">{t('staffLandingEditor.layoutTitle')}</h3>
-        <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>
+        <p className="text-muted-sm mb-16">
           {t('staffLandingEditor.layoutHint')}
         </p>
-        <div id="layoutSorter" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div id="layoutSorter" className="flex flex-col gap-8">
           {layout.map((item, index) => {
             const isCustom = item.type === 'custom';
             const label = isCustom ? (item.label || 'Bloque personalizado') : (SECTION_LABELS[item.id] || item.id);
@@ -48,9 +47,9 @@ export default function LayoutTab() {
             );
           })}
         </div>
-        <hr style={{ borderColor: 'var(--glass-border)', margin: '16px 0' }} />
+        <hr className="border-subtle mt-16 mb-16" />
         <h3 style={{ fontSize: '1.05rem', marginBottom: 8 }}>{t('staffLandingEditor.customBlocksTitle')}</h3>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+        <p className="text-sm text-muted mb-12">
           {t('staffLandingEditor.customBlocksHint')}
         </p>
         <button className="btn btn-secondary" onClick={addCustomBlock} style={{ fontSize: '0.9rem' }}>
@@ -60,8 +59,8 @@ export default function LayoutTab() {
 
       {/* Modal for custom block */}
       <div className={`modal-overlay${modalOpen ? ' open' : ''}`}>
-        <div className="glass-panel" style={{ width: '90%', maxWidth: 600, padding: '2rem', borderRadius: 16, maxHeight: '90vh', overflowY: 'auto' }}>
-          <h3 className="text-gradient" style={{ marginBottom: '1.5rem' }}>{t('staffLandingEditor.customBlockModalTitle')}</h3>
+          <div className="glass-panel rounded-xl" style={{ width: '90%', maxWidth: 600, padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+          <h3 className="text-gradient mb-24">{t('staffLandingEditor.customBlockModalTitle')}</h3>
           <div className="form-group">
             <label>{t('staffLandingEditor.customBlockNameLabel')}</label>
             <input type="text" className="glass-input" placeholder={t('staffLandingEditor.customBlockNamePlaceholder')} value={modalLabel}
@@ -76,9 +75,9 @@ export default function LayoutTab() {
             <label>{t('staffLandingEditor.customBlockContentLabel')}</label>
             <textarea className="glass-input" rows={6} placeholder={t('staffLandingEditor.customBlockContentPlaceholder')} value={modalContent}
               onChange={e => setModalContent(e.target.value)} />
-            <small style={{ color: 'var(--text-muted)' }}>{t('staffLandingEditor.customBlockContentHint')}</small>
+            <small className="text-muted">{t('staffLandingEditor.customBlockContentHint')}</small>
           </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1rem' }}>
+          <div className="flex gap-10 flex-end mt-16">
             <button className="btn btn-secondary" onClick={() => setModalOpen(false)}>{t('staffLandingEditor.customBlockCancel')}</button>
             <button className="btn btn-primary" onClick={saveCustomBlockModal}>{t('staffLandingEditor.customBlockAdd')}</button>
           </div>

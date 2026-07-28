@@ -125,7 +125,7 @@ function SalonSection({ title, subtitle, salons, t, getGenderCategory }: SalonSe
         ))}
       </div>
       <div className="slider-pagination-dots">
-        {Array.from({ length: getDotCount() }).map((_, idx) => (
+        {Array.from({ length: getDotCount() }).map((_, idx) => ( // eslint-disable-line react-hooks/refs
           <span key={idx} className="slider-dot" onClick={() => scrollToSalon(idx)}></span>
         ))}
       </div>
@@ -166,7 +166,7 @@ export default function PublicSalonGrid({
       )}
 
       {!loading && !error && categorizedSalons.trending.length > 0 && (
-        <div style={{ marginTop: 60 }}>
+        <div className="mt-60">
           <SalonSection
             title={t('publicIndex.trendingTitle')}
             subtitle={t('publicIndex.trendingSubtitle')}
@@ -178,7 +178,7 @@ export default function PublicSalonGrid({
       )}
 
       {!loading && !error && categorizedSalons.new.length > 0 && (
-        <div style={{ marginTop: 60 }}>
+        <div className="mt-60">
           <SalonSection
             title={t('publicIndex.newSalonsTitle')}
             subtitle={t('publicIndex.newSalonsSubtitle')}
@@ -203,7 +203,7 @@ export default function PublicSalonGrid({
         </div>
       )}
       {!loading && !error && filteredCount === 0 && (
-        <div className="empty-state glass-panel" style={{ width: '100%' }}>
+        <div className="empty-state glass-panel w-full">
           <h3 className="text-gradient">
             {currentServiceFilter
               ? `No se encontraron establecimientos de ${serviceCategories[currentServiceFilter] || currentServiceFilter}`

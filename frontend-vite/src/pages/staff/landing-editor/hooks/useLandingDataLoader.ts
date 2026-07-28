@@ -39,7 +39,7 @@ export function useLandingDataLoader({
       setTenant(data.tenant);
       setPreviewSlug(data.tenant.slug as string);
       setServices(data.services.map(s => ({ ...s, _deleted: false })));
-      try { const cats = await api.get<{ categories: CategoryItem[] }>('/api/tenant/categories'); setCategories(cats.categories); } catch {}
+      try { const cats = await api.get<{ categories: CategoryItem[] }>('/api/tenant/categories'); setCategories(cats.categories); } catch { /* categories optional */ }
       setGallery((data.tenant.landing_gallery as string[]) || []);
       setTeam((data.tenant.landing_team as unknown[]) || []);
       setSocial((data.tenant.landing_social_links as Record<string, string>) || {});
@@ -63,9 +63,9 @@ export function useLandingDataLoader({
     } catch {
       showStatus(t('staffLandingEditor.statusDataError'), false);
     }
-  }, [showStatus, t]);
+  }, [showStatus, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { loadAllData(); }, [loadAllData]);
+  useEffect(() => { loadAllData(); }, [loadAllData]); // eslint-disable-line react-hooks/set-state-in-effect
 
   return { loaded, previewSlug, categories, setCategories, loadAllData };
 }

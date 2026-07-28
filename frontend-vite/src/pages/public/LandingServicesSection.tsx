@@ -164,7 +164,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
                                   {onSelectService && (
                                     <button className="service-book-btn"
                                       onClick={e => { e.stopPropagation(); onSelectService(s.id); }}>
-                                      {t('landingServices.bookButton', 'Agendar servicio')}
+                                      {t('landingServices.bookButton')}
                                     </button>
                                   )}
                                 </div>
@@ -213,7 +213,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
                             {onSelectService && (
                               <button className="service-book-btn"
                                 onClick={e => { e.stopPropagation(); onSelectService(s.id); }}>
-                                {t('landingServices.bookButton', 'Agendar servicio')}
+                                {t('landingServices.bookButton')}
                               </button>
                             )}
                           </div>

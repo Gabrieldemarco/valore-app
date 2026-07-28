@@ -17,17 +17,17 @@ const BookingStepper: React.FC<BookingStepperProps> = ({
 
   const steps = isQuickBook
     ? [
-        { label: t("booking.stepService", "Servicio"), number: 2 },
-        { label: t("booking.stepDate", "Fecha"), number: 3 },
-        { label: t("booking.stepTime", "Horario"), number: 4 },
-        { label: t("booking.stepData", "Tus Datos"), number: 5 },
+        { label: t('booking.stepServicio'), number: 2 },
+        { label: t('booking.stepFecha'), number: 3 },
+        { label: t('booking.stepHorario'), number: 4 },
+        { label: t('booking.stepTusDatos'), number: 5 },
       ]
     : [
-        { label: t("booking.stepStaff", "Peluquero"), number: 1 },
-        { label: t("booking.stepService", "Servicio"), number: 2 },
-        { label: t("booking.stepDate", "Fecha"), number: 3 },
-        { label: t("booking.stepTime", "Horario"), number: 4 },
-        { label: t("booking.stepData", "Tus Datos"), number: 5 },
+        { label: t('booking.stepPeluquero'), number: 1 },
+        { label: t('booking.stepServicio'), number: 2 },
+        { label: t('booking.stepFecha'), number: 3 },
+        { label: t('booking.stepHorario'), number: 4 },
+        { label: t('booking.stepTusDatos'), number: 5 },
       ];
 
   return (

@@ -6,7 +6,7 @@ require('dotenv').config();
 const config = require('./config');
 import logger from './services/logger';
 
-const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+const isLocal = (process.env.DATABASE_URL || '').includes('localhost') || (process.env.DATABASE_URL || '').includes('127.0.0.1');
 const dbSslRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
 
 let sslConfig;
@@ -19,9 +19,9 @@ if (isLocal) {
 }
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL!,
   ssl: sslConfig,
-  max: parseInt(process.env.DB_POOL_MAX) || 30,
+  max: parseInt(process.env.DB_POOL_MAX || '30'),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000
 });

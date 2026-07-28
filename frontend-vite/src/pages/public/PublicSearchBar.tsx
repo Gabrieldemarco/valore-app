@@ -91,7 +91,7 @@ export default function PublicSearchBar({
           <div className="search-input-wrapper" ref={professionalDropdownRef}>
             <input
               type="text"
-              placeholder={t('publicIndex.searchProfessionalPlaceholder', 'Profesional')}
+              placeholder={t('publicIndex.searchProfessionalPlaceholder')}
               value={searchProfessional}
               onChange={e => onSearchProfessionalChange(e.target.value)}
               onFocus={() => setShowProfessionalDropdown(true)}
@@ -142,14 +142,14 @@ export default function PublicSearchBar({
                           }
                           setShowLocationPopup(false);
                         },
-                        () => { alert(t('publicIndex.locationError', 'No se pudo obtener la ubicación')); }
+                        () => { alert(t('publicIndex.locationError')); }
                       );
                     } else {
-                      alert(t('publicIndex.locationNotSupported', 'Geolocalización no soportada'));
+                      alert(t('publicIndex.locationNotSupported'));
                     }
                   }}
                 >
-                  <span className="location-icon">📍</span> {t('publicIndex.useMyLocation', 'Usar mi ubicación actual')}
+                  <span className="location-icon"></span> {t('publicIndex.useMyLocation')}
                 </button>
               </div>
             )}

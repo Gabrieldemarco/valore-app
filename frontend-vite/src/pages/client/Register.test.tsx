@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ClientRegister from './Register';
-import type { Mock } from 'vitest';
+
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {

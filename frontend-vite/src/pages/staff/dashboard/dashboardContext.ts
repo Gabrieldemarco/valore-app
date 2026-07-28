@@ -202,8 +202,8 @@ export interface DashboardContextType {
   loadCalendarStatus: () => Promise<void>;
   loadInvoices: () => Promise<void>;
   flatCats: { id: number; name: string; depth: number }[];
-  couponsList: any[];
-  setCouponsList: React.Dispatch<React.SetStateAction<any[]>>;
+  couponsList: Record<string, unknown>[];
+  setCouponsList: React.Dispatch<React.SetStateAction<Record<string, unknown>[]>>;
   blockedDates: { id: number; date: string; reason: string }[];
   setBlockedDates: React.Dispatch<React.SetStateAction<{ id: number; date: string; reason: string }[]>>;
   staffName: string | null;

@@ -59,7 +59,7 @@ export default function StaffRegister() {
 
           <div className="form-group">
             <label>{t('staffRegister.businessCategory')}</label>
-            <select name="category" value={form.category} onChange={handleChange} className="glass-input" required style={{ appearance: 'auto', cursor: 'pointer' }}>
+            <select name="category" value={form.category} onChange={handleChange} className="glass-input appearance-auto cursor-pointer" required>
               <option value="peluqueria">{t('staffRegister.categoryBarber')}</option>
               <option value="cejas">{t('staffRegister.categoryEyebrows')}</option>
               <option value="uñas">{t('staffRegister.categoryNails')}</option>
@@ -93,11 +93,11 @@ export default function StaffRegister() {
           <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, marginBottom: 20 }}>
             <input type="checkbox" id="acceptTerms" required style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--primary)', width: 'auto', height: 'auto' }} />
             <label htmlFor="acceptTerms" style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none', fontWeight: 400, marginBottom: 0 }}>
-              {t('staffRegister.acceptThe', 'Acepto los')} <Link to="/terms#terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.termsAndConditions', 'Términos y Condiciones')}</Link>, la <Link to="/terms#privacy" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.privacyPolicy', 'Política de Privacidad')}</Link> y la <Link to="/terms#cancellations" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.cancellationPolicy', 'Política de Cancelaciones')}</Link> de Velsoie.
+              {t('staffRegister.acceptThe')} <Link to="/terms#terms" target="_blank" className="text-primary no-underline font-500">{t('common.termsAndConditions')}</Link>, la <Link to="/terms#privacy" target="_blank" className="text-primary no-underline font-500">{t('common.privacyPolicy')}</Link> y la <Link to="/terms#cancellations" target="_blank" className="text-primary no-underline font-500">{t('common.cancellationPolicy')}</Link> de Velsoie.
             </label>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10 }}>{t('staffRegister.createButton')}</button>
+          <button type="submit" className="btn btn-primary w-full p-14 mt-10">{t('staffRegister.createButton')}</button>
         </form>
 
         <div className="auth-bottom-text">

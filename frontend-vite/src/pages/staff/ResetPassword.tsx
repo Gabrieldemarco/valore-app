@@ -118,7 +118,7 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
           <h1 style={styles.title}>{t('staffResetPassword.invalidLinkTitle')}</h1>
           <p style={styles.subtitle}>{t('staffResetPassword.invalidLinkMessage')}</p>
@@ -132,9 +132,9 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
-          <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>✅</div>
+          <div className="fs-48 mb-16 text-center">✓</div>
           <h1 style={styles.title}>{t('staffResetPassword.successTitle')}</h1>
           <p style={{ ...styles.subtitle, color: 'var(--success)' }}>{t('staffResetPassword.successMessage')}</p>
           <Link to="/staff/login" style={{ ...styles.btn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: 16 }}>{t('staffResetPassword.loginNow')}</Link>
@@ -144,7 +144,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={styles.container}>
         <h1 style={styles.title}>{t('staffResetPassword.title')}</h1>
         <p style={styles.subtitle}>{t('staffResetPassword.subtitle')}</p>

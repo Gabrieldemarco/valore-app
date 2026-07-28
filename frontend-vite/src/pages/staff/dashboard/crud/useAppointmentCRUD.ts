@@ -19,7 +19,7 @@ export function useAppointmentCRUD() {
       await api.put(`/api/appointments/${id}/status`, { status });
       addToast(t('staffDashboard.toastStatusUpdated'), 'success');
       loadAppointments();
-      try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch {}
+      try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch { /* broadcast not supported */ }
       return true;
     } catch {
       addToast(t('staffDashboard.toastUpdateError'), 'error');
@@ -56,7 +56,7 @@ export function useAppointmentCRUD() {
       addToast(t('staffDashboard.toastAppointmentCreated'), 'success');
       loadAppointments();
       loadClients();
-      try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch {}
+      try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch { /* broadcast not supported */ }
       return true;
     } catch {
       addToast(t('staffDashboard.toastCreateAppointmentError'), 'error');

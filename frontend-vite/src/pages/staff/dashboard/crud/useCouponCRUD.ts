@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, clearApiCache } from '../../../../api/client';
 import { useDashboard } from '../dashboardContext';
+import type { CouponForm } from './types';
 
 export function useCouponCRUD() {
   const { t } = useTranslation();
@@ -9,21 +10,21 @@ export function useCouponCRUD() {
 
   const loadCoupons = useCallback(async () => {
     try {
-      const data = await api.get<{ coupons: any[] }>('/api/tenant/coupons');
+      const data = await api.get<{ coupons: Record<string, unknown>[] }>('/api/tenant/coupons');
       setCouponsList(data.coupons || []);
     } catch { addToast(t('staffDashboard.toastLoadCouponsError'), 'error'); }
   }, [addToast, t, setCouponsList]);
 
   const saveCoupon = useCallback(async (
-    form: { code: string; discount_type: string; discount_value: string; min_appointment_amount: string; max_uses: string; expires_at: string },
-    editing: any | null
+    form: CouponForm,
+    editing: Record<string, unknown> | null
   ) => {
     if (!form.code || !form.discount_value) {
       addToast(t('staffDashboard.toastCouponRequired'), 'error');
       return false;
     }
     try {
-      const body: any = {
+      const body: Record<string, unknown> = {
         code: form.code,
         discount_type: form.discount_type,
         discount_value: parseFloat(form.discount_value),
@@ -41,8 +42,9 @@ export function useCouponCRUD() {
       clearApiCache();
       await loadCoupons();
       return true;
-    } catch (e: any) {
-      addToast(e?.message || t('staffDashboard.toastCouponSaveError'), 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastCouponSaveError');
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, t, loadCoupons]);
@@ -55,8 +57,9 @@ export function useCouponCRUD() {
       clearApiCache();
       await loadCoupons();
       return true;
-    } catch (e: any) {
-      addToast(e?.message || t('staffDashboard.toastCouponDeleteError'), 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastCouponDeleteError');
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, t, loadCoupons]);

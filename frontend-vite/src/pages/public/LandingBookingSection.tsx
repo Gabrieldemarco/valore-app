@@ -102,8 +102,9 @@ export default function LandingBookingSection({
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      if (turnstileRef.current && (window as any).turnstile) {
-        (window as any).turnstile.render(turnstileRef.current, {
+      const w = window as unknown as { turnstile?: { render: (el: HTMLDivElement, opts: { sitekey: string; callback: (token: string) => void }) => void } };
+      if (turnstileRef.current && w.turnstile) {
+        w.turnstile.render(turnstileRef.current, {
           sitekey: captchaSiteKey,
           callback: (token: string) => onSetCaptchaToken(token),
         });
@@ -134,12 +135,12 @@ export default function LandingBookingSection({
         {step === 1 && !isQuickBook && (
           <div className="step-content">
             <BookingStaffSelection staff={staff} selectedStaff={selectedStaff} fixImageUrl={fixImageUrl} onSetSelectedStaff={(id) => onSetSelectedStaff(id)} />
-            <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <div className="text-center mt-20">
               <button type="button" className="btn btn-primary" onClick={() => onSetStep(2)}>
-                {t('booking.nextButton') || 'Siguiente'}
+                {t('booking.nextButton')}
               </button>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                {selectedStaff ? null : (t('booking.skipStaffHint') || 'Podes elegir un profesional o continuar para asignacion automatica')}
+              <p className="text-xs mt-8 text-muted">
+                {selectedStaff ? null : t('booking.skipStaffHint')}
               </p>
             </div>
           </div>
@@ -147,14 +148,14 @@ export default function LandingBookingSection({
 
         {/* QuickBook loading / error */}
         {isQuickBook && !quickBookError && step < 3 && (
-          <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
-            <div className="spinner" style={{ margin: '0 auto' }} />
-            <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>{t('booking.quickBookLoading')}</p>
+          <div className="step-content text-center p-40">
+            <div className="spinner m-0-auto" />
+            <p className="mt-12 text-muted">{t('booking.quickBookLoading')}</p>
           </div>
         )}
         {isQuickBook && quickBookError && (
-          <div className="step-content" style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: 'var(--danger-light)' }}>{t('booking.quickBookError')}</p>
+          <div className="step-content text-center p-40">
+            <p className="text-danger-light">{t('booking.quickBookError')}</p>
             <button type="button" className="btn btn-secondary" onClick={() => { window.location.href = `/p/${tenantSlug}`; }}>
               {t('booking.quickBookNormal')}
             </button>
@@ -164,7 +165,7 @@ export default function LandingBookingSection({
         {/* Step 2: Service accordion */}
         {step === 2 && !isQuickBook && (
           <div className="step-content">
-            <label style={{ display: 'block', textAlign: 'center', marginBottom: 16, fontWeight: 600, color: 'var(--text-muted)' }}>
+            <label className="block text-center mb-16 font-600 text-muted">
               {t('booking.selectService')}
             </label>
             <BookingServiceAccordion
@@ -179,8 +180,8 @@ export default function LandingBookingSection({
 
         {/* Step 3: Date picker */}
         {step === 3 && (
-          <div className="step-content form-group" style={{ textAlign: 'center' }}>
-            <label style={{ textAlign: 'center', marginBottom: 16, fontSize: '1rem' }}>{t('booking.selectDate')}</label>
+          <div className="step-content form-group text-center">
+            <label className="text-center mb-16">{t('booking.selectDate')}</label>
             <BookingDatePicker
               calMonth={calMonth}
               calYear={calYear}
@@ -219,7 +220,7 @@ export default function LandingBookingSection({
 
         {/* Step 5: Client form */}
         {step === 5 && (
-          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+          <div className="max-w-480 m-0-auto">
             <BookingClientForm
               clientName={clientName} onSetClientName={onSetClientName}
               clientPhone={clientPhone} onSetClientPhone={onSetClientPhone}
@@ -239,7 +240,7 @@ export default function LandingBookingSection({
               selStaff={selStaff} fixImageUrl={fixImageUrl}
             />
             {captchaEnabled && captchaSiteKey && (
-              <div className="form-group" style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+              <div className="form-group flex-center mt-12">
                 <div ref={turnstileRef} />
               </div>
             )}
@@ -248,7 +249,7 @@ export default function LandingBookingSection({
 
         {/* Cancel */}
         {!msg && !errMsg && step < 5 && (!isQuickBook || step >= 4) && (
-          <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <div className="text-center mt-20">
             <button
               type="button" className="btn"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '8px 20px' }}

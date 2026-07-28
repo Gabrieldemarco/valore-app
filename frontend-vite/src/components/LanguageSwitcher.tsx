@@ -9,7 +9,7 @@ const LANGUAGES = [
 export default function LanguageSwitcher({ className }: { className?: string }) {
   const { i18n, t } = useTranslation();
   return (
-    <div className={className} style={{ display: 'inline-flex', gap: 2 }}>
+    <div className={[className, 'inline-flex', 'gap-2'].filter(Boolean).join(' ')}>
       {LANGUAGES.map(lang => (
         <button
           key={lang.code}

@@ -49,7 +49,7 @@ export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) 
       const offset = (pageNum - 1) * limitNum;
 
       let sql = 'SELECT * FROM tenants';
-      const params = [];
+      const params: any[] = [];
       if (status) { sql += ` WHERE status = $${params.length + 1}`; params.push(status); }
       if (plan) { sql += status ? ` AND plan = $${params.length + 1}` : ` WHERE plan = $${params.length + 1}`; params.push(plan); }
       if (search) { sql += (status || plan) ? ` AND (business_name ILIKE $${params.length + 1} OR slug ILIKE $${params.length + 1})` : ` WHERE (business_name ILIKE $${params.length + 1} OR slug ILIKE $${params.length + 1})`; params.push(`%${search}%`); }

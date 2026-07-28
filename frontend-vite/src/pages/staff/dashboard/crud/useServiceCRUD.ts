@@ -18,7 +18,7 @@ export function useServiceCRUD() {
       return false;
     }
     try {
-      const body: Record<string, any> = {
+      const body: Record<string, unknown> = {
         name: form.name,
         duration: parseInt(form.duration, 10),
         price: parseFloat(form.price),
@@ -36,9 +36,10 @@ export function useServiceCRUD() {
       }
       loadServices();
       return true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('Error saving service:', e);
-      addToast(e?.message || t('staffDashboard.toastServiceSaveError'), 'error');
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastServiceSaveError');
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, t, loadServices]);
@@ -75,8 +76,9 @@ export function useServiceCRUD() {
       const res = await api.post<{ image: ServiceImage }>(`/api/tenant/services/${serviceId}/images`, { url });
       addToast('Imagen agregada', 'success');
       return res.image;
-    } catch (e: any) {
-      addToast(e?.message || 'Error al agregar imagen', 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al agregar imagen';
+      addToast(msg, 'error');
       return null;
     }
   }, [addToast]);
@@ -86,8 +88,9 @@ export function useServiceCRUD() {
       await api.delete(`/api/tenant/services/${serviceId}/images/${imageId}`);
       addToast('Imagen eliminada', 'success');
       return true;
-    } catch (e: any) {
-      addToast(e?.message || 'Error al eliminar imagen', 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al eliminar imagen';
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast]);

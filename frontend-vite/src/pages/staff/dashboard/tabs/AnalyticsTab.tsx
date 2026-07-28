@@ -17,15 +17,15 @@ export default function AnalyticsTab() {
         <div className="flex-col flex-gap-20">
           <div className="dash-stats m-0">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="dash-stat-card glass-panel" style={{ height: 96 }}>
+              <div key={i} className="dash-stat-card glass-panel h-96">
                 <div className="mb-12" style={{ width: '60%', height: 14, background: 'rgba(148,163,184,0.12)', borderRadius: 6 }} />
                 <div style={{ width: '40%', height: 28, background: 'rgba(148,163,184,0.08)', borderRadius: 6 }} />
               </div>
             ))}
           </div>
-          <div className="grid-2" style={{ gap: 20 }}>
+          <div className="grid-2 gap-20">
             {[1, 2].map(i => (
-              <div key={i} className="glass-panel p-20" style={{ height: 320 }}>
+              <div key={i} className="glass-panel p-20 h-320">
                 <div className="mb-20" style={{ width: '50%', height: 16, background: 'rgba(148,163,184,0.12)', borderRadius: 6 }} />
                 <div style={{ width: '100%', height: 260, background: 'rgba(148,163,184,0.06)', borderRadius: 8 }} />
               </div>
@@ -51,7 +51,7 @@ export default function AnalyticsTab() {
 
   return (
     <div className="glass-panel section-card">
-        <div className="flex-between flex-wrap mb-20" style={{ gap: 10 }}>
+        <div className="flex-between flex-wrap mb-20 gap-10">
         <h3 className="text-gradient m-0">{t('staffDashboard.analyticsTitle')}</h3>
         <div className="flex-center flex-gap-8">
           <div className="flex flex-gap-4" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 3 }}>
@@ -60,7 +60,7 @@ export default function AnalyticsTab() {
                 style={{
                   padding: '4px 12px', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
                   background: analyticsDateRange === r ? 'rgba(197,168,128,0.25)' : 'transparent',
-                  color: analyticsDateRange === r ? '#c5a880' : 'var(--text-muted)',
+                  color: analyticsDateRange === r ? 'var(--chart-revenue)' : 'var(--text-muted)',
                   transition: 'all 0.2s',
                 }}>
                 {r === '6m' ? t('staffDashboard.analytics6m') : r === '12m' ? t('staffDashboard.analytics12m') : t('staffDashboard.analyticsAll')}
@@ -112,7 +112,7 @@ export default function AnalyticsTab() {
         </div>
       </div>
 
-      <div className="grid-2 mb-24" style={{ gap: 20 }}>
+      <div className="grid-2 mb-24 gap-20">
         <div className="glass-panel p-20">
           <h4 className="m-0 mb-16 text-main">{t('staffDashboard.analyticsRevenueChart')}</h4>
           {revenueByMonth.length > 0 ? <RevenueChart data={revenueByMonth} /> : <p className="text-muted text-center p-20">{t('staffDashboard.analyticsNoData')}</p>}

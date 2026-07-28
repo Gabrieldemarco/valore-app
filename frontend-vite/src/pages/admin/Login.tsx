@@ -23,7 +23,7 @@ export default function AdminLogin() {
       login(res.token, 'superAdmin');
       navigate('/admin/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('adminLogin.loginError', 'Error al iniciar sesión'));
+      setError(err instanceof Error ? err.message : t('adminLogin.loginError'));
     }
   };
 
@@ -45,7 +45,7 @@ export default function AdminLogin() {
               <label>{t('adminLogin.passwordLabel')}</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="glass-input" required placeholder={t('adminLogin.passwordPlaceholder')} />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10 }}>{t('adminLogin.loginButton')}</button>
+            <button type="submit" className="btn btn-primary w-full p-14 mt-10">{t('adminLogin.loginButton')}</button>
           </form>
 
           <div className="auth-back-link">

@@ -41,7 +41,7 @@ export default function PublicSalonStates({
 
   if (salonCount === 0) {
     return (
-      <div className="empty-state glass-panel" style={{ width: '100%' }}>
+      <div className="empty-state glass-panel w-full">
         <h3 className="text-gradient">
           {currentServiceFilter
             ? t('publicIndex.noEstablishmentsForCategory', { category: currentServiceFilterLabel })

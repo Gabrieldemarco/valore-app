@@ -8,12 +8,12 @@ export default function ClientsTab() {
   const [search, setSearch] = useState('');
 
   return (
-    <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.clientsTitle')}</h3>
+    <div className="glass-panel mt-24 p-24">
+      <div className="flex-between mb-20">
+        <h3 className="text-gradient m-0">{t('staffDashboard.clientsTitle')}</h3>
       </div>
-      <div className="dash-filters glass-panel" style={{ marginBottom: 20 }}>
-        <div className="dash-filter-group" style={{ flex: 1 }}>
+      <div className="dash-filters glass-panel mb-20">
+        <div className="dash-filter-group flex-1">
           <label>{t('staffDashboard.clientsSearchLabel')}</label>
           <input type="text" className="glass-input" placeholder={t('staffDashboard.clientsSearchPlaceholder')} value={search}
             onChange={e => { setSearch(e.target.value); loadClients(e.target.value); }} />
@@ -25,27 +25,27 @@ export default function ClientsTab() {
           <p>{search ? t('staffDashboard.clientsEmptyNoMatch') : t('staffDashboard.clientsEmptyNone')}</p>
         </div>
       ) : (
-        <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="dash-table-responsive overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTableName')}</th>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTablePhone')}</th>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTableEmail')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTableAppointments')}</th>
-                <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTableLastVisit')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.clientsTableAction')}</th>
+                <th className="table-cell-left">{t('staffDashboard.clientsTableName')}</th>
+                <th className="table-cell-left">{t('staffDashboard.clientsTablePhone')}</th>
+                <th className="table-cell-left">{t('staffDashboard.clientsTableEmail')}</th>
+                <th className="table-cell-center">{t('staffDashboard.clientsTableAppointments')}</th>
+                <th className="table-cell-right">{t('staffDashboard.clientsTableLastVisit')}</th>
+                <th className="table-cell-center">{t('staffDashboard.clientsTableAction')}</th>
               </tr>
             </thead>
             <tbody>
               {clientsList.map(c => (
                 <tr key={c.client_phone}>
-                  <td style={{ padding: 12, fontWeight: 600 }}>{c.client_name}</td>
-                  <td style={{ padding: 12, color: 'var(--text-muted)' }}>{c.client_phone}</td>
-                  <td style={{ padding: 12, color: 'var(--text-muted)' }}>{c.client_email || '-'}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>{c.total_appointments}</td>
-                  <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{new Date(c.last_appointment).toLocaleDateString(i18n.language)}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
+                  <td className="p-12 font-600">{c.client_name}</td>
+                  <td className="p-12 text-muted">{c.client_phone}</td>
+                  <td className="p-12 text-muted">{c.client_email || '-'}</td>
+                  <td className="p-12 text-center">{c.total_appointments}</td>
+                  <td className="p-12 text-right text-muted">{new Date(c.last_appointment).toLocaleDateString(i18n.language)}</td>
+                  <td className="p-12 text-center">
                     <button className="dash-btn dash-btn-success" onClick={() => openClientHistory(c)}>{t('staffDashboard.clientsHistoryButton')}</button>
                   </td>
                 </tr>

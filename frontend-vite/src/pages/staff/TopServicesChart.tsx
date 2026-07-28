@@ -17,8 +17,8 @@ export default function TopServicesChart({ data }: Props) {
       <BarChart data={data} layout="vertical" barCategoryGap={6} margin={{ top: 4, right: 40, left: -4, bottom: 0 }}>
         <defs>
           <linearGradient id="servicesGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.85} />
-            <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.25} />
+            <stop offset="0%" stopColor="var(--chart-services)" stopOpacity={0.85} />
+            <stop offset="100%" stopColor="var(--chart-services)" stopOpacity={0.25} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.08)" horizontal={false} />
@@ -26,7 +26,7 @@ export default function TopServicesChart({ data }: Props) {
         <YAxis type="category" dataKey="service" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} width={80} />
         <Tooltip
           contentStyle={{ background: 'rgba(26,26,31,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(197,168,128,0.25)', borderRadius: 10, color: 'var(--text-main)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-          formatter={(value: any, name: string, props: any) => {
+          formatter={(value: number, name: string, props: { payload?: { count: number; avg_price: number } }) => {
             if (name === 'count') {
               const item = props.payload;
               const pct = totalCount > 0 ? ((item.count / totalCount) * 100).toFixed(1) : '0';

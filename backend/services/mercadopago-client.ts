@@ -2,10 +2,8 @@
 // Cliente Mercado Pago SDK v2 (Uruguay / Checkout Pro)
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
-/** @type {import('mercadopago').Preference | null} */
-let preferenceClient = null;
-/** @type {import('mercadopago').Payment | null} */
-let paymentClient = null;
+let preferenceClient: Preference | null = null;
+let paymentClient: Payment | null = null;
 
 /** @returns {boolean} */
 function isConfigured() {
@@ -24,19 +22,19 @@ function initMercadoPago() {
 }
 
 /** @returns {import('mercadopago').Preference} */
-function getPreferenceClient() {
+function getPreferenceClient(): Preference {
   if (!preferenceClient && !initMercadoPago()) {
     throw new Error('Mercado Pago no configurado (MP_ACCESS_TOKEN)');
   }
-  return preferenceClient;
+  return preferenceClient!;
 }
 
 /** @returns {import('mercadopago').Payment} */
-function getPaymentClient() {
+function getPaymentClient(): Payment {
   if (!paymentClient && !initMercadoPago()) {
     throw new Error('Mercado Pago no configurado (MP_ACCESS_TOKEN)');
   }
-  return paymentClient;
+  return paymentClient!;
 }
 
 /**
@@ -52,7 +50,7 @@ async function createPreference(body) {
  * @param {string} paymentId
  * @returns {Promise<any>}
  */
-async function getPayment(paymentId) {
+async function getPayment(paymentId: string) {
   const client = getPaymentClient();
   return client.get({ id: paymentId });
 }

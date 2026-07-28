@@ -20,6 +20,7 @@ interface AdminDashboardContextValue {
 
 const AdminDashboardContext = createContext<AdminDashboardContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAdminDashboard() {
   const ctx = useContext(AdminDashboardContext);
   if (!ctx) throw new Error('useAdminDashboard must be used within AdminDashboardProvider');
@@ -27,7 +28,7 @@ export function useAdminDashboard() {
 }
 
 export function AdminDashboardProvider({ children }: { children: ReactNode }) {
-  const { superAdminToken, logout } = useAuth();
+  const { superAdminToken } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -49,7 +50,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const loadData = useCallback(() => {
     api.get<Stats>('/api/super-admin/stats/billing').then(setStats).catch(() => {});
     api.get<{ tenants: Tenant[] }>('/api/super-admin/tenants').then(r => setTenants(r.tenants)).catch(() => {});
-    api.get<{ config: Record<string, any> }>('/api/super-admin/config').then(r => {
+    api.get<{ config: Record<string, unknown> }>('/api/super-admin/config').then(r => {
       if (r.config?.twilio) setTwilioConfig(r.config.twilio);
     }).catch(() => {});
   }, []);

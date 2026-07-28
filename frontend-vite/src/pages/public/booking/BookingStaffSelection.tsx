@@ -21,7 +21,7 @@ const BookingStaffSelection: React.FC<BookingStaffSelectionProps> = ({
   return (
     <div className="booking-staff-selection">
       <h3 className="staff-section-title">
-        {t("booking.selectStaff", "Selecciona un profesional")}
+        {t('booking.selectStaff')}
       </h3>
       <div className="staff-grid">
         {staff.map((member) => (

@@ -621,8 +621,25 @@
       border-left: 4px solid var(--warning);
     }
 
+    .dash-toast.success .dash-toast-icon {
+      color: var(--accent);
+    }
+    .dash-toast.error .dash-toast-icon {
+      color: var(--danger);
+    }
     .dash-toast-icon {
       font-size: 21px;
+      font-weight: 700;
+    }
+
+    .connected-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
     }
 
     .dash-toast-message {
@@ -1372,7 +1389,7 @@
 }
 
 [data-theme="light"] .dash-modal-content {
-  background: #fff;
+  background: var(--text-white);
   border-color: rgba(200, 130, 125, 0.15);
 }
 

@@ -1,10 +1,8 @@
 import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { api } from '../../../../api/client';
 import { useDashboard } from '../dashboardContext';
 
 export function useCategoryCRUD() {
-  const { t } = useTranslation();
   const { addToast, loadCategories, loadServices } = useDashboard();
 
   const saveCategory = useCallback(async (form: { id?: number; name: string; parent_id: number | null }) => {
@@ -22,8 +20,9 @@ export function useCategoryCRUD() {
       }
       loadCategories();
       return true;
-    } catch (e: any) {
-      addToast(e?.message || 'Error al guardar categoría', 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar categoría';
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, loadCategories]);
@@ -36,8 +35,9 @@ export function useCategoryCRUD() {
       loadCategories();
       loadServices();
       return true;
-    } catch (e: any) {
-      addToast(e?.message || 'Error al eliminar', 'error');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al eliminar';
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, loadCategories, loadServices]);

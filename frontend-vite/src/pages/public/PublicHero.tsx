@@ -59,8 +59,8 @@ export default function PublicHero({ countryName, currentGenderFilter, onSelectG
         <path fill="none" stroke="url(#goldGradientHero)" strokeWidth="1.0" d="M0,180 C180,150 360,110 540,160 C720,210 900,310 1080,250 C1260,190 1380,120 1440,100" opacity="0.6" />
         <defs>
           <linearGradient id="goldGradientHero" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#cfa86b" />
-            <stop offset="100%" stopColor="#dfc293" />
+            <stop offset="0%" stopColor="var(--gold)" />
+            <stop offset="100%" stopColor="var(--gold-light)" />
           </linearGradient>
         </defs>
       </svg>

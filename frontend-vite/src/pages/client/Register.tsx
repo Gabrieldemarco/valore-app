@@ -30,21 +30,21 @@ export default function ClientRegister() {
       await api.post('/api/register', { username, password, name, phone: phone || undefined, email: email || undefined });
       setSuccess(t('clientRegister.successMessage'));
       setTimeout(() => navigate('/client/login'), 2000);
-    } catch (err: any) {
-      setError(err?.message || t('clientRegister.registerError'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('clientRegister.registerError'));
     } finally { setLoading(false); }
   };
 
   return (
     <div className="auth-body">
-      <div className="auth-card glass-panel" style={{ textAlign: 'center' }}>
-        <h1 className="text-gradient" style={{ marginBottom: 4 }}>{t('clientRegister.title')}</h1>
+      <div className="auth-card glass-panel text-center">
+        <h1 className="text-gradient mb-4">{t('clientRegister.title')}</h1>
         <p className="auth-subtitle">{t('clientRegister.subtitle')}</p>
 
         {error && <div className="auth-error">{error}</div>}
         {success && <div className="auth-success">{success}</div>}
 
-        <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
+        <form onSubmit={handleSubmit} className="text-left">
           <div className="form-group">
             <label>{t('clientRegister.nameLabel')}</label>
             <input type="text" className="glass-input" value={name} onChange={e => setName(e.target.value)} placeholder={t('clientRegister.namePlaceholder')} autoFocus />
@@ -74,26 +74,26 @@ export default function ClientRegister() {
             <input type="email" className="glass-input" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('clientRegister.emailOptionalPlaceholder')} />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10, fontSize: 15 }} disabled={loading}>
+          <button type="submit" className="btn btn-primary w-full p-14 mt-10 fs-15" disabled={loading}>
             {loading ? t('clientRegister.loading') : t('clientRegister.submitButton')}
           </button>
 
-          <div className="auth-bottom-text" style={{ marginTop: 20 }}>
+          <div className="auth-bottom-text mt-20">
             {t('clientRegister.hasAccount')} <Link to="/client/login">{t('clientRegister.loginLink')}</Link>
           </div>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+        <div className="flex-center gap-12 my-20">
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
-          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.or')}</span>
+          <span className="text-secondary fs-13">{t('common.or')}</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="flex-center-center">
           <GoogleLoginButton mode="register" />
         </div>
 
-        <div className="auth-back-link" style={{ marginTop: 8 }}>
+        <div className="auth-back-link mt-8">
           <Link to="/">{t('clientRegister.backHome')}</Link>
         </div>
       </div>

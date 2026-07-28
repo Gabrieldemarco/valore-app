@@ -41,7 +41,7 @@ export default function RevenueChart({ data }: Props) {
         <ReferenceLine yAxisId="revenue" y={avgRevenue} stroke={CHART_COLORS.revenue + '66'} strokeDasharray="6 4" strokeWidth={1.5} label={{ value: t('staffDashboard.analyticsRevenueAxis') + ' avg', fill: 'var(--text-muted)', fontSize: 11, position: 'right' }} />
         <Tooltip
           contentStyle={{ background: 'rgba(26,26,31,0.95)', backdropFilter: 'blur(8px)', border: `1px solid ${CHART_COLORS.revenue}40`, borderRadius: 10, color: 'var(--text-main)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-          formatter={(value: any, name: string, props: any) => {
+          formatter={(value: number, name: string, _props: { payload?: { revenue?: number; appointments?: number } }) => {
             if (name === 'revenue') {
               return [`$${Number(value).toLocaleString()}`, t('staffDashboard.analyticsRevenueAxis')];
             }
@@ -52,8 +52,8 @@ export default function RevenueChart({ data }: Props) {
           }}
           labelFormatter={(label: string) => label}
         />
-        <Area yAxisId="revenue" type="monotone" dataKey="revenue" stroke={CHART_COLORS.revenue} strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ fill: CHART_COLORS.revenue, stroke: '#1a1a1f', strokeWidth: 2, r: 4 }} activeDot={{ fill: CHART_COLORS.revenue, stroke: '#1a1a1f', strokeWidth: 2, r: 6 }} animationBegin={0} animationDuration={900} />
-        <Line yAxisId="appointments" type="monotone" dataKey="appointments" stroke={CHART_COLORS.appointments} strokeWidth={2} fill="url(#apptsGrad)" dot={{ fill: CHART_COLORS.appointments, stroke: '#1a1a1f', strokeWidth: 2, r: 3 }} activeDot={{ fill: CHART_COLORS.appointments, stroke: '#1a1a1f', strokeWidth: 2, r: 5 }} animationBegin={200} animationDuration={900} />
+        <Area yAxisId="revenue" type="monotone" dataKey="revenue" stroke={CHART_COLORS.revenue} strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ fill: CHART_COLORS.revenue, stroke: 'var(--bg-deep)', strokeWidth: 2, r: 4 }} activeDot={{ fill: CHART_COLORS.revenue, stroke: 'var(--bg-deep)', strokeWidth: 2, r: 6 }} animationBegin={0} animationDuration={900} />
+        <Line yAxisId="appointments" type="monotone" dataKey="appointments" stroke={CHART_COLORS.appointments} strokeWidth={2} fill="url(#apptsGrad)" dot={{ fill: CHART_COLORS.appointments, stroke: 'var(--bg-deep)', strokeWidth: 2, r: 3 }} activeDot={{ fill: CHART_COLORS.appointments, stroke: 'var(--bg-deep)', strokeWidth: 2, r: 5 }} animationBegin={200} animationDuration={900} />
       </AreaChart>
     </ResponsiveContainer>
   );

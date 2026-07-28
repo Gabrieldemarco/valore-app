@@ -8,12 +8,12 @@ export default function StaffTab() {
   const { t } = useTranslation();
   const { staffList } = useDashboard();
   const { deleteStaffMember } = useDashboardCRUD();
-  const [modal, setModal] = useState<{ open: boolean; editing: any | null }>({ open: false, editing: null });
+  const [modal, setModal] = useState<{ open: boolean; editing: unknown | null }>({ open: false, editing: null });
 
   return (
-    <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.staffTitle')}</h3>
+    <div className="glass-panel mt-24 p-24">
+      <div className="flex-between mb-20">
+        <h3 className="text-gradient m-0">{t('staffDashboard.staffTitle')}</h3>
         <button className="dash-btn dash-btn-success" onClick={() => setModal({ open: true, editing: null })}>{t('staffDashboard.staffNewButton')}</button>
       </div>
       {staffList.length === 0 ? (
@@ -22,34 +22,34 @@ export default function StaffTab() {
           <p>{t('staffDashboard.staffEmptyMessage')}</p>
         </div>
       ) : (
-        <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="dash-table-responsive overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableName')}</th>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableEmail')}</th>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableSpecialties')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableCommission')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableStatus')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                <th className="text-left p-12 border-b">{t('staffDashboard.staffTableName')}</th>
+                <th className="text-left p-12 border-b">{t('staffDashboard.staffTableEmail')}</th>
+                <th className="text-left p-12 border-b">{t('staffDashboard.staffTableSpecialties')}</th>
+                <th className="text-center p-12 border-b">{t('staffDashboard.staffTableCommission')}</th>
+                <th className="text-center p-12 border-b">{t('staffDashboard.staffTableStatus')}</th>
+                <th className="text-center p-12 border-b">{t('staffDashboard.staffTableActions')}</th>
               </tr>
             </thead>
             <tbody>
               {staffList.map(s => (
                 <tr key={s.id}>
-                  <td style={{ padding: 12, fontWeight: 600 }}>{s.name}</td>
-                  <td style={{ padding: 12, color: 'var(--text-muted)' }}>{s.email || '-'}</td>
-                  <td style={{ padding: 12, color: 'var(--text-muted)' }}>{(s.specialties || []).join(', ') || '-'}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
+                  <td className="p-12 font-600">{s.name}</td>
+                  <td className="p-12 text-muted">{s.email || '-'}</td>
+                  <td className="p-12 text-muted">{(s.specialties || []).join(', ') || '-'}</td>
+                  <td className="p-12 text-center">
                     {s.commission_type === 'percentage' ? `${s.commission_value}%` : s.commission_type === 'fixed' ? `$${s.commission_value}` : '-'}
                   </td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
+                  <td className="p-12 text-center">
                     <span className={`dash-appointment-status ${s.active !== false ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
                       {s.active !== false ? t('staffDashboard.staffActive') : t('staffDashboard.staffInactive')}
                     </span>
                   </td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
-                    <button className="dash-btn dash-btn-success" style={{ marginRight: 8 }} onClick={() => setModal({ open: true, editing: s })}>{t('staffDashboard.staffEditButton')}</button>
+                  <td className="p-12 text-center">
+                    <button className="dash-btn dash-btn-success mr-8" onClick={() => setModal({ open: true, editing: s })}>{t('staffDashboard.staffEditButton')}</button>
                     <button className="dash-btn dash-btn-danger" onClick={() => deleteStaffMember(s.id, s.name)}>{t('staffDashboard.staffDeleteButton')}</button>
                   </td>
                 </tr>

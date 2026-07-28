@@ -13,7 +13,7 @@ interface Props {
 
 type ModalTab = 'info' | 'invoices' | 'payments';
 
-export default function TenantModal({ tenantId, onClose, onReactivate, showToast, loadData }: Props) {
+export default function TenantModal({ tenantId, onClose, showToast, loadData }: Props) {
   const { t } = useTranslation();
   const [detail, setDetail] = useState<TenantDetail | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -26,14 +26,14 @@ export default function TenantModal({ tenantId, onClose, onReactivate, showToast
 
   useEffect(() => {
     if (tenantId === null) return;
-    setActiveTab('info');
+    setActiveTab('info'); // eslint-disable-line react-hooks/set-state-in-effect
     setReactivateMode('extend_trial');
     setNewInvoiceAmount('');
     setNewInvoiceDesc('');
     api.get<{ tenant: TenantDetail }>(`/api/super-admin/tenants/${tenantId}`).then(r => setDetail(r.tenant)).catch(() => showToast(t('adminDashboard.toastLoadError'), 'error'));
     api.get<{ invoices: Invoice[] }>(`/api/super-admin/tenants/${tenantId}/invoices`).then(r => setInvoices(r.invoices || [])).catch(() => setInvoices([]));
     api.get<{ payments: Payment[] }>(`/api/super-admin/tenants/${tenantId}/payments`).then(r => setPayments(r.payments || [])).catch(() => setPayments([]));
-  }, [tenantId]);
+  }, [tenantId, showToast, t]);
 
   if (tenantId === null) return null;
 
@@ -84,7 +84,7 @@ export default function TenantModal({ tenantId, onClose, onReactivate, showToast
   const handlePayInvoiceMP = async (invoiceId: number) => {
     try {
       const res = await api.post<{ init_point: string }>('/api/payments/mercadopago/create', { invoiceId });
-      if (res.init_point) window.location.href = res.init_point;
+      if (res.init_point) window.location.href = res.init_point; // eslint-disable-line react-hooks/immutability
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('common.error'), 'error');
     }

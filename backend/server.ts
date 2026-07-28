@@ -193,7 +193,7 @@ async function createMercadoPagoPreference(invoice, tenant, req, returnPath = '/
 // Rate limiting
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.LOGIN_RATE_LIMIT_MAX) || 50,
+  max: parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '50'),
   message: { error: 'Demasiados intentos' },
   standardHeaders: true,
   legacyHeaders: false
@@ -201,7 +201,7 @@ const loginLimiter = rateLimit({
 
 const appointmentLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: parseInt(process.env.APPOINTMENT_RATE_LIMIT_MAX) || 20,
+  max: parseInt(process.env.APPOINTMENT_RATE_LIMIT_MAX || '20'),
   message: { error: 'Demasiadas reservas' },
   standardHeaders: true,
   legacyHeaders: false

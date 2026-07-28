@@ -20,7 +20,7 @@ export function useDashboardCRUD() {
   const coupon = useCouponCRUD();
   const billing = useBillingCRUD();
 
-  const saveSettings = useCallback(async (settings: any, openingHours: any) => {
+  const saveSettings = useCallback(async (settings: Record<string, unknown>, openingHours: Record<string, unknown>) => {
     try {
       await api.put('/api/tenant/settings', { ...settings, opening_hours: openingHours });
       addToast(t('staffDashboard.toastStatusUpdated'), 'success');

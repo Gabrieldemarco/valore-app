@@ -15,9 +15,9 @@ export function generateBrandingCSS(data: {
   const secondaryFont = data.fonts?.secondary || 'system';
   const heroHeight = data.heroHeight || 70;
   const heroWidth = data.heroWidth || 100;
-  const primaryTextColor = data.primaryTextColor || '#1a1a1a';
-  const secondaryTextColor = data.secondaryTextColor || '#666666';
-  const bgColor = data.bgColor || '#0f0808';
+  const primaryTextColor = data.primaryTextColor || 'var(--text-dark)';
+  const secondaryTextColor = data.secondaryTextColor || 'var(--text-muted)';
+  const bgColor = data.bgColor || 'var(--bg-gradient-end)';
 
   const fontImport = primaryFont !== 'system'
     ? `@import url('https://fonts.googleapis.com/css2?family=${primaryFont.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap');\n`
@@ -39,7 +39,7 @@ ${fontImport}${secondaryFontImport}
 /* End Velsoie Branding */`;
 }
 
-export function generatePresetCSS(preset: string, primary: string, secondary: string): string {
+export function generatePresetCSS(preset: string, _primary: string, _secondary: string): string {
   if (preset === 'barber') {
     return `/* 🧡 ESTILO BARBERIA CLASICA: Split Hero & Lista de Precios */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
@@ -88,24 +88,24 @@ footer { order: 100 !important; }
   }
   if (preset === 'light') {
     return `/* ☀️ ESTILO CLARO: Fondo Blanco & Diseño Limpio */
-.landing-view { background: #ffffff !important; color: #1a1a1a !important; }
-.landing-view .hero { background: #ffffff !important; }
+.landing-view { background: var(--text-white) !important; color: var(--text-dark) !important; }
+.landing-view .hero { background: var(--text-white) !important; }
 .landing-view .glass-panel { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important; }
-.landing-view .service-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: #1a1a1a !important; }
-.landing-view .team-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: #1a1a1a !important; }
-.landing-view .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: #ffffff !important; }
-.landing-view .glass-input { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: #1a1a1a !important; }
-.landing-view .slot-btn { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: #1a1a1a !important; }
-.landing-view .slot-btn.selected { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: #ffffff !important; }
-.landing-view h1, .landing-view h2, .landing-view h3, .landing-view h4, .landing-view h5, .landing-view h6 { color: #1a1a1a !important; }
-.landing-view .service-name, .landing-view .team-name { color: #1a1a1a !important; }
-.landing-view .service-desc, .landing-view .team-bio { color: #666666 !important; }
-.landing-view .booking-section { background: #f9f9f9 !important; }
+.landing-view .service-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: var(--text-dark) !important; }
+.landing-view .team-card { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; color: var(--text-dark) !important; }
+.landing-view .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: var(--text-white) !important; }
+.landing-view .glass-input { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: var(--text-dark) !important; }
+.landing-view .slot-btn { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; color: var(--text-dark) !important; }
+.landing-view .slot-btn.selected { background: linear-gradient(135deg, var(--primary), var(--accent)) !important; color: var(--text-white) !important; }
+.landing-view h1, .landing-view h2, .landing-view h3, .landing-view h4, .landing-view h5, .landing-view h6 { color: var(--text-dark) !important; }
+.landing-view .service-name, .landing-view .team-name { color: var(--text-dark) !important; }
+.landing-view .service-desc, .landing-view .team-bio { color: var(--text-muted) !important; }
+.landing-view .booking-section { background: var(--bg-warm) !important; }
 .landing-view .booking-form { background: rgba(255, 255, 255, 0.95) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important; }
-.landing-view footer { background: #f9f9f9 !important; color: #1a1a1a !important; border-top: 1px solid rgba(0, 0, 0, 0.1) !important; }`;
+.landing-view footer { background: var(--bg-warm) !important; color: var(--text-dark) !important; border-top: 1px solid rgba(0, 0, 0, 0.1) !important; }`;
   }
   // default / velvet
   return `/* Custom Background & Hero Height */
-.landing-view { background: #0f0808 !important; }
+.landing-view { background: var(--bg-gradient-end) !important; }
 .landing-view .hero { min-height: 70vh !important; }`;
 }

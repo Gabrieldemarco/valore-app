@@ -114,7 +114,7 @@ async function generateMonthlyInvoices() {
 
         let invoicedCount = 0;
         let errorCount = 0;
-        const results = [];
+        const results: any[] = [];
 
         for (const tenant of tenants) {
             try {

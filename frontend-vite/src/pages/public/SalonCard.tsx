@@ -23,6 +23,7 @@ function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getGenderCategory(salon: Salon): 'hombre' | 'mujer' | 'unisex' {
   const name = (salon.business_name || '').toLowerCase();
   const desc = (salon.landing_description || '').toLowerCase();

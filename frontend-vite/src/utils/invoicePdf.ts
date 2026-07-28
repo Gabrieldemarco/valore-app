@@ -40,7 +40,6 @@ export function exportInvoicePdf(invoice: InvoiceData, tenant: TenantInfo) {
   }
   if (tenant.notification_email) {
     doc.text(tenant.notification_email, 14, y)
-    y += 5
   }
 
   doc.setFontSize(18)
@@ -71,7 +70,7 @@ export function exportInvoicePdf(invoice: InvoiceData, tenant: TenantInfo) {
     columnStyles: { 0: { cellWidth: 140 }, 1: { cellWidth: 40, halign: 'right' } },
   })
 
-  const finalY = (doc as any).lastAutoTable.finalY + 10
+  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
   doc.text(`Total: $ ${Number(invoice.amount).toLocaleString('es-UY', { minimumFractionDigits: 2 })}`, pageWidth - 14, finalY, { align: 'right' })
@@ -79,7 +78,7 @@ export function exportInvoicePdf(invoice: InvoiceData, tenant: TenantInfo) {
   doc.save(`factura-${invNum.replace(/[^a-zA-Z0-9-]/g, '')}.pdf`)
 }
 
-export function exportAppointmentsPdf(appointments: any[], tenant: TenantInfo) {
+export function exportAppointmentsPdf(appointments: Record<string, unknown>[], tenant: TenantInfo) {
   const doc = new jsPDF()
 
   doc.setFontSize(18)

@@ -18,7 +18,7 @@ export default function AppointmentDetailModal() {
 
   useEffect(() => {
     if (selectedAppointment) {
-      setInternalNotes(selectedAppointment.internal_notes || '');
+      setInternalNotes(selectedAppointment.internal_notes || ''); // eslint-disable-line react-hooks/set-state-in-effect
       setShowClientHistory(false);
       setClientHistory([]);
     }
@@ -114,11 +114,10 @@ export default function AppointmentDetailModal() {
 
           <div className="dash-info-group">
             <label>{t('staffDashboard.apptDetailInternalNotes')}</label>
-            <textarea className="glass-input w-full mt-4" rows={2} value={internalNotes}
+            <textarea className="glass-input w-full mt-4 resize-y" rows={2} value={internalNotes}
               onChange={e => setInternalNotes(e.target.value)}
               onBlur={() => handleSaveNotes(internalNotes)}
-              placeholder={t('staffDashboard.apptDetailInternalNotesPlaceholder')}
-              style={{ resize: 'vertical' }} />
+              placeholder={t('staffDashboard.apptDetailInternalNotesPlaceholder')} />
           </div>
 
           {selectedAppointment.status !== 'cancelled' && selectedAppointment.status !== 'completed' && (
@@ -133,7 +132,7 @@ export default function AppointmentDetailModal() {
           )}
 
           <div className="mt-16 border-bottom pt-12">
-            <button className="dash-btn dash-btn-ghost w-full" onClick={handleToggleHistory} style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+            <button className="dash-btn dash-btn-ghost w-full text-left justify-start" onClick={handleToggleHistory}>
               {t('staffDashboard.apptDetailClientHistory')}
               <span className="ml-auto">{showClientHistory ? '▲' : '▼'}</span>
             </button>
@@ -161,14 +160,14 @@ export default function AppointmentDetailModal() {
                         </div>
                       </div>
                     </div>
-                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                    <div className="overflow-y-auto max-h-300">
                       <table className="table-full">
                         <thead>
                           <tr>
                             <th className="table-cell-header">{t('staffDashboard.apptDetailClientHistoryDate')}</th>
                             <th className="table-cell-header">{t('staffDashboard.apptDetailClientHistoryService')}</th>
                             <th className="table-cell-header">{t('staffDashboard.apptDetailClientHistoryStaff')}</th>
-                            <th className="table-cell-header" style={{ textAlign: 'center' }}>{t('staffDashboard.apptDetailClientHistoryStatus')}</th>
+                            <th className="table-cell-header text-center">{t('staffDashboard.apptDetailClientHistoryStatus')}</th>
                             <th className="table-cell-header">{t('staffDashboard.apptDetailClientHistoryNotes')}</th>
                           </tr>
                         </thead>

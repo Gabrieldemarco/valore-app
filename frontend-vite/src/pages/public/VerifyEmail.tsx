@@ -11,18 +11,18 @@ export default function VerifyEmail() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!token) { setStatus('error'); setMessage(t('verifyEmail.tokenNotFound', 'Token de verificación no encontrado.')); return; }
+    if (!token) { setStatus('error'); setMessage(t('verifyEmail.tokenNotFound')); return; } // eslint-disable-line react-hooks/set-state-in-effect
     api.post('/api/verify-email', { token })
-      .then(() => { setStatus('success'); setMessage(t('verifyEmail.successMessage', 'Email verificado exitosamente. Ya puedes iniciar sesión.')); })
-      .catch(err => { setStatus('error'); setMessage(err instanceof Error ? err.message : t('verifyEmail.errorMessage', 'Error al verificar email.')); });
-  }, [token]);
+      .then(() => { setStatus('success'); setMessage(t('verifyEmail.successMessage')); })
+      .catch(err => { setStatus('error'); setMessage(err instanceof Error ? err.message : t('verifyEmail.errorMessage')); });
+  }, [token, t]);
 
   return (
-    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ background: 'white', padding: '40px', borderRadius: '16px', maxWidth: '450px', width: '100%', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)', textAlign: 'center' }}>
-        {status === 'loading' && <><div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div><h2>{t('verifyEmail.verifying', 'Verificando email...')}</h2></>}
-        {status === 'success' && <><div style={{ fontSize: 48, marginBottom: 16 }}>✅</div><h2>{t('verifyEmail.verified', '¡Email verificado!')}</h2><p style={{ color: 'var(--success)', marginBottom: 16 }}>{message}</p><Link to="/client/login" style={{ background: 'var(--info)', color: 'white', padding: '12px 24px', borderRadius: 8, textDecoration: 'none', display: 'inline-block' }}>{t('verifyEmail.loginButton', 'Iniciar sesión')}</Link></>}
-        {status === 'error' && <><div style={{ fontSize: 48, marginBottom: 16 }}>❌</div><h2>{t('verifyEmail.errorTitle', 'Error')}</h2><p style={{ color: 'var(--danger-dark)', marginBottom: 16 }}>{message}</p><p><Link to="/client/login" style={{ color: 'var(--info)' }}>{t('verifyEmail.goToLogin', 'Ir al inicio de sesión')}</Link></p></>}
+        {status === 'loading' && <><div className="fs-48 mb-16">⏳</div><h2>{t('verifyEmail.verifying')}</h2></>}
+        {status === 'success' && <><div className="fs-48 mb-16">✓</div><h2>{t('verifyEmail.verified')}</h2><p className="text-success mb-16">{message}</p><Link to="/client/login" className="btn btn-primary fs-16 no-underline inline-block" style={{ background: 'var(--info)', color: 'white', padding: '12px 24px', borderRadius: 8 }}>{t('verifyEmail.loginButton')}</Link></>}
+        {status === 'error' && <><div className="fs-48 mb-16">❌</div><h2>{t('verifyEmail.errorTitle')}</h2><p className="text-danger-dark mb-16">{message}</p><p><Link to="/client/login" className="text-info">{t('verifyEmail.goToLogin')}</Link></p></>}
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ export default function StaffLogin() {
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="glass-input" required placeholder={t('staffLogin.passwordPlaceholder')} />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10 }}>{t('staffLogin.loginButton')}</button>
+          <button type="submit" className="btn btn-primary w-full p-14 mt-10">{t('staffLogin.loginButton')}</button>
 
           <div className="auth-forgot-link">
             <Link to="/staff/forgot-password">{t('staffLogin.forgotPassword')}</Link>

@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { api } from '../api/client';
@@ -10,18 +9,17 @@ interface Props {
 }
 
 export default function GoogleLoginButton({ mode }: Props) {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSuccess = async (response: any) => {
+  const handleSuccess = async (response: { credential: string }) => {
     try {
-      const res: any = await api.post('/api/auth/google/token', { credential: response.credential });
+      const res = await api.post<{ token: string; name?: string; username?: string; phone?: string }>('/api/auth/google/token', { credential: response.credential });
       login(res.token, 'client', res.name || res.username || '', res.phone);
       if (res.phone) localStorage.setItem('clientPhone', res.phone);
       if (res.name) localStorage.setItem('clientDisplayName', res.name);
       navigate('/client/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Google login error:', err);
     }
   };

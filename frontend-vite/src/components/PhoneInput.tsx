@@ -82,7 +82,7 @@ export default function PhoneInput({ value, onChange, placeholder, className, st
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        style={{ flex: 1, minWidth: 0 }}
+        className="flex-1 min-w-0"
       />
     </div>
   );

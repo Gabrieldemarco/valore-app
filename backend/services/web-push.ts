@@ -43,7 +43,7 @@ export async function sendPushToTenant(tenantId: number, payload: { title: strin
   const { query } = await import('../database');
   try {
     const subs = await query('SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE tenant_id = $1', [tenantId]);
-    const results = [];
+    const results: any[] = [];
     for (const row of subs.rows) {
       const notificationPayload = {
         ...payload,

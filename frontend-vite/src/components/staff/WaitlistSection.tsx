@@ -2,25 +2,39 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 
+interface WaitlistEntry {
+  id: number;
+  client_name?: string;
+  name?: string;
+  phone?: string;
+  client_phone?: string;
+  service_name?: string;
+  service?: string;
+  staff_name?: string;
+  status: string;
+  created_at?: string;
+  date?: string;
+}
+
 interface Props {
   addToast: (message: string, type: 'success' | 'error') => void;
 }
 
 export default function WaitlistSection({ addToast }: Props) {
   const { t, i18n } = useTranslation();
-  const [waitlistList, setWaitlistList] = useState<any[]>([]);
+  const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([]);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
 
   const loadWaitlist = useCallback(async () => {
     setWaitlistLoading(true);
     try {
-      const data = await api.get<{ entries: any[] }>('/api/tenant/waitlist');
+      const data = await api.get<{ entries: WaitlistEntry[] }>('/api/tenant/waitlist');
       setWaitlistList(data.entries || []);
     } catch { addToast(t('staffDashboard.toastLoadWaitlistError'), 'error'); }
     setWaitlistLoading(false);
   }, [addToast, t]);
 
-  useEffect(() => { loadWaitlist(); }, [loadWaitlist]);
+  useEffect(() => { loadWaitlist(); }, [loadWaitlist]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const notifyWaitlistEntry = useCallback(async (id: number) => {
     try {
@@ -39,11 +53,11 @@ export default function WaitlistSection({ addToast }: Props) {
   }, [loadWaitlist, addToast, t]);
 
   return (
-    <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.waitlistTitle')}</h3>
-        <button className="dash-btn dash-btn-secondary" onClick={loadWaitlist} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {waitlistLoading ? <span className="dash-loading-spinner" style={{ width: 14, height: 14 }} /> : null}
+    <div className="glass-panel mt-24 p-24">
+      <div className="flex-between mb-20">
+        <h3 className="text-gradient m-0">{t('staffDashboard.waitlistTitle')}</h3>
+        <button className="dash-btn dash-btn-secondary flex-center gap-6" onClick={loadWaitlist}>
+          {waitlistLoading ? <span className="dash-loading-spinner w-14 h-14" /> : null}
           {t('staffDashboard.waitlistRefresh')}
         </button>
       </div>
@@ -55,35 +69,35 @@ export default function WaitlistSection({ addToast }: Props) {
           <p>{t('staffDashboard.waitlistEmptyMessage')}</p>
         </div>
       ) : (
-        <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="dash-table-responsive overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableClient')}</th>
-                <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTablePhone')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableService')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStaff')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableStatus')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.waitlistTableDate')}</th>
-                <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                <th className="table-cell-left">{t('staffDashboard.waitlistTableClient')}</th>
+                <th className="table-cell-left">{t('staffDashboard.waitlistTablePhone')}</th>
+                <th className="table-cell-center">{t('staffDashboard.waitlistTableService')}</th>
+                <th className="table-cell-center">{t('staffDashboard.waitlistTableStaff')}</th>
+                <th className="table-cell-center">{t('staffDashboard.waitlistTableStatus')}</th>
+                <th className="table-cell-center">{t('staffDashboard.waitlistTableDate')}</th>
+                <th className="table-cell-center">{t('staffDashboard.staffTableActions')}</th>
               </tr>
             </thead>
             <tbody>
               {waitlistList.map(e => (
                 <tr key={e.id}>
-                  <td style={{ padding: 12, fontWeight: 600 }}>{e.client_name || e.name}</td>
-                  <td style={{ padding: 12, color: 'var(--text-muted)' }}>{e.phone || e.client_phone}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>{e.service_name || e.service || '-'}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>{e.staff_name || '-'}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
+                  <td className="p-12 font-600">{e.client_name || e.name}</td>
+                  <td className="p-12 text-muted">{e.phone || e.client_phone}</td>
+                  <td className="p-12 text-center">{e.service_name || e.service || '-'}</td>
+                  <td className="p-12 text-center">{e.staff_name || '-'}</td>
+                  <td className="p-12 text-center">
                     <span className={`dash-appointment-status ${e.status === 'waiting' ? 'dash-status-confirmed' : e.status === 'notified' ? 'dash-status-pending' : e.status === 'converted' ? 'dash-status-completed' : 'dash-status-cancelled'}`}>
                       {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
                     </span>
                   </td>
-                  <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>{new Date(e.created_at || e.date).toLocaleDateString(i18n.language)}</td>
-                  <td style={{ padding: 12, textAlign: 'center' }}>
+                  <td className="p-12 text-center text-muted">{new Date(e.created_at || e.date).toLocaleDateString(i18n.language)}</td>
+                  <td className="p-12 text-center">
                     {e.status === 'waiting' && (
-                      <button className="dash-btn dash-btn-success" onClick={() => notifyWaitlistEntry(e.id)} style={{ marginRight: 4 }}>
+                      <button className="dash-btn dash-btn-success mr-8" onClick={() => notifyWaitlistEntry(e.id)}>
                         {t('staffDashboard.waitlistNotify')}
                       </button>
                     )}

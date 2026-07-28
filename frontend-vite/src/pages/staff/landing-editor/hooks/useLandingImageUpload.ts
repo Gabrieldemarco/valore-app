@@ -58,7 +58,8 @@ export function useLandingImageUpload({
       debounceSave();
       showStatus(t('staffLandingEditor.statusImageUploaded'), false);
     } catch { showStatus(t('staffLandingEditor.statusImageUploadError'), false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cropTarget, showStatus, t, debounceSave]);
 
-  return { cropFile, cropAspect, cropTarget, handleImageUpload };
+  return { cropFile, cropAspect, cropTarget, handleImageUpload, handleCropApply };
 }

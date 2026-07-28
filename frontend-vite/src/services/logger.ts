@@ -3,7 +3,7 @@ const LOG_PREFIX = '[Velsoie]';
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 const isDev = (): boolean =>
-  typeof window !== 'undefined' && (window as any).__ENV?.NODE_ENV !== 'production'
+  typeof window !== 'undefined' && (window as Record<string, unknown>).__ENV?.NODE_ENV !== 'production'
   && !import.meta.env?.PROD;
 
 function log(level: LogLevel, ...args: unknown[]) {

@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { PLACEHOLDER_IMG, fixImageUrl } from '../../utils/imageUtils';
 
 interface LandingLightboxProps {
@@ -10,7 +9,6 @@ interface LandingLightboxProps {
 }
 
 export default function LandingLightbox({ images, currentIndex, onClose, onPrev, onNext }: LandingLightboxProps) {
-  const { t } = useTranslation();
 
   if (currentIndex === null || images.length === 0) return null;
 

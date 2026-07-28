@@ -131,7 +131,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter
       const verification = verifyMercadoPagoWebhook(req);
       if (!verification.ok) {
         logger.warn('Webhook MercadoPago rechazado', { message: verification.message });
-        return res.status(verification.status).send(verification.message);
+        return res.status(verification.status!).send(verification.message!);
       }
       if (verification.skipped) {
         logger.warn('Webhook MercadoPago: MP_WEBHOOK_SECRET no configurado (firma omitida en desarrollo)');

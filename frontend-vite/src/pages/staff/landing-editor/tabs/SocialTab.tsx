@@ -5,9 +5,9 @@ export default function SocialTab() {
   const { t, social, handleSocialField } = useLandingEditor();
 
   return (
-    <div className="card glass-panel" style={{ padding: '1.5rem' }}>
+    <div className="card glass-panel p-24">
       <h3 className="text-gradient">{t('staffLandingEditor.socialTitle')}</h3>
-      <p className="text-muted-sm" style={{ marginBottom: '1rem' }}>
+      <p className="text-muted-sm mb-16">
         {t('staffLandingEditor.socialHint')}
       </p>
       {[

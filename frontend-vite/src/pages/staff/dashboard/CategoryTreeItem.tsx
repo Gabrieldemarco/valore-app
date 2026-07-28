@@ -17,11 +17,11 @@ export default function CategoryTreeItem({ cat, depth, onEdit, onDelete }: {
             <ChevronRight size={14} className={`dash-category-arrow ${open ? 'rotated' : ''}`} />
           </button>
         )}
-        {!hasChildren && <span style={{ width: 14, display: 'inline-block' }} />}
+        {!hasChildren && <span className="w-14 inline-block" />}
         <span className="dash-category-name">{cat.name}</span>
         <div className="dash-category-actions">
-          <button className="dash-btn dash-btn-success" style={{ fontSize: 12, padding: '2px 8px' }} onClick={() => onEdit(cat)}>{t('staffDashboard.staffEditButton')}</button>
-          <button className="dash-btn dash-btn-danger" style={{ fontSize: 12, padding: '2px 8px' }} onClick={() => onDelete(cat.id)}>{t('staffDashboard.staffDeleteButton')}</button>
+          <button className="dash-btn dash-btn-success fs-12 px-8 py-2" onClick={() => onEdit(cat)}>{t('staffDashboard.staffEditButton')}</button>
+          <button className="dash-btn dash-btn-danger fs-12 px-8 py-2" onClick={() => onDelete(cat.id)}>{t('staffDashboard.staffDeleteButton')}</button>
         </div>
       </div>
       {hasChildren && open && (

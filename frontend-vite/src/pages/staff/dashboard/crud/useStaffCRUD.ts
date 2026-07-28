@@ -22,7 +22,7 @@ export function useStaffCRUD() {
       return false;
     }
     try {
-      const body: any = {
+      const body: Record<string, unknown> = {
         name: form.name,
         email: form.email,
         specialties: form.specialties ? form.specialties.split(',').map(s => s.trim()).filter(Boolean) : [],
@@ -49,9 +49,10 @@ export function useStaffCRUD() {
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
       return true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('Error saving staff:', e);
-      addToast(e?.message || t('staffDashboard.toastStaffSaveError'), 'error');
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastStaffSaveError');
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, t, setStaffList]);
@@ -65,9 +66,10 @@ export function useStaffCRUD() {
       const data = await api.get<{ staff: StaffMember[] }>('/api/tenant/staff');
       setStaffList(data.staff);
       return true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('Error deleting staff:', e);
-      addToast(e?.message || t('staffDashboard.toastStaffDeleteError'), 'error');
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastStaffDeleteError');
+      addToast(msg, 'error');
       return false;
     }
   }, [addToast, t, setStaffList]);

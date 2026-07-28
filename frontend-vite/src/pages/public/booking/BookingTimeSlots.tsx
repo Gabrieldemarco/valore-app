@@ -9,7 +9,6 @@ interface BookingTimeSlotsProps {
   selectedTime: string;
   onSetSelectedTime: (time: string) => void;
   onSetStep: (step: number) => void;
-  onFetchSlots: () => void;
   showWaitlistForm: boolean;
   waitlistMsg: string;
   waitlistErr: string;
@@ -23,7 +22,6 @@ const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
   selectedTime,
   onSetSelectedTime,
   onSetStep,
-  onFetchSlots,
   showWaitlistForm,
   waitlistMsg,
   waitlistErr,
@@ -45,18 +43,18 @@ const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
   return (
     <div className="booking-time-slots">
       <h3 className="slots-title">
-        {t("booking.selectTime", "Selecciona un horario")}
+        {t('booking.selectTime')}
       </h3>
 
       {slotsTimeout && (
         <div className="slots-loading">
-          <span>{t("booking.loadingSlots", "Cargando horarios...")}</span>
+          <span>{t('booking.loadingSlots')}</span>
         </div>
       )}
 
       {!slotsTimeout && slots.length === 0 && (
         <div className="slots-empty">
-          <p>{t("booking.noSlots", "No hay horarios disponibles.")}</p>
+          <p>{t('booking.noSlots')}</p>
         </div>
       )}
 
@@ -87,28 +85,28 @@ const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
               className="waitlist-btn"
               onClick={() => onSetShowWaitlistForm(true)}
             >
-              {t("booking.joinWaitlist", "Unirse a la lista de espera")}
+              {t('booking.joinWaitlist')}
             </button>
           ) : (
             <div className="waitlist-form">
-              <h4>{t("booking.waitlistTitle", "Lista de Espera")}</h4>
+              <h4>{t('booking.waitlistFormTitle')}</h4>
               <input
                 type="text"
-                placeholder={t("booking.name", "Nombre")}
+                placeholder={t('booking.nameLabel')}
                 value={waitlistName}
                 onChange={(e) => setWaitlistName(e.target.value)}
                 className="waitlist-input"
               />
               <input
                 type="tel"
-                placeholder={t("booking.phone", "Teléfono")}
+                placeholder={t('booking.phoneLabel')}
                 value={waitlistPhone}
                 onChange={(e) => setWaitlistPhone(e.target.value)}
                 className="waitlist-input"
               />
               <input
                 type="email"
-                placeholder={t("booking.email", "Email")}
+                placeholder={t('booking.emailLabel')}
                 value={waitlistEmail}
                 onChange={(e) => setWaitlistEmail(e.target.value)}
                 className="waitlist-input"
@@ -119,14 +117,14 @@ const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
                   className="booking-btn primary"
                   onClick={handleJoinWaitlist}
                 >
-                  {t("booking.submitWaitlist", "Unirme")}
+                  {t('booking.waitlistConfirm')}
                 </button>
                 <button
                   type="button"
                   className="booking-btn secondary"
                   onClick={() => onSetShowWaitlistForm(false)}
                 >
-                  {t("booking.cancel", "Cancelar")}
+                  {t('common.cancel')}
                 </button>
               </div>
               {waitlistMsg && <div className="waitlist-msg success">{waitlistMsg}</div>}

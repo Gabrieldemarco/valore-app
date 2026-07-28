@@ -13,7 +13,7 @@ if (!fs.existsSync(logsPath)) {
 
 function safeStringify(val: any): string {
   if (val instanceof Error) {
-    return JSON.stringify({ message: val.message, stack: val.stack, name: val.name, ...val });
+    return JSON.stringify({ message: val.message, stack: val.stack, name: val.name });
   }
   try { return JSON.stringify(val); } catch { return String(val); }
 }

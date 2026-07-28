@@ -1,11 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import BookingStepper from './BookingStepper';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback || key,
+    t: (key: string) => ({
+      'booking.stepPeluquero': 'Peluquero',
+      'booking.stepServicio': 'Servicio',
+      'booking.stepFecha': 'Fecha',
+      'booking.stepHorario': 'Horario',
+      'booking.stepTusDatos': 'Tus Datos',
+    }[key] || key),
   }),
 }));
 

@@ -33,7 +33,7 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      setSupported(false);
+      setSupported(false); // eslint-disable-line react-hooks/set-state-in-effect
       setPermission('unavailable');
       return;
     }
@@ -84,7 +84,7 @@ export function usePushNotifications() {
         if (!import.meta.env.PROD) { setLoading(false); return; }
         try {
           reg = await navigator.serviceWorker.register('/sw.js');
-        } catch (swErr: any) {
+        } catch (swErr: unknown) {
           logger.error('SW registration failed:', swErr);
           setError('El Service Worker no pudo registrarse');
           setLoading(false);
@@ -111,17 +111,18 @@ export function usePushNotifications() {
       });
 
       setSubscribed(true);
-    } catch (err: any) {
-      logger.error('Push subscribe error:', err.name, err.message, err);
-      const msg = err.name === 'AbortError'
+    } catch (err: unknown) {
+      const errObj = err as { name?: string; message?: string };
+      logger.error('Push subscribe error:', errObj.name, errObj.message, err);
+      const msg = errObj.name === 'AbortError'
         ? 'El servicio de notificaciones no está disponible (posiblemente bloqueado por red o firewall)'
-        : err.name === 'NetworkError'
+        : errObj.name === 'NetworkError'
           ? 'Error de red al conectar con el servicio de notificaciones'
-          : err.name === 'InvalidStateError'
+          : errObj.name === 'InvalidStateError'
             ? 'El Service Worker no está activo'
-            : err.name === 'NotSupportedError'
+            : errObj.name === 'NotSupportedError'
               ? 'Push no soportado en este navegador'
-              : err.message || 'Error al suscribir';
+              : errObj.message || 'Error al suscribir';
       setError(msg);
     } finally {
       setLoading(false);
@@ -138,8 +139,9 @@ export function usePushNotifications() {
         await sub.unsubscribe();
       }
       setSubscribed(false);
-    } catch (err: any) {
-      setError(err.message || 'Error al desuscribir');
+    } catch (err: unknown) {
+      const errObj = err as { message?: string };
+      setError(errObj.message || 'Error al desuscribir');
     } finally {
       setLoading(false);
     }

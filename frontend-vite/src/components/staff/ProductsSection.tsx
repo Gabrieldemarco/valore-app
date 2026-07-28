@@ -71,7 +71,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
       setProductsModal({ open: false, editing: null });
       setProductCropFile(null);
       refreshProducts();
-    } catch (e: any) { addToast(e?.message || t('staffDashboard.toastProductSaveError'), 'error'); }
+    } catch (e: unknown) { addToast(e instanceof Error ? e.message : t('staffDashboard.toastProductSaveError'), 'error'); }
   };
 
   const deleteProduct = async (id: number, name: string) => {
@@ -116,17 +116,17 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
                     <td className="table-cell-label">{p.name}</td>
                     <td className="table-cell-pad-center">
                       {p.image_url ? (
-                        <img src={p.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <img src={p.image_url} alt="" className="w-40 h-40 object-cover-4" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
-                        <span className="text-muted" style={{ opacity: 0.4 }}>—</span>
+                        <span className="text-muted opacity-50">—</span>
                       )}
                     </td>
                     <td className="p-12 text-muted">{p.category || '-'}</td>
                     <td className="table-cell-pad-right">${p.price}</td>
                     <td className="table-cell-pad-right text-muted">${p.cost}</td>
                     <td className="table-cell-pad-right">
-                      <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
-                      {p.min_stock > 0 && <span className="fs-12" style={{ color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
+                      <span style={{ color: p.stock <= p.min_stock ? 'var(--danger-light)' : 'var(--text-secondary)' }}>{p.stock}</span>
+                      {p.min_stock > 0 && <span className="fs-12 text-secondary ml-4">/ {p.min_stock}</span>}
                     </td>
                     <td className="table-cell-pad-center">
                       <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
@@ -147,7 +147,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
 
       {productsModal.open && (
         <div className="dash-modal-overlay flex" onClick={() => setProductsModal({ open: false, editing: null })}>
-          <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+          <div className="dash-modal-content glass-panel max-w-500" onClick={e => e.stopPropagation()}>
             <div className="dash-modal-header">
               <h3 className="text-gradient">{productsModal.editing ? t('staffDashboard.productsModalEditTitle') : t('staffDashboard.productsModalNewTitle')}</h3>
               <button onClick={() => setProductsModal({ open: false, editing: null })} className="dash-close-btn">✕</button>
@@ -194,14 +194,14 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
               <div className="dash-form-group">
                 <label>{t('staffDashboard.productsModalImageLabel')}</label>
                 <input type="text" className="glass-input" value={productsForm.image_url} onChange={e => setProductsForm(p => ({ ...p, image_url: e.target.value }))} placeholder={t('staffDashboard.productsModalImagePlaceholder')} />
-                <input type="file" accept="image/*" style={{ marginTop: 6, padding: 6, fontSize: 13 }} className="glass-input" onChange={handleProductImageUpload} />
+                <input type="file" accept="image/*" className="glass-input fs-13 mt-6 p-6" onChange={handleProductImageUpload} />
                 {productsForm.image_url && (
-                  <div style={{ marginTop: 6 }}>
-                    <img src={productsForm.image_url} alt="" style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <div className="mt-6">
+                    <img src={productsForm.image_url} alt="" className="w-60 h-60 object-cover-6" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   </div>
                 )}
               </div>
-              <div className="flex flex-gap-12 mt-8" style={{ justifyContent: 'flex-end' }}>
+              <div className="flex flex-gap-12 mt-8 flex-end">
                 <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>{t('staffDashboard.productsModalCancel')}</button>
                 <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? t('staffDashboard.productsModalSave') : t('staffDashboard.productsModalCreate')}</button>
               </div>

@@ -11,7 +11,7 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
 
 function buildAuthUrl(state: string): string {
-  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_CALENDAR_CALLBACK_URL)}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
+  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID!}&redirect_uri=${encodeURIComponent(GOOGLE_CALENDAR_CALLBACK_URL!)}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
 }
 
 async function exchangeCodeForTokens(code: string): Promise<any> {

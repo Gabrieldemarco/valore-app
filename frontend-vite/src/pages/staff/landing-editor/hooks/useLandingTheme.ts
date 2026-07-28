@@ -17,17 +17,17 @@ export function useLandingTheme({
   tenant, collectPayload, updatePreview, showStatus, t, setTenant,
 }: ThemeProps) {
   const updateCustomBackgroundAndHero = useCallback((overrides?: Record<string, unknown>) => {
-    const bgColor = (overrides?.landing_background_color as string) || (tenant.landing_background_color as string) || '#0f0808';
+    const bgColor = (overrides?.landing_background_color as string) || (tenant.landing_background_color as string) || 'var(--bg-gradient-end)';
     const heroHeight = (overrides?.landing_hero_height as number) || (tenant.landing_hero_height as number) || 70;
     const heroWidth = (overrides?.landing_hero_width as number) || (tenant.landing_hero_width as number) || 100;
-    const primaryTextColor = (overrides?.landing_primary_text_color as string) || (tenant.landing_primary_text_color as string) || '#1a1a1a';
-    const secondaryTextColor = (overrides?.landing_secondary_text_color as string) || (tenant.landing_secondary_text_color as string) || '#666666';
+    const primaryTextColor = (overrides?.landing_primary_text_color as string) || (tenant.landing_primary_text_color as string) || 'var(--text-dark)';
+    const secondaryTextColor = (overrides?.landing_secondary_text_color as string) || (tenant.landing_secondary_text_color as string) || 'var(--text-muted)';
     const primaryFont = (overrides?.landing_primary_font as string) || (tenant.landing_primary_font as string) || 'system';
     const secondaryFont = (overrides?.landing_secondary_font as string) || (tenant.landing_secondary_font as string) || 'system';
 
     const updatedCss = generateBrandingCSS({
-      primary: tenant.brand_primary_color as string || '#c8827d',
-      secondary: tenant.brand_secondary_color as string || '#d69c98',
+      primary: tenant.brand_primary_color as string || 'var(--primary)',
+      secondary: tenant.brand_secondary_color as string || 'var(--accent)',
       fonts: { primary: primaryFont, secondary: secondaryFont },
       heroHeight,
       heroWidth,
@@ -71,12 +71,12 @@ export function useLandingTheme({
   const applyPresetTheme = useCallback((primary: string, secondary: string, stylePreset: string) => {
     let customCss = generatePresetCSS(stylePreset, primary, secondary);
     if (stylePreset === 'light') {
-      const bgColor = (tenant.landing_background_color as string) || '#ffffff';
+      const bgColor = (tenant.landing_background_color as string) || 'var(--text-white)';
       const heroHeight = (tenant.landing_hero_height as number) || 70;
       customCss = customCss
-        .replace('.landing-view .hero { background: #ffffff !important; }', `.landing-view .hero { background: ${bgColor} !important; min-height: ${heroHeight}vh !important; }`);
+        .replace('.landing-view .hero { background: var(--text-white) !important; }', `.landing-view .hero { background: ${bgColor} !important; min-height: ${heroHeight}vh !important; }`);
     } else if (stylePreset === 'default' || stylePreset === 'velvet') {
-      const bgColor = (tenant.landing_background_color as string) || '#0f0808';
+      const bgColor = (tenant.landing_background_color as string) || 'var(--bg-gradient-end)';
       const heroHeight = (tenant.landing_hero_height as number) || 70;
       customCss = `/* Custom Background & Hero Height */
 .landing-view { background: ${bgColor} !important; }

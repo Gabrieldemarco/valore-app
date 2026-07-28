@@ -166,7 +166,7 @@ describe('AdminDashboard', () => {
   });
 
   it('shows Twilio config section', async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
     setupFetch();
     renderDashboard();

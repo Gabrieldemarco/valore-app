@@ -8,46 +8,15 @@ import PublicSearchBar from './PublicSearchBar';
 import PublicSalonStates from './PublicSalonStates';
 import PublicFooter from './PublicFooter';
 import SalonGridSection from './SalonGridSection';
+import TreatmentCategories from './components/TreatmentCategories';
+import HowItWorksSection from './components/HowItWorksSection';
+import { SERVICE_CATEGORIES_DATA } from './components/ServiceCategoriesData';
 import { getGenderCategory, type Salon } from './SalonCard';
 import '../../styles/index.css';
 
 interface TenantsResponse {
   tenants?: Salon[];
 }
-
-interface ServiceCategory {
-  key: string;
-  labelKey: string;
-  image: string;
-  keywords: string[];
-}
-
-const SERVICE_CATEGORIES_DATA: ServiceCategory[] = [
-  {
-    key: 'cejas', labelKey: 'publicIndex.catCejas', image: '/uploads/category-cejas.png',
-    keywords: ['ceja', 'pestaña', 'henna', 'lifting', 'laminado', 'diseño de ceja']
-  },
-  {
-    key: 'uñas', labelKey: 'publicIndex.catUnas', image: '/uploads/category-unas.png',
-    keywords: ['manicura', 'pedicura', 'uña', 'nail', 'esmaltado', 'semipermanente', 'kapping', 'esculpida', 'acrílica', 'gel']
-  },
-  {
-    key: 'maquillaje', labelKey: 'publicIndex.catMaquillaje', image: '/uploads/category-maquillaje.jpeg',
-    keywords: ['maquillaje', 'makeup', 'social', 'novia']
-  },
-  {
-    key: 'facial', labelKey: 'publicIndex.catFacial', image: '/uploads/category-facial.png',
-    keywords: ['facial', 'limpieza facial', 'hidratación', 'skin care', 'dermaplaning']
-  },
-  {
-    key: 'depilacion', labelKey: 'publicIndex.catDepilacion', image: '/uploads/category-depilacion.png',
-    keywords: ['depilación', 'depilacion', 'cera', 'laser']
-  },
-  {
-    key: 'masajes', labelKey: 'publicIndex.catMasajes', image: '/uploads/category-masajes.png',
-    keywords: ['masaje', 'masajes', 'bienestar', 'relajación', 'relajante']
-  },
-];
 
 export default function PublicIndex() {
   const { t, i18n } = useTranslation();
@@ -90,7 +59,7 @@ export default function PublicIndex() {
     api.get<{ services: string[] }>('/api/services/all')
       .then(data => setAllServices(data.services || []))
       .catch(() => setAllServices([]));
-  }, []);
+  }, [t]);
 
   const filterSalons = useCallback(() => {
     let result = allSalons;
@@ -149,9 +118,9 @@ export default function PublicIndex() {
       }
     }
     setFiltered(result);
-  }, [allSalons, searchQuery, searchProfessional, searchLocation, currentGenderFilter, currentServiceFilter]);
+  }, [allSalons, searchQuery, searchProfessional, searchLocation, currentGenderFilter, currentServiceFilter, SERVICE_CATEGORIES]);
 
-  useEffect(() => { filterSalons(); }, [filterSalons]);
+  useEffect(() => { filterSalons(); }, [filterSalons]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleGenderFilter = useCallback((filter: string) => {
     setCurrentGenderFilter(filter);
@@ -236,19 +205,11 @@ export default function PublicIndex() {
         onSearch={handleSearch}
       />
 
-      <section className="service-cards-section">
-        <div className="container">
-          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 8 }}>{t('publicIndex.treatmentsTitle', 'Tratamientos')}</h2>
-          <p className="section-subtitle" style={{ textAlign: 'center', marginBottom: 32 }}>{t('publicIndex.treatmentsSubtitle', 'Explorá por tipo de servicio')}</p>
-          <div className="service-cards-grid">
-            {SERVICE_CATEGORIES.map(cat => (
-              <div key={cat.key} className={`service-card${currentServiceFilter === cat.key ? ' active' : ''}`} onClick={() => handleServiceFilter(cat.key)}>
-                <img src={cat.image} alt={cat.label} className="service-card-image" loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TreatmentCategories
+        categories={SERVICE_CATEGORIES}
+        activeCategory={currentServiceFilter}
+        onCategoryClick={handleServiceFilter}
+      />
 
       <main className="container salons-section" id="salons">
         {!loading && !error && categorizedSalons.featured.length > 0 && (
@@ -258,7 +219,7 @@ export default function PublicIndex() {
             salons={categorizedSalons.featured}
             gridRef={featuredGridRef}
             defaultServices={defaultServices}
-            dotCount={getDotCount(featuredGridRef, categorizedSalons.featured.length)}
+            dotCount={getDotCount(featuredGridRef, categorizedSalons.featured.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, featuredGridRef)}
           />
         )}
@@ -270,7 +231,7 @@ export default function PublicIndex() {
             salons={categorizedSalons.trending}
             gridRef={trendingGridRef}
             defaultServices={defaultServices}
-            dotCount={getDotCount(trendingGridRef, categorizedSalons.trending.length)}
+            dotCount={getDotCount(trendingGridRef, categorizedSalons.trending.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, trendingGridRef)}
             headerStyle={{ marginTop: 60 }}
           />
@@ -283,7 +244,7 @@ export default function PublicIndex() {
             salons={categorizedSalons.new}
             gridRef={newGridRef}
             defaultServices={defaultServices}
-            dotCount={getDotCount(newGridRef, categorizedSalons.new.length)}
+            dotCount={getDotCount(newGridRef, categorizedSalons.new.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, newGridRef)}
             headerStyle={{ marginTop: 60 }}
           />
@@ -299,50 +260,7 @@ export default function PublicIndex() {
         />
       </main>
 
-      <section className="container features-section">
-        <div className="section-header">
-          <h2 className="section-title">{t('publicIndex.howItWorksTitle')}</h2>
-          <p className="section-subtitle">{t('publicIndex.howItWorksSubtitle')}</p>
-        </div>
-        <div className="features-grid">
-          <div className="feature-card glass-panel">
-            <div className="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </div>
-            <h3>{t('publicIndex.step1Title')}</h3>
-            <p>{t('publicIndex.step1Desc')}</p>
-          </div>
-          <div className="feature-card glass-panel">
-            <div className="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="6" cy="6" r="3"></circle>
-                <circle cx="6" cy="18" r="3"></circle>
-                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
-              </svg>
-            </div>
-            <h3>{t('publicIndex.step2Title')}</h3>
-            <p>{t('publicIndex.step2Desc')}</p>
-          </div>
-          <div className="feature-card glass-panel">
-            <div className="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-                <polyline points="8 14 11 17 16 12"></polyline>
-              </svg>
-            </div>
-            <h3>{t('publicIndex.step3Title')}</h3>
-            <p>{t('publicIndex.step3Desc')}</p>
-          </div>
-        </div>
-      </section>
+      <HowItWorksSection />
 
       <PublicFooter appointmentsCount={appointmentsCount} />
     </>

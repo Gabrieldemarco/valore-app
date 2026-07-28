@@ -58,7 +58,7 @@ export default function ClientResetPassword() {
 
   if (!token) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
           <h1 style={styles.title}>{t('clientResetPassword.invalidLinkTitle')}</h1>
           <p style={styles.subtitle}>{t('clientResetPassword.invalidLinkMessage')}</p>
@@ -72,9 +72,9 @@ export default function ClientResetPassword() {
 
   if (success) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
-          <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>✅</div>
+          <div className="fs-48 mb-16 text-center">✓</div>
           <h1 style={styles.title}>{t('clientResetPassword.successTitle')}</h1>
           <p style={{ ...styles.subtitle, color: 'var(--success)' }}>{t('clientResetPassword.successMessage')}</p>
           <Link to="/client/login" style={{ ...styles.btn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: 16 }}>{t('clientResetPassword.loginNow')}</Link>
@@ -84,7 +84,7 @@ export default function ClientResetPassword() {
   }
 
   return (
-    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={styles.container}>
         <h1 style={styles.title}>{t('clientResetPassword.title')}</h1>
         <p style={styles.subtitle}>{t('clientResetPassword.subtitle')}</p>

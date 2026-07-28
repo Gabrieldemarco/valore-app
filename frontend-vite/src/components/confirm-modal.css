@@ -83,7 +83,7 @@
 .confirm-modal-actions .btn-danger {
   background: rgba(225, 29, 72, 0.15);
   border: 1px solid rgba(225, 29, 72, 0.4);
-  color: #fca5a5;
+  color: var(--danger-light);
 }
 
 .confirm-modal-actions .btn-danger:hover {

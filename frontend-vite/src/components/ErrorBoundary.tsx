@@ -33,9 +33,9 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-deep)', color: 'var(--text-secondary)', fontFamily: 'Outfit, sans-serif', padding: 20, textAlign: 'center' }}>
           <div>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>💇</div>
-            <h1 style={{ color: 'var(--primary)', fontSize: 24, margin: '0 0 8px' }}>{t('app.errorBoundary.title')}</h1>
-            <p style={{ color: 'var(--text-secondary)', margin: '0 0 24px', lineHeight: 1.6 }}>{t('app.errorBoundary.description')}</p>
+            <div className="fs-64 mb-16">💇</div>
+            <h1 className="text-primary fs-24 m-0 mb-8">{t('app.errorBoundary.title')}</h1>
+            <p className="text-secondary m-0 mb-24 leading-relaxed">{t('app.errorBoundary.description')}</p>
             <a href="/" style={{ display: 'inline-block', background: 'var(--primary)', color: 'var(--text-dark)', padding: '10px 24px', borderRadius: 30, fontWeight: 600, textDecoration: 'none', fontSize: 13 }}>{t('app.errorBoundary.goHome')}</a>
           </div>
         </div>

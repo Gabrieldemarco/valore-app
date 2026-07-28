@@ -15,6 +15,7 @@ import createEmailTransporter from './email';
 import { sendWhatsApp } from './twilio';
 import logger from './logger';
 import { getLocale } from '../utils/locale';
+import { getTemplate } from '../utils/templates';
 
 /**
  * @param {Object} appointment
@@ -30,28 +31,24 @@ async function sendClientConfirmation(appointment, tenant) {
   if (!appointment.client_email) return { success: true, skipped: 'No email provided' };
 
   const date = new Date(appointment.appointment_date);
+  const locale = getLocale();
+  const tmpl = getTemplate('appointmentConfirmation', locale);
+  if (!tmpl) return { success: false, error: `Missing template for locale: ${locale}` };
 
-  const manageLink = appointment.management_link
-    ? `<p style="margin-top:20px"><a href="${appointment.management_link}" style="background:${tenant.brand_primary_color || '#2563eb'};color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Gestionar turno</a></p>
-       <p style="font-size:13px;color:#6b7280">O copiá este enlace: <a href="${appointment.management_link}" style="color:${tenant.brand_primary_color || '#2563eb'}">${appointment.management_link}</a></p>`
-    : '';
+  const data = {
+    client_name: appointment.client_name,
+    business_name: tenant.business_name,
+    date: date.toLocaleDateString(locale),
+    time: date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+    service: appointment.service,
+    staff_name: appointment.staff_name,
+    business_address: tenant.business_address,
+    business_phone: tenant.business_phone,
+    brand_primary_color: tenant.brand_primary_color,
+    management_link: appointment.management_link,
+  };
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:${tenant.brand_primary_color || '#2563eb'}">✅ Turno Confirmado</h2>
-      <p>Hola <strong>${appointment.client_name}</strong>,</p>
-      <p>Tu turno en <strong>${tenant.business_name}</strong>:</p>
-      <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
-        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString(getLocale())}</p>
-        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}</p>
-        <p><strong>✂️ Servicio:</strong> ${appointment.service}</p>
-        ${appointment.staff_name ? `<p><strong>💈 Peluquero:</strong> ${appointment.staff_name}</p>` : ''}
-      </div>
-      <p>📍 ${tenant.business_address || ''}<br>📞 ${tenant.business_phone || ''}</p>
-      ${manageLink}
-      <p style="color:#6b7280;font-size:14px;margin-top:30px">💡 Llegá 5 minutos antes</p>
-    </div>
-  `;
+  const html = tmpl.emailHtml(data);
 
   try {
     // ✅ CORREGIDO: Usar SMTP_USER en lugar de EMAIL_USER
@@ -66,7 +63,7 @@ async function sendClientConfirmation(appointment, tenant) {
     const info = await transporter.sendMail({
       from: `"${tenant.business_name}" <${process.env.SMTP_USER}>`,
       to: appointment.client_email,
-      subject: `✅ Turno confirmado - ${tenant.business_name}`,
+      subject: tmpl.emailSubject(data),
       html
     });
 
@@ -77,10 +74,7 @@ async function sendClientConfirmation(appointment, tenant) {
 
   // WhatsApp al cliente
   if (appointment.client_phone) {
-    let clientBody = `✅ Hola ${appointment.client_name}, tu turno en ${tenant.business_name} fue confirmado:\n📅 ${date.toLocaleDateString(getLocale())}\n🕐 ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📍 ${tenant.business_address || ''}`;
-    if (appointment.management_link) {
-      clientBody += `\n\n🔗 Gestioná tu turno: ${appointment.management_link}`;
-    }
+    const clientBody = tmpl.whatsappBody(data);
     await sendWhatsApp(appointment.client_phone, clientBody);
   }
 
@@ -101,7 +95,7 @@ async function sendClientConfirmation(appointment, tenant) {
  * @returns {Promise<{success: boolean, messageId?: string, skipped?: string, simulated?: boolean, error?: string}>}
  */
 async function notifyStaff(appointment, tenant) {
-  const recipients = [];
+  const recipients: string[] = [];
   if (tenant.notification_email) recipients.push(tenant.notification_email);
   if (appointment.staff_email && appointment.staff_email !== tenant.notification_email) {
     recipients.push(appointment.staff_email);
@@ -109,23 +103,23 @@ async function notifyStaff(appointment, tenant) {
   if (recipients.length === 0) return { success: true, skipped: 'No recipients configured' };
 
   const date = new Date(appointment.appointment_date);
+  const locale = getLocale();
+  const tmpl = getTemplate('staffNewAppointment', locale);
+  if (!tmpl) return { success: false, error: `Missing template for locale: ${locale}` };
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#10b981">📅 Nuevo Turno Reservado</h2>
-      <p><strong>${tenant.business_name}</strong></p>
-      <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
-        <p><strong>👤 Cliente:</strong> ${appointment.client_name}</p>
-        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString(getLocale())}</p>
-        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}</p>
-        <p><strong>✂️ Servicio:</strong> ${appointment.service}</p>
-        ${appointment.staff_name ? `<p><strong>💈 Peluquero:</strong> ${appointment.staff_name}</p>` : ''}
-        <p><strong>📞 Teléfono:</strong> ${appointment.client_phone}</p>
-        ${appointment.client_email ? `<p><strong>📧 Email:</strong> ${appointment.client_email}</p>` : ''}
-        ${appointment.notes ? `<p><strong>📝 Notas:</strong> ${appointment.notes}</p>` : ''}
-      </div>
-    </div>
-  `;
+  const data = {
+    client_name: appointment.client_name,
+    business_name: tenant.business_name,
+    date: date.toLocaleDateString(locale),
+    time: date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+    service: appointment.service,
+    staff_name: appointment.staff_name,
+    client_phone: appointment.client_phone,
+    client_email: appointment.client_email,
+    notes: appointment.notes,
+  };
+
+  const html = tmpl.emailHtml(data);
 
   try {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -141,7 +135,7 @@ async function notifyStaff(appointment, tenant) {
         const info = await transporter.sendMail({
           from: `"Sistema Turnos" <${process.env.SMTP_USER}>`,
           to: recipient,
-          subject: `📅 Nuevo turno: ${appointment.client_name}`,
+          subject: tmpl.emailSubject(data),
           html
         });
         logger.info('✅ Alerta enviada a:', recipient, info.messageId);
@@ -155,13 +149,13 @@ async function notifyStaff(appointment, tenant) {
 
   // WhatsApp al staff (solo al número general del negocio)
   if (tenant.notification_whatsapp) {
-    const staffBody = `📅 Nuevo turno - ${tenant.business_name}\n👤 ${appointment.client_name}\n📅 ${date.toLocaleDateString(getLocale())}\n🕐 ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📞 ${appointment.client_phone}${appointment.notes ? `\n📝 ${appointment.notes}` : ''}`;
+    const staffBody = tmpl.whatsappBody(data);
     await sendWhatsApp(tenant.notification_whatsapp, staffBody);
   }
 
   sendPushToTenant(tenant.id, {
-    title: `📅 Nuevo turno - ${tenant.business_name}`,
-    body: `${appointment.client_name} - ${appointment.service} - ${date.toLocaleDateString(getLocale())} ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}`,
+    title: tmpl.pushTitle(data),
+    body: tmpl.pushBody(data),
     url: '/staff/dashboard',
   });
 
@@ -171,19 +165,18 @@ async function notifyStaff(appointment, tenant) {
 // ========== ENVIAR CREDENCIALES A NUEVO STAFF ==========
 async function sendStaffCredentials(staff: { name: string; email: string }, tempPassword: string, tenant: { business_name: string }) {
   const loginUrl = `${process.env.BASE_URL || 'https://app.velsoie.com.uy'}/staff/login`;
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#10b981">👋 Bienvenido a ${tenant.business_name}</h2>
-      <p>Hola <strong>${staff.name}</strong>,</p>
-      <p>Se ha creado tu cuenta de acceso al sistema de turnos.</p>
-      <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
-        <p><strong>🔑 Contraseña temporal:</strong> <code style="background:#e5e7eb;padding:4px 8px;border-radius:4px;font-size:16px">${tempPassword}</code></p>
-        <p style="margin-top:16px"><a href="${loginUrl}" style="background:#10b981;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Iniciar sesión</a></p>
-        <p style="margin-top:12px;font-size:13px;color:#6b7280">O copiá este enlace en tu navegador: <br><a href="${loginUrl}" style="color:#10b981">${loginUrl}</a></p>
-      </div>
-      <p style="color:#6b7280;font-size:13px">Te recomendamos cambiar la contraseña después de iniciar sesión.</p>
-    </div>
-  `;
+  const locale = getLocale();
+  const tmpl = getTemplate('staffCredentials', locale);
+  if (!tmpl) return { success: false, error: `Missing template for locale: ${locale}` };
+
+  const data = {
+    staff_name: staff.name,
+    business_name: tenant.business_name,
+    tempPassword,
+    loginUrl,
+  };
+
+  const html = tmpl.emailHtml(data);
 
   try {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -195,7 +188,7 @@ async function sendStaffCredentials(staff: { name: string; email: string }, temp
     await transporter.sendMail({
       from: `"${tenant.business_name}" <${process.env.SMTP_USER}>`,
       to: staff.email,
-      subject: `👋 Bienvenido a ${tenant.business_name} - Tus credenciales`,
+      subject: tmpl.emailSubject(data),
       html
     });
     logger.info('✅ Credenciales enviadas a:', staff.email);

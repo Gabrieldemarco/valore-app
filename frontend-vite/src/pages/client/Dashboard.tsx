@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, clearApiCache } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import PhoneInput from '../../components/PhoneInput';
 import { logger } from '../../services/logger';
 import OnboardingTour from '../../components/OnboardingTour';
 import type { TourStep } from '../../components/OnboardingTour';
+import ClientDashboardHeader from './components/ClientDashboardHeader';
+import AppointmentCard from './components/AppointmentCard';
+import EmptyState from './components/EmptyState';
+import ProfileSection from './components/ProfileSection';
+import ExploreSection from './components/ExploreSection';
+import AgendaSection from './components/AgendaSection';
 import '../../styles/dashboard.css';
 
 interface Appointment {
@@ -76,13 +81,7 @@ export default function ClientDashboard() {
     } else if (!clientToken) {
       navigate('/client/login');
     }
-  }, []);
-
-  useEffect(() => {
-    if (!clientToken) return;
-    loadData();
-    loadTenants();
-  }, [clientToken]);
+  }, [clientToken, login, navigate]);
 
   const loadData = async () => {
     setLoading(true);
@@ -103,6 +102,21 @@ export default function ClientDashboard() {
     finally { setLoading(false); }
   };
 
+  const loadTenants = async () => {
+    setTenantsLoading(true);
+    try {
+      const data = await api.get<{ tenants: Tenant[] }>('/api/tenants');
+      setTenants(data.tenants || []);
+    } catch (err) { logger.error('Error loading tenants:', err); }
+    finally { setTenantsLoading(false); }
+  };
+
+  useEffect(() => {
+    if (!clientToken) return;
+    loadData(); // eslint-disable-line react-hooks/set-state-in-effect
+    loadTenants();
+  }, [clientToken]);
+
   const saveProfile = async () => {
     setProfileMsg(''); setProfileError('');
     try {
@@ -114,18 +128,9 @@ export default function ClientDashboard() {
       if (res.user?.phone) localStorage.setItem('clientPhone', res.user.phone);
       setProfileMsg(t('clientDashboard.profileUpdated'));
       setTimeout(() => setProfileMsg(''), 3000);
-    } catch (err: any) {
-      setProfileError(err?.message || t('clientDashboard.profileError'));
+    } catch (err: unknown) {
+      setProfileError(err instanceof Error ? err.message : t('clientDashboard.profileError'));
     }
-  };
-
-  const loadTenants = async () => {
-    setTenantsLoading(true);
-    try {
-      const data = await api.get<{ tenants: Tenant[] }>('/api/tenants');
-      setTenants(data.tenants || []);
-    } catch (err) { logger.error('Error loading tenants:', err); }
-    finally { setTenantsLoading(false); }
   };
 
   const handleLogout = () => {
@@ -170,6 +175,17 @@ export default function ClientDashboard() {
     setShowAgendaForm(true);
   };
 
+  const handleAgendaNew = () => {
+    setEditingAgenda(null);
+    setAgendaForm({ titulo: '', fecha: '', descripcion: '' });
+    setShowAgendaForm(true);
+  };
+
+  const handleAgendaCancel = () => {
+    setShowAgendaForm(false);
+    setEditingAgenda(null);
+  };
+
   const clientTourSteps: TourStep[] = [
     { target: '', title: t('clientDashboard.tourWelcomeTitle'), content: t('clientDashboard.tourWelcomeContent') },
     { target: '.glass-panel:nth-child(2)', title: t('clientDashboard.tourUpcomingTitle'), content: t('clientDashboard.tourUpcomingContent'), position: 'bottom' },
@@ -184,8 +200,8 @@ export default function ClientDashboard() {
 
   if (loading) {
     return (
-      <div className="dash-container text-center" style={{ padding: 40 }}>
-        <div className="spinner" style={{ margin: '0 auto' }} />
+      <div className="dash-container text-center p-40">
+        <div className="spinner m-0-auto" />
         <p className="text-muted mt-12">{t('clientDashboard.loading')}</p>
       </div>
     );
@@ -193,19 +209,14 @@ export default function ClientDashboard() {
 
   return (
     <div className="dash-container p-24">
-      <div className="flex-between mb-24">
-        <h2 className="text-gradient m-0">{t('clientDashboard.welcome', { name: clientName })}</h2>
-        <div className="flex-gap-8">
-          <button className="dash-btn dash-btn-danger" onClick={handleLogout}>{t('clientDashboard.logout')}</button>
-        </div>
-      </div>
+      <ClientDashboardHeader clientName={clientName} onLogout={handleLogout} />
 
       <OnboardingTour tourId="client-dashboard" steps={clientTourSteps} enabled={!!clientToken} onComplete={() => {}} />
 
       <div className="glass-panel card-padded">
         <h3 className="m-0 mb-16">{t('clientDashboard.upcomingTitle')}</h3>
         {upcomingAppts.length === 0 ? (
-          <p className="text-muted">{t('clientDashboard.noUpcoming')}</p>
+          <EmptyState message={t('clientDashboard.noUpcoming')} />
         ) : (
           <div className="dash-table-responsive table-wrapper">
             <table className="table-full">
@@ -219,16 +230,7 @@ export default function ClientDashboard() {
               </thead>
               <tbody>
                 {upcomingAppts.map(a => (
-                  <tr key={a.id}>
-                    <td className="table-cell-label">{a.service}</td>
-                    <td className="p-12">{new Date(a.appointment_date).toLocaleDateString()}</td>
-                    <td className="p-12">{new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="table-cell-pad-center">
-                      <span className={`dash-appointment-status ${a.status === 'confirmed' ? 'dash-status-confirmed' : 'dash-status-pending'}`}>
-                        {a.status}
-                      </span>
-                    </td>
-                  </tr>
+                  <AppointmentCard key={a.id} appointment={a} />
                 ))}
               </tbody>
             </table>
@@ -236,48 +238,22 @@ export default function ClientDashboard() {
         )}
       </div>
 
-      <div className="glass-panel card-padded">
-        <h3 className="m-0 mb-16">{t('clientDashboard.profileTitle')}</h3>
-        {profileMsg && <div className="auth-success mb-12">{profileMsg}</div>}
-        {profileError && <div className="auth-error mb-12">{profileError}</div>}
-        <div className="flex flex-gap-16 flex-wrap">
-          <div style={{ flex: '1 1 200px' }}>
-            <label className="block text-xs-secondary mb-4">{t('clientDashboard.profileNameLabel')}</label>
-            <input type="text" className="glass-input w-full" value={profileName} onChange={e => setProfileName(e.target.value)} placeholder={t('clientDashboard.profileNamePlaceholder')} />
-          </div>
-          <div style={{ flex: '1 1 200px' }}>
-            <label className="block text-xs-secondary mb-4">{t('clientDashboard.profilePhoneLabel')}</label>
-            <PhoneInput value={profilePhone} onChange={setProfilePhone} placeholder="099 123 456" className="glass-input w-full" />
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={saveProfile}>{t('clientDashboard.profileSaveButton')}</button>
-        </div>
-      </div>
+      <ProfileSection
+        profileName={profileName}
+        profilePhone={profilePhone}
+        profileMsg={profileMsg}
+        profileError={profileError}
+        onNameChange={setProfileName}
+        onPhoneChange={setProfilePhone}
+        onSave={saveProfile}
+      />
 
-      <div className="glass-panel card-padded">
-        <h3 className="m-0 mb-16">{t('clientDashboard.exploreTitle')}</h3>
-        {tenantsLoading ? (
-          <p className="text-muted">{t('common.loading')}</p>
-        ) : tenants.length === 0 ? (
-          <p className="text-muted">{t('clientDashboard.exploreEmpty')}</p>
-        ) : (
-          <div className="grid-auto-fill">
-            {tenants.map(tenant => (
-              <div key={tenant.id} onClick={() => goToTenant(tenant.slug)} className="card-border"
-                   onMouseOver={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)')}
-                   onMouseOut={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.15)')}>
-                <div className="font-600 mb-4" style={{ color: 'var(--border-color)' }}>{tenant.business_name}</div>
-                {tenant.business_address && <div className="text-xs-secondary">{tenant.business_address}</div>}
-                <div className="text-secondary mt-8" style={{ fontSize: 11 }}>{t('clientDashboard.exploreBookButton')}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ExploreSection tenants={tenants} loading={tenantsLoading} onTenantClick={goToTenant} />
 
       <div className="glass-panel card-padded">
         <h3 className="m-0 mb-16">{t('clientDashboard.historyTitle')}</h3>
         {pastAppts.length === 0 ? (
-          <p className="text-muted">{t('clientDashboard.noHistory')}</p>
+          <EmptyState message={t('clientDashboard.noHistory')} />
         ) : (
           <div className="dash-table-responsive table-wrapper">
             <table className="table-full">
@@ -291,14 +267,7 @@ export default function ClientDashboard() {
               </thead>
               <tbody>
                 {pastAppts.map(a => (
-                  <tr key={a.id}>
-                    <td className="table-cell-label">{a.service}</td>
-                    <td className="p-12">{new Date(a.appointment_date).toLocaleDateString()}</td>
-                    <td className="p-12">${a.service_price || 0}</td>
-                    <td className="table-cell-pad-center">
-                      <span className="dash-appointment-status dash-status-cancelled">{a.status}</span>
-                    </td>
-                  </tr>
+                  <AppointmentCard key={a.id} appointment={a} showPrice />
                 ))}
               </tbody>
             </table>
@@ -306,65 +275,18 @@ export default function ClientDashboard() {
         )}
       </div>
 
-      <div className="glass-panel p-24">
-        <div className="flex-between mb-16">
-          <h3 className="m-0">{t('clientDashboard.agendaTitle')}</h3>
-          <button className="dash-btn dash-btn-primary" onClick={() => { setEditingAgenda(null); setAgendaForm({ titulo: '', fecha: '', descripcion: '' }); setShowAgendaForm(true); }}>
-            {t('clientDashboard.agendaNewButton')}
-          </button>
-        </div>
-        {showAgendaForm && (
-          <div className="card-base mb-16">
-            <div className="dash-form-group">
-              <label>{t('clientDashboard.agendaTitleLabel')}</label>
-              <input type="text" className="glass-input" value={agendaForm.titulo} onChange={e => setAgendaForm(p => ({ ...p, titulo: e.target.value }))} />
-            </div>
-            <div className="dash-form-group">
-              <label>{t('clientDashboard.agendaDateLabel')}</label>
-              <input type="datetime-local" className="glass-input" value={agendaForm.fecha} onChange={e => setAgendaForm(p => ({ ...p, fecha: e.target.value }))} />
-            </div>
-            <div className="dash-form-group">
-              <label>{t('clientDashboard.agendaDescLabel')}</label>
-              <textarea className="glass-input" value={agendaForm.descripcion} onChange={e => setAgendaForm(p => ({ ...p, descripcion: e.target.value }))} rows={2} />
-            </div>
-            <div className="flex-gap-8">
-              <button className="dash-btn dash-btn-success" onClick={saveAgendaEvent}>
-                {editingAgenda ? t('clientDashboard.agendaSaveButton') : t('clientDashboard.agendaCreateButton')}
-              </button>
-              <button className="dash-btn dash-btn-danger" onClick={() => { setShowAgendaForm(false); setEditingAgenda(null); }}>
-                {t('clientDashboard.agendaCancelButton')}
-              </button>
-            </div>
-          </div>
-        )}
-        {agendaEvents.length === 0 ? (
-          <p className="text-muted">{t('clientDashboard.agendaEmpty')}</p>
-        ) : (
-          <div className="dash-table-responsive table-wrapper">
-            <table className="table-full">
-              <thead>
-                <tr>
-                  <th className="table-cell-left">{t('clientDashboard.agendaTableTitle')}</th>
-                  <th className="table-cell-left">{t('clientDashboard.agendaTableDate')}</th>
-                  <th className="table-cell-center">{t('clientDashboard.tableActions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agendaEvents.map(ev => (
-                  <tr key={ev.id}>
-                    <td className="table-cell-label">{ev.titulo}</td>
-                    <td className="p-12">{new Date(ev.fecha).toLocaleString()}</td>
-                    <td className="table-cell-pad-center">
-                      <button className="dash-btn dash-btn-success mr-8" onClick={() => editAgendaEvent(ev)}>{t('clientDashboard.editButton')}</button>
-                      <button className="dash-btn dash-btn-danger" onClick={() => deleteAgendaEvent(ev.id)}>{t('clientDashboard.deleteButton')}</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <AgendaSection
+        events={agendaEvents}
+        showForm={showAgendaForm}
+        form={agendaForm}
+        isEditing={!!editingAgenda}
+        onSave={saveAgendaEvent}
+        onDelete={deleteAgendaEvent}
+        onEdit={editAgendaEvent}
+        onCancel={handleAgendaCancel}
+        onFormChange={setAgendaForm}
+        onNew={handleAgendaNew}
+      />
     </div>
   );
 }

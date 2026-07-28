@@ -30,9 +30,9 @@ function Loading() {
   const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)', color: 'var(--text-secondary)', fontFamily: 'Outfit, sans-serif' }}>
-      <div style={{ textAlign: 'center' }}>
+      <div className="text-center">
         <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'ls 0.8s linear infinite', margin: '0 auto 16px' }}></div>
-        {t('common.loading', 'Cargando...')}
+        {t('common.loading')}
         <style>{`@keyframes ls{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>

@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute('data-theme', t);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute('content', t === 'dark' ? '#0a0a0c' : '#faf6f3');
+      meta.setAttribute('content', t === 'dark' ? 'var(--text-dark)' : 'var(--bg-input)');
     }
     localStorage.setItem('velsoie-theme', t);
   };
@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider');

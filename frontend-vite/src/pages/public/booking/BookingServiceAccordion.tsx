@@ -68,7 +68,7 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
         node.services.push(s);
       }
     } else {
-      const cat = s.category?.trim() || t('landingServices.otherCategory', 'Otros');
+      const cat = s.category?.trim() || t('landingServices.otherCategory');
       if (!legacyCats[cat]) legacyCats[cat] = [];
       legacyCats[cat].push(s);
     }
@@ -110,7 +110,7 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
         </div>
         {s.description && <p className="service-description">{s.description}</p>}
         <button className="service-book-btn" onClick={e => { e.stopPropagation(); onSelect(s.id); }}>
-          {t('landingServices.bookButton', 'Agendar servicio')}
+          {t('landingServices.bookButton')}
         </button>
       </div>
     </div>

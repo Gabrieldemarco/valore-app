@@ -37,7 +37,7 @@ export default function ForgotPassword() {
               <label>{t('staffForgotPassword.emailLabel')}</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="glass-input" required placeholder={t('staffForgotPassword.emailPlaceholder')} />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10 }}>{t('staffForgotPassword.sendButton')}</button>
+            <button type="submit" className="btn btn-primary w-full p-14 mt-10">{t('staffForgotPassword.sendButton')}</button>
           </form>
         )}
 

@@ -21,14 +21,14 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   const [panY, setPanY] = useState(0);
   const [containerSize, setContainerSize] = useState({ w: 500, h: 400 });
 
-  const dragging = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const lastTouchDist = useRef(0);
 
   useEffect(() => {
     if (!open || !file) return;
     const url = URL.createObjectURL(file);
-    setObjectUrl(url);
+    setObjectUrl(url); // eslint-disable-line react-hooks/set-state-in-effect
     setZoom(1);
     setPanX(0);
     setPanY(0);
@@ -72,17 +72,17 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   const cropY = (containerSize.h - cropH) / 2;
 
   const onPointerDown = (clientX: number, clientY: number) => {
-    dragging.current = true;
+    setIsDragging(true);
     dragStart.current = { x: clientX, y: clientY, px: panX, py: panY };
   };
 
   const onPointerMove = (clientX: number, clientY: number) => {
-    if (!dragging.current) return;
+    if (!isDragging) return;
     setPanX(dragStart.current.px + (clientX - dragStart.current.x));
     setPanY(dragStart.current.py + (clientY - dragStart.current.y));
   };
 
-  const onPointerUp = () => { dragging.current = false; };
+  const onPointerUp = () => { setIsDragging(false); };
 
   const handleImgLoad = () => {
     if (imgRef.current) {
@@ -118,7 +118,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
       const t = e.touches[0];
       onPointerDown(t.clientX, t.clientY);
     } else if (e.touches.length === 2) {
-      dragging.current = false;
+      setIsDragging(false);
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       lastTouchDist.current = Math.sqrt(dx * dx + dy * dy);
@@ -126,7 +126,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && dragging.current) {
+    if (e.touches.length === 1 && isDragging) {
       onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
     } else if (e.touches.length === 2) {
       e.preventDefault();
@@ -142,7 +142,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   };
 
   const handleTouchEnd = () => {
-    dragging.current = false;
+    setIsDragging(false);
     lastTouchDist.current = 0;
   };
 
@@ -153,18 +153,18 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
       alignItems: 'center', justifyContent: 'center',
     }} onClick={onCancel}>
       <div style={{
-        background: '#1a1a2e', borderRadius: 16, padding: 20, width: 560, maxWidth: '94vw',
+        background: 'var(--bg-soft-dark)', borderRadius: 16, padding: 20, width: 560, maxWidth: '94vw',
         display: 'flex', flexDirection: 'column', gap: 14,
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, color: 'var(--border-color)', fontSize: 19 }}>{t('common.adjustImage', 'Ajustar imagen')}</h3>
+        <div className="flex-between">
+          <h3 className="m-0 text-border fs-19">{t('common.adjustImage')}</h3>
           <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 21, padding: '4px 8px' }}>✕</button>
         </div>
 
         <div ref={containerRef} style={{
           width: '100%', height: 380, maxHeight: '50vh',
           overflow: 'hidden', position: 'relative', borderRadius: 10,
-          background: '#0a0a14', cursor: dragging.current ? 'grabbing' : 'grab', touchAction: 'none',
+          background: 'var(--bg-darkest)', cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none',
         }}
           onMouseDown={e => onPointerDown(e.clientX, e.clientY)}
           onMouseMove={e => onPointerMove(e.clientX, e.clientY)}
@@ -194,7 +194,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
             <div style={{
               position: 'absolute', inset: 0, display: 'flex',
               alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 15,
-            }}>{t('common.loadingImage', 'Cargando imagen...')}</div>
+            }}>{t('common.loadingImage')}</div>
           )}
           <div style={{
             position: 'absolute', left: cropX, top: cropY,
@@ -207,28 +207,28 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
         </div>
 
         {imgLoaded && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)' }}>
+          <div className="flex-center gap-10 text-secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <input type="range" min={0.5} max={5} step={0.05} value={zoom}
               onChange={e => setZoom(parseFloat(e.target.value))}
-              style={{ flex: 1, accentColor: 'var(--info)' }} />
+              className="flex-1 accent-info" />
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <span style={{ fontSize: 13, minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{zoom.toFixed(1)}x</span>
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <div className="flex flex-end gap-10">
           <button onClick={onCancel} style={{
             padding: '10px 28px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.25)',
             background: 'transparent', color: 'var(--border-color)', cursor: 'pointer', fontSize: 15,
-          }}>{t('common.cancel', 'Cancelar')}</button>
+          }}>{t('common.cancel')}</button>
           <button onClick={handleApply} disabled={!imgLoaded} style={{
             padding: '10px 28px', borderRadius: 8, border: 'none',
-            background: imgLoaded ? 'linear-gradient(135deg, var(--info), #764ba2)' : 'rgba(148,163,184,0.15)',
-            color: imgLoaded ? '#fff' : 'var(--text-secondary)',
+            background: imgLoaded ? 'linear-gradient(135deg, var(--info), var(--purple-gradient))' : 'rgba(148,163,184,0.15)',
+            color: imgLoaded ? 'var(--text-white)' : 'var(--text-secondary)',
             cursor: imgLoaded ? 'pointer' : 'not-allowed',
             fontSize: 15, fontWeight: 600,
-          }}>{imgLoaded ? t('common.apply', 'Aplicar') : t('common.loading', 'Cargando...')}</button>
+          }}>{imgLoaded ? t('common.apply') : t('common.loading')}</button>
         </div>
       </div>
     </div>

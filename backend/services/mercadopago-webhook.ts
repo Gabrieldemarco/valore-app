@@ -12,8 +12,8 @@ const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 function parseXSignature(header) {
   if (!header || typeof header !== 'string') return null;
 
-  let ts = null;
-  let v1 = null;
+  let ts: string | null = null;
+  let v1: string | null = null;
 
   for (const part of header.split(',')) {
     const eq = part.indexOf('=');
@@ -45,7 +45,7 @@ function normalizeDataId(dataId) {
  * @returns {string}
  */
 function buildManifest(dataId, requestId, ts) {
-  const parts = [];
+  const parts: string[] = [];
   if (dataId !== '') parts.push(`id:${dataId}`);
   if (requestId) parts.push(`request-id:${requestId}`);
   if (ts) parts.push(`ts:${ts}`);

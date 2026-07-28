@@ -8,7 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useCallback, useState } from 'react';
 import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
-import { exportInvoicePdf, exportAppointmentsPdf } from '../../../utils/invoicePdf';
+import { exportAppointmentsPdf } from '../../../utils/invoicePdf';
 import type { Tab } from './dashboardContext';
 import SettingsPanel from './SettingsPanel';
 import AppointmentDetailModal from './modals/AppointmentDetailModal';
@@ -28,9 +28,12 @@ export default function DashboardShell({ children }: Props) {
     settings, staffName, plan,
     servicesList, appointments, filterDate,
     selectedStaff, setSelectedStaff, setPage,
-    staffList, toasts, invoices,
+    staffList, toasts,
   } = useDashboard();
   const [showQR, setShowQR] = useState(false);
+  const daysLeft = plan && plan.trial_end_date && plan.status !== 'active'
+    ? Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) // eslint-disable-line react-hooks/purity
+    : 0;
 
   const handleLogout = useCallback(() => { logout(); navigate('/staff/login'); }, [logout, navigate]);
 
@@ -39,7 +42,7 @@ export default function DashboardShell({ children }: Props) {
     { key: 'calendar', label: t('staffDashboard.tabCalendar') },
     { key: 'staff', label: t('staffDashboard.tabStaff') },
     { key: 'services', label: t('staffDashboard.tabServices') },
-    { key: 'categories', label: t('staffDashboard.tabCategories', 'Categorías') },
+    { key: 'categories', label: t('staffDashboard.tabCategories') },
     { key: 'clients', label: t('staffDashboard.tabClients') },
     { key: 'billing', label: t('staffDashboard.tabBilling') },
     { key: 'analytics', label: t('staffDashboard.tabAnalytics') },
@@ -69,7 +72,7 @@ export default function DashboardShell({ children }: Props) {
         <div className="dash-toast-container">
           {toasts.map(toast => (
             <div key={toast.id} className={`dash-toast glass-panel ${toast.type}`}>
-              <span className="dash-toast-icon">{toast.type === 'success' ? '✅' : '❌'}</span>
+              <span className="dash-toast-icon">{toast.type === 'success' ? 'OK' : 'ERR'}</span>
               <span className="dash-toast-message">{toast.message}</span>
             </div>
           ))}
@@ -79,22 +82,22 @@ export default function DashboardShell({ children }: Props) {
       <div className="dash-header">
         <h1 className="text-gradient">{t('staffDashboard.title')}</h1>
         <div className="dash-user-info">
-          {plan && plan.trial_end_date && plan.status !== 'active' && (
-            <span className={`dash-trial-badge${Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) < 3 ? ' dash-trial-critical' : ''}`}>
-              {t('staffDashboard.trialBadge', { days: Math.max(0, Math.ceil((new Date(plan.trial_end_date).getTime() - Date.now()) / 86400000)) })}
+          {daysLeft > 0 && (
+            <span className={`dash-trial-badge${daysLeft < 3 ? ' dash-trial-critical' : ''}`}>
+              {t('staffDashboard.trialBadge', { days: daysLeft })}
             </span>
           )}
-          <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary fs-14" style={{ padding: '8px 18px' }}>{t('staffDashboard.landingPageLink')}</Link>
-          {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary fs-14" style={{ padding: '8px 18px', textDecoration: 'none' }}>{t('staffDashboard.viewLanding')}</a>}
-          {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary fs-14" style={{ padding: '8px 14px', textDecoration: 'none' }}>{t('staffDashboard.qrButton')}</button>}
-          <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary fs-15" style={{ padding: '8px 16px', fontWeight: 500, borderRadius: 8 }}>{t('staffDashboard.settingsButton')}</button>
+          <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary fs-14 px-18 py-8">{t('staffDashboard.landingPageLink')}</Link>
+          {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">{t('staffDashboard.viewLanding')}</a>}
+          {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary fs-14 no-underline px-14 py-8">{t('staffDashboard.qrButton')}</button>}
+          <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary fs-15 px-16 py-8 font-500 rounded">{t('staffDashboard.settingsButton')}</button>
           <span className="dash-user-name">{staffName || t('staffDashboard.userNameLoading')}</span>
           <button className="dash-btn dash-btn-danger" onClick={handleLogout}>{t('staffDashboard.logoutButton')}</button>
         </div>
       </div>
 
       {showSettings && (
-        <div className="dash-container" style={{ maxWidth: 700, margin: '0 auto 24px' }}>
+        <div className="dash-container max-w-700 m-0-auto-24">
           <PushNotificationToggle />
         </div>
       )}
@@ -156,9 +159,9 @@ export default function DashboardShell({ children }: Props) {
         </div>
 
         {showStaffFilter && (
-          <div id="dashStaffFilterContainer" className="glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', margin: '20px 0', padding: 16 }}>
-            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{t('staffDashboard.staffFilterLabel')}</span>
-            <div id="dashStaffFilterButtons" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div id="dashStaffFilterContainer" className="glass-panel flex flex-wrap gap-10 items-center my-20 p-16">
+            <span className="font-700 text-main">{t('staffDashboard.staffFilterLabel')}</span>
+            <div id="dashStaffFilterButtons" className="flex flex-wrap gap-8">
               <button className={`dash-staff-filter-btn${selectedStaff === '' ? ' active' : ''}`} onClick={() => { setPage(1); setSelectedStaff(''); }}>{t('staffDashboard.staffFilterAll')}</button>
               {staffList.filter(s => s.active !== false).map(s => (
                 <button key={s.id} className={`dash-staff-filter-btn${selectedStaff === s.id ? ' active' : ''}`} onClick={() => { setPage(1); setSelectedStaff(s.id); }}>{s.name}</button>

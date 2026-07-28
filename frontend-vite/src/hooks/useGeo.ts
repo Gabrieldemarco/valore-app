@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+
 
 interface CountryNames {
   es: string;
@@ -99,19 +99,15 @@ function detectCountryCode(): string {
       const code = TZ_TO_COUNTRY[parts[i]];
       if (code) return code;
     }
-  } catch {}
+  } catch { /* timezone detection failed */ }
   return 'UY';
 }
 
 export function useGeo(lng: string = 'es') {
-  const [country, setCountry] = useState<string>('');
-
-  useEffect(() => {
-    const code = detectCountryCode();
-    const names = COUNTRY_MAP[code];
-    const lang = lng.startsWith('pt') ? 'pt' : lng.startsWith('en') ? 'en' : 'es';
-    setCountry(names ? names[lang] : '');
-  }, [lng]);
+  const code = detectCountryCode();
+  const names = COUNTRY_MAP[code];
+  const lang = lng.startsWith('pt') ? 'pt' : lng.startsWith('en') ? 'en' : 'es';
+  const country = names ? names[lang] : '';
 
   return { country, countryCode: '' };
 }

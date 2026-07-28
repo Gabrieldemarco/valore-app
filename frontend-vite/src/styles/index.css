@@ -31,7 +31,7 @@
   width: 700px; height: 700px;
   filter: blur(180px);
   opacity: 0.045;
-  background: radial-gradient(circle at 30% 40%, #cfa86b, #dfc293, transparent);
+  background: radial-gradient(circle at 30% 40%, var(--gold), var(--gold-light), transparent);
   animation: driftPrimary 28s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 
@@ -47,7 +47,7 @@
   width: 500px; height: 500px;
   filter: blur(140px);
   opacity: 0.03;
-  background: radial-gradient(circle at 70% 60%, #b8864e, #d4a86a, transparent);
+  background: radial-gradient(circle at 70% 60%, var(--gold), var(--gold-light), transparent);
   animation: driftAmber 35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 
@@ -64,7 +64,7 @@
   width: 350px; height: 350px;
   filter: blur(120px);
   opacity: 0.025;
-  background: radial-gradient(circle at 50% 50%, #f5e6d3, #e8d5b7, transparent);
+  background: radial-gradient(circle at 50% 50%, var(--gold-light), var(--gold), transparent);
   animation: driftChampagne 40s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 
@@ -246,7 +246,7 @@
 }
 
 /* Feminine card — champagne, warm editorial light */
-.card-1 .collage-label-title { color: #e8cfa0; }
+.card-1 .collage-label-title { color: var(--gold-light); }
 .card-1::after {
   content: '';
   position: absolute;
@@ -257,7 +257,7 @@
 }
 
 /* Masculine card — carbon, deep shadow, boutique hotel */
-.card-2 .collage-label-title { color: #c8bfb0; }
+.card-2 .collage-label-title { color: var(--gold-light); }
 .card-2 img { filter: contrast(1.08) saturate(0.85); }
 .card-2::after {
   content: '';
@@ -292,7 +292,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #121215, #1c1c22);
+  background: linear-gradient(135deg, var(--bg-darkest), var(--bg-soft-dark));
   border: 1px solid rgba(207, 168, 107, 0.1);
   position: relative;
   padding: 40px;
@@ -336,7 +336,7 @@
   margin-bottom: 24px;
   letter-spacing: -0.5px;
   line-height: 1.1;
-  color: #f4f4f5;
+  color: var(--text-main);
 }
 
 .hero p {
@@ -390,8 +390,16 @@
 }
 
 .location-icon {
-  filter: sepia(1) saturate(2) hue-rotate(25deg) brightness(0.9);
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E") no-repeat center;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
+  -webkit-mask-size: contain;
   opacity: 0.8;
+  vertical-align: middle;
 }
 
 .search-input-wrapper {
@@ -511,14 +519,14 @@
   font-family: 'Cormorant Garamond', serif;
   font-size: 18px;
   font-weight: 600;
-  color: #dfc293;
+  color: var(--gold-light);
   text-transform: capitalize;
 }
 
 .calendar-nav {
   background: none;
   border: 1px solid rgba(207, 168, 107, 0.25);
-  color: #cfa86b;
+  color: var(--gold);
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -573,7 +581,7 @@
 
 .calendar-day:hover:not(.empty) {
   background: rgba(207, 168, 107, 0.12);
-  color: #fff;
+  color: var(--text-white);
 }
 
 .calendar-day.empty {
@@ -582,12 +590,12 @@
 
 .calendar-day.today {
   border: 1px solid rgba(207, 168, 107, 0.3);
-  color: #dfc293;
+  color: var(--gold-light);
 }
 
 .calendar-day.selected {
-  background: linear-gradient(135deg, #cfa86b, #dfc293);
-  color: #0d0d12;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--text-dark);
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(207, 168, 107, 0.3);
 }
@@ -793,7 +801,7 @@
   font-weight: 500;
   font-family: 'Cormorant Garamond', serif !important;
   letter-spacing: -2px;
-  background: linear-gradient(to right, #cfa86b, #dfc293);
+  background: linear-gradient(to right, var(--gold), var(--gold-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   z-index: 2;
@@ -855,7 +863,7 @@
 .distance-badge {
   font-size: 12px;
   background: var(--primary);
-  color: #fff;
+  color: var(--text-white);
   padding: 1px 8px;
   border-radius: 8px;
   white-space: nowrap;
@@ -1138,7 +1146,7 @@
 }
 
 [data-theme="light"] .search-box input {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .search-input-wrapper {
@@ -1151,7 +1159,7 @@
 }
 
 [data-theme="light"] .search-dropdown-item {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .search-dropdown-item:hover {
@@ -1164,17 +1172,17 @@
 }
 
 [data-theme="light"] .location-option {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .date-picker-popup {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(200, 130, 125, 0.3);
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .calendar-day {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .calendar-day:hover {
@@ -1182,8 +1190,8 @@
 }
 
 [data-theme="light"] .calendar-day.selected {
-  background: #c8827d;
-  color: #fff;
+  background: var(--primary);
+  color: var(--text-white);
 }
 
 @media (max-width: 768px) {
@@ -1248,16 +1256,16 @@
 }
 
 [data-theme="light"] .nav-links a {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .nav-links a:hover {
-  color: #b0706b;
+  color: var(--primary);
 }
 
 [data-theme="light"] .btn-outline {
   border-color: rgba(200, 130, 125, 0.3);
-  color: #b0706b !important;
+  color: var(--primary) !important;
 }
 
 [data-theme="light"] .btn-outline:hover {
@@ -1265,8 +1273,8 @@
 }
 
 [data-theme="light"] .btn-studio-access {
-  background: #b0706b !important;
-  color: #fff !important;
+  background: var(--primary) !important;
+  color: var(--text-white) !important;
 }
 
 [data-theme="light"] .service-card {
@@ -1275,35 +1283,35 @@
 }
 
 [data-theme="light"] .service-card.active {
-  border-color: #b0706b;
+  border-color: var(--primary);
   background: rgba(200, 130, 125, 0.08);
 }
 
 [data-theme="light"] .service-card-title {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .service-card-subtitle {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .filter-btn {
-  color: #6b6b73;
+  color: var(--text-muted);
   border-color: rgba(200, 130, 125, 0.2);
 }
 
 [data-theme="light"] .filter-btn.active {
-  background: #b0706b;
-  color: #fff;
-  border-color: #b0706b;
+  background: var(--primary);
+  color: var(--text-white);
+  border-color: var(--primary);
 }
 
 [data-theme="light"] .section-title {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .section-subtitle {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .salon-card {
@@ -1312,23 +1320,23 @@
 }
 
 [data-theme="light"] .salon-card-name {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .salon-card-address {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .no-results {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .calendar-month-year {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .calendar-weekday {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 /* ===== COMPREHENSIVE LIGHT THEME OVERRIDES ===== */
@@ -1339,24 +1347,24 @@
 
 [data-theme="light"] .hero h1,
 [data-theme="light"] .hero-subtitle {
-  color: #1a1a1e;
+  color: var(--text-main);
 }
 
 [data-theme="light"] .unisex-salon-graphic {
-  background: linear-gradient(135deg, #f5f0ed, #ede6e1);
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
   border-color: rgba(200, 130, 125, 0.15);
 }
 
 [data-theme="light"] .filter-btn {
   background: rgba(200, 130, 125, 0.08);
   border-color: rgba(200, 130, 125, 0.2);
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .filter-btn.active {
-  background: #b0706b;
-  color: #fff;
-  border-color: #b0706b;
+  background: var(--primary);
+  color: var(--text-white);
+  border-color: var(--primary);
 }
 
 [data-theme="light"] .calendar-nav {
@@ -1370,20 +1378,20 @@
 [data-theme="light"] .footer {
   background: rgba(250, 246, 243, 0.95);
   border-top-color: rgba(200, 130, 125, 0.15);
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .footer a {
-  color: #6b6b73;
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .footer a:hover {
-  color: #b0706b;
+  color: var(--primary);
 }
 
 [data-theme="light"] .spinner {
   border-color: rgba(200, 130, 125, 0.15);
-  border-top-color: #b0706b;
+  border-top-color: var(--primary);
 }
 
 [data-theme="light"] .service-tag {
@@ -1395,19 +1403,19 @@
 }
 
 [data-theme="light"] .distance-badge {
-  background: #b0706b;
-  color: #fff;
+  background: var(--primary);
+  color: var(--text-white);
 }
 
 @media (max-width: 768px) {
   [data-theme="light"] .search-box input {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(200, 130, 125, 0.25) !important;
-    color: #1a1a1e;
+    color: var(--text-main);
   }
 
   [data-theme="light"] .search-box button {
-    background: #b0706b;
-    color: #fff;
+    background: var(--primary);
+    color: var(--text-white);
   }
 }

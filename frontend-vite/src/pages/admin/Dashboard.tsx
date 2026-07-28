@@ -36,7 +36,7 @@ function DashboardInner() {
   return (
     <div className="admin-view">
       {toastMsg && (
-        <div className="toast-container" style={{ display: 'block' }}>
+        <div className="toast-container block">
           <div className={`toast ${toastType}`}>
             <span className="toast-msg">{toastMsg}</span>
           </div>
@@ -45,7 +45,7 @@ function DashboardInner() {
 
       <header className="header">
         <h1>{t('adminDashboard.title')}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="flex-center gap-12">
           <input
             type="text"
             placeholder={t('adminDashboard.searchPlaceholder')}

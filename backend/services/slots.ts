@@ -14,7 +14,7 @@
  * @returns {string[]} Array de ISO strings de slots disponibles
  */
 function generateAvailableSlots(date, duration, appointments, tenantConfig, blockedDates) {
-  const slots = [];
+  const slots: string[] = [];
   if (blockedDates && blockedDates.some(b => {
     const bd = typeof b.date === 'string' ? b.date.slice(0, 10) : '';
     return bd === date;

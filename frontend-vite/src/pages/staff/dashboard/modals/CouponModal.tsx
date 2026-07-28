@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 
-export default function CouponModal({ editing, onClose }: { editing: any | null; onClose: () => void }) {
+export default function CouponModal({ editing, onClose }: { editing: Record<string, unknown> | null; onClose: () => void }) {
   const { t } = useTranslation();
   const { saveCoupon } = useDashboardCRUD();
   const [form, setForm] = useState({
@@ -20,8 +20,8 @@ export default function CouponModal({ editing, onClose }: { editing: any | null;
   };
 
   return (
-    <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={onClose}>
-      <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+    <div className="dash-modal-overlay flex" onClick={onClose}>
+      <div className="dash-modal-content glass-panel max-w-500" onClick={e => e.stopPropagation()}>
         <div className="dash-modal-header">
           <h3 className="text-gradient">{editing ? t('staffDashboard.couponModalEditTitle') : t('staffDashboard.couponModalNewTitle')}</h3>
           <button onClick={onClose} className="dash-close-btn">✕</button>

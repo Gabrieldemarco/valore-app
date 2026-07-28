@@ -7,13 +7,12 @@ export default function GalleryTab() {
   const { t, gallery, addGalleryUrl, removeGallery, handleImageUpload, showStatus } = useLandingEditor();
 
   return (
-    <div className="card glass-panel" style={{ padding: '1.5rem' }}>
+    <div className="card glass-panel p-24">
       <h3 className="text-gradient">{t('staffLandingEditor.galleryTitle')}</h3>
       <div className="form-group">
         <input type="url" id="newGalleryUrl" className="glass-input" placeholder={t('staffLandingEditor.galleryUrlPlaceholder')} />
-        <div style={{ display: 'flex', gap: 5, marginTop: 5 }}>
-          <input type="file" id="newGalleryFile" accept="image/*" className="glass-input"
-            style={{ flex: 1, padding: 10 }}
+        <div className="flex mt-5 gap-5">
+          <input type="file" id="newGalleryFile" accept="image/*" className="glass-input flex-1 p-10"
             onChange={e => {
               const file = e.target.files?.[0];
               if (!file) return;

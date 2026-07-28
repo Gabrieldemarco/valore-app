@@ -1,10 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 import { getStatusBadge } from '../utils';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import NewAppointmentModal from '../modals/NewAppointmentModal';
-import PhoneInput from '../../../../components/PhoneInput';
 
 export default function AppointmentListTab() {
   const { t } = useTranslation();
@@ -24,19 +23,19 @@ export default function AppointmentListTab() {
       <div className="dash-filters glass-panel">
         <div className="dash-filter-group">
           <label>{t('staffDashboard.filterDateLabel')}</label>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.25)' }}>
+          <div className="flex-center gap-6">
+            <div className="flex rounded" style={{ overflow: 'hidden', border: '1px solid rgba(148,163,184,0.25)' }}>
               {(['day', 'week', 'month'] as const).map(m => (
                 <button key={m} onClick={() => { setPage(1); setFilterMode(m); }}
                   style={{
                     padding: '6px 14px', fontWeight: 600, cursor: 'pointer', border: 'none',
                     background: filterMode === m ? 'var(--accent)' : 'transparent',
-                    color: filterMode === m ? '#fff' : 'var(--text-muted)',
+                    color: filterMode === m ? 'var(--text-white)' : 'var(--text-muted)',
                     transition: 'all 0.15s'
                   }}>{m === 'day' ? t('staffDashboard.calendarDay') : m === 'week' ? t('staffDashboard.calendarWeek') : t('staffDashboard.calendarMonth')}</button>
               ))}
             </div>
-            <input type="date" className="glass-input" value={filterDate} onChange={e => { setPage(1); setFilterDate(e.target.value); }} style={{ flex: 1, minWidth: 0 }} />
+            <input type="date" className="glass-input flex-1" value={filterDate} onChange={e => { setPage(1); setFilterDate(e.target.value); }} style={{ minWidth: 0 }} />
           </div>
         </div>
         <div className="dash-filter-group">
@@ -56,7 +55,7 @@ export default function AppointmentListTab() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+      <div className="flex-end mb-16">
         <button className="dash-btn dash-btn-success" onClick={() => setShowNewAppointment(true)}>{t('staffDashboard.newAppointmentButton')}</button>
       </div>
 
@@ -73,7 +72,7 @@ export default function AppointmentListTab() {
       ) : (
         <div className="dash-appointments-list">
           {filteredAppointments.map(a => (
-            <div key={a.id} className={`dash-appointment-card glass-panel ${a.status}`} style={{ cursor: 'pointer' }} onClick={() => setSelectedAppointment(a)}>
+            <div key={a.id} className={`dash-appointment-card glass-panel ${a.status} cursor-pointer`} onClick={() => setSelectedAppointment(a)}>
               <div className="dash-appointment-header">
                 <div>
                   <div className="dash-appointment-time">{a.time}</div>
@@ -98,7 +97,7 @@ export default function AppointmentListTab() {
               {a.notes && <div className="dash-appointment-notes">{a.notes}</div>}
               {(a.phone || a.client_phone) && (
                 <div style={{ padding: '0 16px 8px' }}>
-                  <a href={`https://wa.me/${(a.phone || a.client_phone || '').replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{t('staffDashboard.apptWhatsApp')}</a>
+                  <a href={`https://wa.me/${(a.phone || a.client_phone || '').replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{t('staffDashboard.apptWhatsApp')}</a>
                 </div>
               )}
               <div className="dash-appointment-actions" onClick={e => e.stopPropagation()}>
@@ -121,7 +120,7 @@ export default function AppointmentListTab() {
       )}
 
       {totalPages > 1 && (
-        <div className="glass-panel" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, padding: 12 }}>
+        <div className="glass-panel flex-center-center gap-8 mt-20 p-12">
           <button className="dash-btn dash-btn-success" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ opacity: page <= 1 ? 0.4 : 1 }}>{t('staffDashboard.paginationPrev')}</button>
           <span style={{ color: 'var(--text-muted)', padding: '0 8px' }}>
             {t('staffDashboard.paginationInfo', { page, totalPages, totalAppointments })}

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { api } from '../../../../api/client';
 import { CSS_FORBIDDEN_PATTERNS, DEBOUNCE_MS } from '../constants';
 import type { TenantData, Service, LayoutBlock } from '../types';
@@ -25,7 +25,6 @@ export function useLandingAutoSave({
   setServices, setTenant, setLayout,
 }: AutoSaveProps) {
   const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const saveChangesRef = useRef<((manual?: boolean) => Promise<void>) | null>(null);
 
@@ -67,9 +66,9 @@ export function useLandingAutoSave({
     } catch {
       showStatus(t('staffLandingEditor.statusSaveError'), false);
     }
-  }, [dirty, collectPayload, layout, updatePreview, showStatus, t]);
+  }, [dirty, collectPayload, layout, updatePreview, showStatus, t, setServices, setTenant, setLayout]);
 
-  saveChangesRef.current = saveChanges;
+  useEffect(() => { saveChangesRef.current = saveChanges; });
 
   const debounceSave = useCallback(() => {
     setDirty(true);
@@ -77,5 +76,5 @@ export function useLandingAutoSave({
     saveTimeoutRef.current = setTimeout(() => saveChangesRef.current?.(false), DEBOUNCE_MS);
   }, []);
 
-  return { dirty, saving, debounceSave, saveChanges, collectPayload };
+  return { dirty, debounceSave, saveChanges, collectPayload };
 }

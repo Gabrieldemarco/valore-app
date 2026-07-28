@@ -20,6 +20,8 @@
   --text-muted: #a1a1aa;
   --text-secondary: #94a3b8;
   --text-dark: #0a0a0c;
+  --text-white: #ffffff;
+  --text-black: #000000;
 
   /* Semantic Status Colors */
   --success: #059669;
@@ -31,6 +33,54 @@
   --danger-dark: #991b1b;
   --warning-dark: #92400e;
   --warning-light: #fef3c7;
+
+  /* Extended Palette */
+  --gold: #cfa86b;
+  --gold-light: #dfc293;
+  --bg-soft-dark: #1a1a2e;
+  --bg-darkest: #0a0a14;
+  --bg-warm: #f9f9f9;
+  --purple-gradient: #764ba2;
+
+  /* Admin & Booking Colors */
+  --admin-primary: #6366f1;
+  --admin-primary-hover: #4f46e5;
+  --admin-bg-dark: #1e1e2e;
+  --admin-bg-deeper: #13131c;
+  --admin-bg-deepest: #0f0f14;
+  --admin-gradient-start: #1e1b4b;
+  --admin-gradient-end: #312e81;
+  --admin-highlight: #c7d2fe;
+  --admin-light-red: #f87171;
+  --admin-amber: #fbbf24;
+  --admin-gradient-secondary: #b0706b;
+  --booking-success: #4caf50;
+  --booking-danger: #e53935;
+  --booking-bg-light: #e0e0e0;
+  --booking-bg-lighter: #f0f0f0;
+  --booking-bg-lightest: #f5f5f5;
+  --booking-bg-offwhite: #fafafa;
+  --danger-border: #ef4444;
+  --success-green: #16a34a;
+  --error-red: #dc2626;
+
+  /* Chart Colors */
+  --chart-revenue: #c5a880;
+  --chart-revenue-grad-start: #c5a880;
+  --chart-revenue-grad-end: rgba(197, 168, 128, 0.06);
+  --chart-appointments: #a78bfa;
+  --chart-appointments-grad-start: #a78bfa;
+  --chart-appointments-grad-end: rgba(167, 139, 250, 0.06);
+  --chart-services: #a78bfa;
+  --chart-services-grad-start: #a78bfa;
+  --chart-services-grad-end: rgba(167, 139, 250, 0.12);
+
+  /* Theme Preset Colors */
+  --preset-default: #c8827d;
+  --preset-velvet: #7C3AED;
+  --preset-barber: #B45309;
+  --preset-zen: #059669;
+  --preset-light: #3B82F6;
 
   /* Borders & Surfaces */
   --border-color: #2a2222;
@@ -89,6 +139,28 @@
   --glass-border: rgba(200, 130, 125, 0.2);
   --glass-border-hover: rgba(200, 130, 125, 0.4);
   --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.1);
+
+  /* Admin & Booking Colors */
+  --admin-primary: #6366f1;
+  --admin-primary-hover: #4f46e5;
+  --admin-bg-dark: #1e1e2e;
+  --admin-bg-deeper: #13131c;
+  --admin-bg-deepest: #0f0f14;
+  --admin-gradient-start: #1e1b4b;
+  --admin-gradient-end: #312e81;
+  --admin-highlight: #c7d2fe;
+  --admin-light-red: #f87171;
+  --admin-amber: #fbbf24;
+  --admin-gradient-secondary: #b0706b;
+  --booking-success: #4caf50;
+  --booking-danger: #e53935;
+  --booking-bg-light: #e0e0e0;
+  --booking-bg-lighter: #f0f0f0;
+  --booking-bg-lightest: #f5f5f5;
+  --booking-bg-offwhite: #fafafa;
+  --danger-border: #ef4444;
+  --success-green: #16a34a;
+  --error-red: #dc2626;
 }
 
 [data-theme="light"] .glass-panel {

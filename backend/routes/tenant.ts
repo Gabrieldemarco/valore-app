@@ -286,7 +286,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       );
       if (!tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
 
-      let trialDaysLeft = null;
+      let trialDaysLeft: number | null = null;
       if (tenant.plan === 'free' && tenant.trial_end_date) {
         trialDaysLeft = Math.ceil((new Date(tenant.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       }
