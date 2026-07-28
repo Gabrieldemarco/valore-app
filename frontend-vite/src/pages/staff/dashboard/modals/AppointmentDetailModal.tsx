@@ -7,7 +7,7 @@ import { api } from '../../../../api/client';
 import type { Appointment } from '../dashboardContext';
 
 export default function AppointmentDetailModal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { selectedAppointment, setSelectedAppointment, addToast } = useDashboard();
   const { updateAppointmentStatus } = useDashboardCRUD();
 
@@ -152,12 +152,12 @@ export default function AppointmentDetailModal() {
                       </div>
                       <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
                         <div className="fs-12 text-secondary text-uppercase">{t('staffDashboard.apptDetailClientHistoryLastVisit')}</div>
-                        <div className="fs-15 font-600 text-main">{new Date(clientHistory[0].appointment_date || clientHistory[0].date).toLocaleDateString('es-UY')}</div>
+                        <div className="fs-15 font-600 text-main">{new Date(clientHistory[0].appointment_date || clientHistory[0].date).toLocaleDateString(i18n.language)}</div>
                       </div>
                       <div style={{ background: 'rgba(148,163,184,0.1)', padding: '8px 14px', borderRadius: 8, flex: 1, minWidth: 100 }}>
                         <div className="fs-12 text-secondary text-uppercase">{t('staffDashboard.apptDetailClientHistoryTotalSpent')}</div>
                         <div className="fs-21 font-700 text-main">
-                          ${Math.round(clientHistory.reduce((sum, a) => sum + (Number(a.service_price) || 0), 0)).toLocaleString('es-UY')}
+                          ${Math.round(clientHistory.reduce((sum, a) => sum + (Number(a.service_price) || 0), 0)).toLocaleString(i18n.language)}
                         </div>
                       </div>
                     </div>
@@ -175,7 +175,7 @@ export default function AppointmentDetailModal() {
                         <tbody>
                           {clientHistory.map(a => (
                             <tr key={a.id}>
-                              <td className="fs-14">{new Date(a.appointment_date || a.date).toLocaleDateString('es-UY')}</td>
+                              <td className="fs-14">{new Date(a.appointment_date || a.date).toLocaleDateString(i18n.language)}</td>
                               <td className="fs-14">{a.service_name || a.service}</td>
                               <td className="fs-14">{a.staff_name || '-'}</td>
                               <td style={{ padding: '6px 10px', textAlign: 'center' }}>{getStatusBadge(a.status)}</td>

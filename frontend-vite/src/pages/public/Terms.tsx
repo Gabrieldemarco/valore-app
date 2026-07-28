@@ -1,14 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../../styles/terms.css';
 
 type TabId = 'terms' | 'privacy' | 'cancellations';
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'terms', label: 'Términos y Condiciones' },
-  { id: 'privacy', label: 'Política de Privacidad' },
-  { id: 'cancellations', label: 'Política de Cancelaciones' },
-];
 
 function getInitialTab(): TabId {
   if (typeof window === 'undefined') return 'terms';
@@ -321,6 +316,13 @@ function TermsContent({ id }: { id: TabId }) {
 }
 
 export default function Terms() {
+  const { t } = useTranslation();
+  const termsT = (key: string, fallback: string) => t(key, fallback);
+  const TABS: { id: TabId; label: string }[] = [
+    { id: 'terms', label: termsT('terms.tabTerms', 'Términos y Condiciones') },
+    { id: 'privacy', label: termsT('terms.tabPrivacy', 'Política de Privacidad') },
+    { id: 'cancellations', label: termsT('terms.tabCancellations', 'Política de Cancelaciones') },
+  ];
   const [activeTab, setActiveTab] = useState<TabId>(getInitialTab);
   const location = useLocation();
 
@@ -351,7 +353,7 @@ export default function Terms() {
     <div className="terms-page">
       <div className="terms-container">
         <aside className="terms-sidebar">
-          <div className="terms-sidebar-title">Políticas de Velsoie</div>
+          <div className="terms-sidebar-title">{t('terms.sidebarTitle', 'Políticas de Velsoie')}</div>
           <nav className="terms-nav">
             {TABS.map(tab => (
               <button
@@ -365,7 +367,7 @@ export default function Terms() {
           </nav>
           <div style={{ marginTop: 32, paddingLeft: 8 }}>
             <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-              ← Volver al inicio
+              {t('terms.backLink', '← Volver al inicio')}
             </Link>
           </div>
         </aside>
@@ -376,7 +378,7 @@ export default function Terms() {
       </div>
 
       <div className="terms-footer">
-        &copy; {new Date().getFullYear()} Velsoie. Todos los derechos reservados.
+        {t('terms.footer', '© {{year}} Velsoie. Todos los derechos reservados.', { year: new Date().getFullYear() })}
       </div>
     </div>
   );

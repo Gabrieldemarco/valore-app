@@ -291,6 +291,9 @@
     "tabTerms": "Terms and Conditions",
     "tabPrivacy": "Privacy Policy",
     "tabCancellation": "Cancellation Policy",
+    "tabCancellations": "Cancellation Policy",
+    "footer": "© {{year}} Velsoie. All rights reserved.",
+    "sidebarTitle": "Velsoie Policies",
     "termsItem1": "By using our services, you accept these terms in their entirety.",
     "termsItem2": "Prices and services are subject to availability and may change without prior notice.",
     "termsItem3": "The data provided will be used solely for appointment management and salon communications.",
@@ -303,7 +306,7 @@
     "cancellationItem2": "Late cancellations may be subject to charges.",
     "cancellationItem3": "To modify a booking, please contact the salon directly.",
     "cancellationItem4": "Salons reserve the right to apply additional policies.",
-    "backLink": "Back to home"
+    "backLink": "← Back to home"
   },
   "staffLogin": {
     "title": "Staff Access",

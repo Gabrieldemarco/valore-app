@@ -30,7 +30,7 @@ interface RecurringAppointment {
 }
 
 export default function AppointmentManage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug, token } = useParams<{ slug: string; token: string }>();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,8 +156,8 @@ export default function AppointmentManage() {
               {appointment.client_email && <InfoRow label={t('appointmentManage.infoEmail')} value={appointment.client_email} />}
               <InfoRow label={t('appointmentManage.infoServicio')} value={appointment.service} />
               {appointment.staff_name && <InfoRow label={t('appointmentManage.infoPeluquero')} value={appointment.staff_name} />}
-              {date && <InfoRow label={t('appointmentManage.infoFecha')} value={date.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />}
-              {date && <InfoRow label={t('appointmentManage.infoHorario')} value={date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })} />}
+              {date && <InfoRow label={t('appointmentManage.infoFecha')} value={date.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />}
+              {date && <InfoRow label={t('appointmentManage.infoHorario')} value={date.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })} />}
               {appointment.notes && <InfoRow label={t('appointmentManage.infoNotas')} value={appointment.notes} />}
             </div>
 
@@ -177,7 +177,7 @@ export default function AppointmentManage() {
                         fontSize: 13,
                       }}>
                         <span style={{ color: isCurrent ? 'var(--info-light)' : 'var(--text-muted)', fontWeight: isCurrent ? 600 : 400 }}>
-                          {d.toLocaleDateString('es-UY', { weekday: 'short', day: 'numeric', month: 'short' })} - {d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}
+                          {d.toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })} - {d.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <StatusBadge t={t} status={ra.status} />
                       </div>
@@ -191,7 +191,7 @@ export default function AppointmentManage() {
               <div className="mt-16" style={{ padding: '12px 16px', borderRadius: 10, background: appointment.deposit_paid ? 'var(--success-light)' : '#fef3c7' }}>
                 <div className="flex-between">
                   <span className="font-600" style={{ fontSize: 14, color: appointment.deposit_paid ? 'var(--success-dark)' : 'var(--warning-dark)' }}>
-                    {t('appointmentManage.depositLabel')}: ${parseFloat(appointment.deposit_amount).toLocaleString('es-UY')}
+                    {t('appointmentManage.depositLabel')}: ${parseFloat(appointment.deposit_amount).toLocaleString(i18n.language)}
                   </span>
                   <span style={{ fontSize: 13, fontWeight: 500, color: appointment.deposit_paid ? 'var(--success-dark)' : 'var(--warning-dark)' }}>
                     {appointment.deposit_paid ? t('appointmentManage.depositPaid') : t('appointmentManage.depositPending')}

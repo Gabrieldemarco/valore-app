@@ -293,6 +293,9 @@
     "tabTerms": "Términos y Condiciones",
     "tabPrivacy": "Política de Privacidad",
     "tabCancellation": "Política de Cancelación",
+    "tabCancellations": "Política de Cancelaciones",
+    "footer": "© {{year}} Velsoie. Todos los derechos reservados.",
+    "sidebarTitle": "Políticas de Velsoie",
     "termsItem1": "Al utilizar nuestros servicios, acepta estos términos en su totalidad.",
     "termsItem2": "Los precios y servicios están sujetos a disponibilidad y pueden cambiar sin previo aviso.",
     "termsItem3": "Los datos proporcionados serán utilizados únicamente para la gestión de citas y comunicaciones del salón.",
@@ -305,7 +308,7 @@
     "cancellationItem2": "Cancelaciones tardías pueden estar sujetas a cargos.",
     "cancellationItem3": "Para modificar una reserva, por favor contacte al salón directamente.",
     "cancellationItem4": "Los salones se reservan el derecho de aplicar políticas adicionales.",
-    "backLink": "Volver al inicio"
+    "backLink": "← Volver al inicio"
   },
   "staffLogin": {
     "title": "Acceso Profesionales",

@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function WaitlistSection({ addToast }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [waitlistList, setWaitlistList] = useState<any[]>([]);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
 
@@ -80,7 +80,7 @@ export default function WaitlistSection({ addToast }: Props) {
                       {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
                     </span>
                   </td>
-                  <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>{new Date(e.created_at || e.date).toLocaleDateString('es-UY')}</td>
+                  <td style={{ padding: 12, textAlign: 'center', color: 'var(--text-muted)' }}>{new Date(e.created_at || e.date).toLocaleDateString(i18n.language)}</td>
                   <td style={{ padding: 12, textAlign: 'center' }}>
                     {e.status === 'waiting' && (
                       <button className="dash-btn dash-btn-success" onClick={() => notifyWaitlistEntry(e.id)} style={{ marginRight: 4 }}>

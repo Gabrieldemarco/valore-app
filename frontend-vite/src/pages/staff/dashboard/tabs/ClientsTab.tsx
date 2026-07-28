@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 
 export default function ClientsTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { clientsList, openClientHistory, loadClients } = useDashboard();
   const [search, setSearch] = useState('');
 
@@ -44,7 +44,7 @@ export default function ClientsTab() {
                   <td style={{ padding: 12, color: 'var(--text-muted)' }}>{c.client_phone}</td>
                   <td style={{ padding: 12, color: 'var(--text-muted)' }}>{c.client_email || '-'}</td>
                   <td style={{ padding: 12, textAlign: 'center' }}>{c.total_appointments}</td>
-                  <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{new Date(c.last_appointment).toLocaleDateString('es-UY')}</td>
+                  <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{new Date(c.last_appointment).toLocaleDateString(i18n.language)}</td>
                   <td style={{ padding: 12, textAlign: 'center' }}>
                     <button className="dash-btn dash-btn-success" onClick={() => openClientHistory(c)}>{t('staffDashboard.clientsHistoryButton')}</button>
                   </td>

@@ -6,7 +6,7 @@ import { api } from '../../../api/client';
 import PhoneInput from '../../../components/PhoneInput';
 
 export default function SettingsPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     settings, setSettings,
     openingHours, setOpeningHours,
@@ -135,7 +135,7 @@ export default function SettingsPanel() {
                           <td style={{ padding: '6px 10px' }}>
                             <button className="dash-btn dash-btn-danger" onClick={() => handleDeleteBlockedDate(bd.id)}>✕</button>
                           </td>
-                          <td className="fs-14">{new Date(bd.date).toLocaleDateString('es-UY')}</td>
+                          <td className="fs-14">{new Date(bd.date).toLocaleDateString(i18n.language)}</td>
                           <td className="fs-14">{bd.reason || '-'}</td>
                         </tr>
                       ))}
@@ -208,7 +208,7 @@ export default function SettingsPanel() {
                   </p>
                   {calendarStatus.last_sync && (
                     <p className="text-muted mb-8">
-                      {t('staffDashboard.calendarSyncLastSync', { time: new Date(calendarStatus.last_sync).toLocaleString('es-UY') })}
+                      {t('staffDashboard.calendarSyncLastSync', { time: new Date(calendarStatus.last_sync).toLocaleString(i18n.language) })}
                     </p>
                   )}
                   <div className="flex flex-gap-8">

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 
 export default function ClientHistoryModal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { selectedClient, setSelectedClient, clientHistory, clientHistoryLoading } = useDashboard();
 
   if (!selectedClient) return null;
@@ -39,7 +39,7 @@ export default function ClientHistoryModal() {
                 <tbody>
                   {clientHistory.map(a => (
                     <tr key={a.id}>
-                      <td style={{ padding: 10 }}>{new Date(a.appointment_date || a.date).toLocaleDateString('es-UY')} {a.time}</td>
+                      <td style={{ padding: 10 }}>{new Date(a.appointment_date || a.date).toLocaleDateString(i18n.language)} {a.time}</td>
                       <td style={{ padding: 10 }}>{a.service_name || a.service}</td>
                       <td style={{ padding: 10 }}>{a.staff_name || '-'}</td>
                       <td style={{ padding: 10, textAlign: 'center' }}>{a.status}</td>
