@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import logger from './services/logger';
+import { getLocale } from './utils/locale';
 
 import { PLANS, MP_CURRENCY } from './services/payment-config';
 
@@ -446,8 +447,8 @@ async function sendAppointmentReminders() {
         for (const apt of appointments) {
             try {
                 const date = new Date(apt.appointment_date);
-                const timeStr = date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
-                const dateStr = date.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long' });
+                const timeStr = date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString(getLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 
                 // WhatsApp
                 if (apt.client_phone) {

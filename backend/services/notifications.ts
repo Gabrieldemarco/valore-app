@@ -14,6 +14,7 @@
 import createEmailTransporter from './email';
 import { sendWhatsApp } from './twilio';
 import logger from './logger';
+import { getLocale } from '../utils/locale';
 
 /**
  * @param {Object} appointment
@@ -41,8 +42,8 @@ async function sendClientConfirmation(appointment, tenant) {
       <p>Hola <strong>${appointment.client_name}</strong>,</p>
       <p>Tu turno en <strong>${tenant.business_name}</strong>:</p>
       <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
-        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString('es-UY')}</p>
-        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString(getLocale())}</p>
+        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}</p>
         <p><strong>✂️ Servicio:</strong> ${appointment.service}</p>
         ${appointment.staff_name ? `<p><strong>💈 Peluquero:</strong> ${appointment.staff_name}</p>` : ''}
       </div>
@@ -76,7 +77,7 @@ async function sendClientConfirmation(appointment, tenant) {
 
   // WhatsApp al cliente
   if (appointment.client_phone) {
-    let clientBody = `✅ Hola ${appointment.client_name}, tu turno en ${tenant.business_name} fue confirmado:\n📅 ${date.toLocaleDateString('es-UY')}\n🕐 ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📍 ${tenant.business_address || ''}`;
+    let clientBody = `✅ Hola ${appointment.client_name}, tu turno en ${tenant.business_name} fue confirmado:\n📅 ${date.toLocaleDateString(getLocale())}\n🕐 ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📍 ${tenant.business_address || ''}`;
     if (appointment.management_link) {
       clientBody += `\n\n🔗 Gestioná tu turno: ${appointment.management_link}`;
     }
@@ -115,8 +116,8 @@ async function notifyStaff(appointment, tenant) {
       <p><strong>${tenant.business_name}</strong></p>
       <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
         <p><strong>👤 Cliente:</strong> ${appointment.client_name}</p>
-        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString('es-UY')}</p>
-        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p><strong>📅 Fecha:</strong> ${date.toLocaleDateString(getLocale())}</p>
+        <p><strong>🕐 Hora:</strong> ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}</p>
         <p><strong>✂️ Servicio:</strong> ${appointment.service}</p>
         ${appointment.staff_name ? `<p><strong>💈 Peluquero:</strong> ${appointment.staff_name}</p>` : ''}
         <p><strong>📞 Teléfono:</strong> ${appointment.client_phone}</p>
@@ -154,13 +155,13 @@ async function notifyStaff(appointment, tenant) {
 
   // WhatsApp al staff (solo al número general del negocio)
   if (tenant.notification_whatsapp) {
-    const staffBody = `📅 Nuevo turno - ${tenant.business_name}\n👤 ${appointment.client_name}\n📅 ${date.toLocaleDateString('es-UY')}\n🕐 ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📞 ${appointment.client_phone}${appointment.notes ? `\n📝 ${appointment.notes}` : ''}`;
+    const staffBody = `📅 Nuevo turno - ${tenant.business_name}\n👤 ${appointment.client_name}\n📅 ${date.toLocaleDateString(getLocale())}\n🕐 ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}\n✂️ ${appointment.service}${appointment.staff_name ? `\n💈 ${appointment.staff_name}` : ''}\n📞 ${appointment.client_phone}${appointment.notes ? `\n📝 ${appointment.notes}` : ''}`;
     await sendWhatsApp(tenant.notification_whatsapp, staffBody);
   }
 
   sendPushToTenant(tenant.id, {
     title: `📅 Nuevo turno - ${tenant.business_name}`,
-    body: `${appointment.client_name} - ${appointment.service} - ${date.toLocaleDateString('es-UY')} ${date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`,
+    body: `${appointment.client_name} - ${appointment.service} - ${date.toLocaleDateString(getLocale())} ${date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}`,
     url: '/staff/dashboard',
   });
 
