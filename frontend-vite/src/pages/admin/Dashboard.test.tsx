@@ -128,7 +128,7 @@ describe('AdminDashboard', () => {
       const items = screen.getAllByText('Barbería Centro');
       expect(items.length).toBeGreaterThanOrEqual(2);
     }, { timeout: 3000 });
-    const closeBtn = document.querySelector('.close-modal');
+    const closeBtn = document.querySelector('.admin-close-modal');
     if (closeBtn) await user.click(closeBtn);
     await waitFor(() => {
       const items = screen.getAllByText('Barbería Centro');

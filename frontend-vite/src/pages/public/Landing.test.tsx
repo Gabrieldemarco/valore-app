@@ -161,6 +161,9 @@ describe('Landing', () => {
       expect(steps.length).toBeGreaterThan(0);
     });
 
+    // Advance from step 1 to step 2
+    await user.click(screen.getByText('Siguiente'));
+
     // Step 2: select service
     await waitFor(() => expect(screen.getByText('Elegí un servicio')).toBeInTheDocument());
     const serviceCards = screen.getAllByText('Corte moderno');

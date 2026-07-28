@@ -42,6 +42,7 @@ function setupFetch() {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/api/tenant/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantData) });
     if (u.includes('/api/tenant/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaffList) });
+    if (u.includes('/api/tenant/categories')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ categories: [] }) });
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
 }

@@ -58,15 +58,15 @@ export default function StaffRegister() {
           </div>
 
           <div className="form-group">
-            <label>Categoría del Negocio</label>
+            <label>{t('staffRegister.businessCategory')}</label>
             <select name="category" value={form.category} onChange={handleChange} className="glass-input" required style={{ appearance: 'auto', cursor: 'pointer' }}>
-              <option value="peluqueria">Peluquería / Barbería</option>
-              <option value="cejas">Cejas &amp; Pestañas</option>
-              <option value="uñas">Manicura &amp; Pedicura</option>
-              <option value="maquillaje">Maquillaje</option>
-              <option value="facial">Cuidado Facial</option>
-              <option value="depilacion">Depilación</option>
-              <option value="masajes">Masajes &amp; Bienestar</option>
+              <option value="peluqueria">{t('staffRegister.categoryBarber')}</option>
+              <option value="cejas">{t('staffRegister.categoryEyebrows')}</option>
+              <option value="uñas">{t('staffRegister.categoryNails')}</option>
+              <option value="maquillaje">{t('staffRegister.categoryMakeup')}</option>
+              <option value="facial">{t('staffRegister.categoryFacial')}</option>
+              <option value="depilacion">{t('staffRegister.categoryDepilation')}</option>
+              <option value="masajes">{t('staffRegister.categoryMassages')}</option>
             </select>
           </div>
 
@@ -93,7 +93,7 @@ export default function StaffRegister() {
           <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, marginBottom: 20 }}>
             <input type="checkbox" id="acceptTerms" required style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--primary)', width: 'auto', height: 'auto' }} />
             <label htmlFor="acceptTerms" style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none', fontWeight: 400, marginBottom: 0 }}>
-              Acepto los <Link to="/terms#terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Términos y Condiciones</Link>, la <Link to="/terms#privacy" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Privacidad</Link> y la <Link to="/terms#cancellations" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Política de Cancelaciones</Link> de Velsoie.
+              {t('staffRegister.acceptThe', 'Acepto los')} <Link to="/terms#terms" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.termsAndConditions', 'Términos y Condiciones')}</Link>, la <Link to="/terms#privacy" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.privacyPolicy', 'Política de Privacidad')}</Link> y la <Link to="/terms#cancellations" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{t('common.cancellationPolicy', 'Política de Cancelaciones')}</Link> de Velsoie.
             </label>
           </div>
 

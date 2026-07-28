@@ -358,3 +358,65 @@
   .admin-view .detail-grid { grid-template-columns: 1fr; }
   .admin-view .invoice-form { grid-template-columns: 1fr; }
 }
+
+/* ===== LIGHT THEME - Admin ===== */
+[data-theme="light"] .admin-view {
+  background: #faf6f3;
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .admin-view .header {
+  background: linear-gradient(135deg, #b0706b 0%, #c8827d 100%);
+}
+
+[data-theme="light"] .admin-view .stat-card {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .admin-view .stat-value,
+[data-theme="light"] .admin-view .stat-label {
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .admin-view .filters-bar {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .admin-view .filters-bar input,
+[data-theme="light"] .admin-view .filters-bar select {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(200, 130, 125, 0.2);
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .admin-view .table-wrapper {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .admin-view th {
+  background: rgba(250, 246, 243, 0.95);
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .admin-view td {
+  color: #1a1a1e;
+  border-bottom-color: rgba(200, 130, 125, 0.1);
+}
+
+[data-theme="light"] .admin-view .modal-content {
+  background: #fff;
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .admin-view .modal-header h2 {
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .admin-view .toast {
+  background: #fff;
+  color: #1a1a1e;
+  border-color: rgba(200, 130, 125, 0.15);
+}

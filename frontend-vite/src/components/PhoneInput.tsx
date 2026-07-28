@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import flags from '../utils/phoneFlags';
 
 interface Props {
@@ -45,6 +46,7 @@ function parsePhone(value: string): { dial: string; number: string } {
 }
 
 export default function PhoneInput({ value, onChange, placeholder, className, style, disabled, required }: Props) {
+  const { t } = useTranslation();
   const { dial, number } = useMemo(() => parsePhone(value), [value]);
 
   const handleDialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -68,7 +70,7 @@ export default function PhoneInput({ value, onChange, placeholder, className, st
       >
         {countryCodes.map(cc => (
           <option key={cc.code} value={cc.dial}>
-            {flags[cc.code] || ''} {cc.dial} {cc.label}
+            {flags[cc.code] || ''} {cc.dial} {t(`phoneInput.${cc.code.toLowerCase()}`, cc.label)}
           </option>
         ))}
       </select>

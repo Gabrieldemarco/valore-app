@@ -85,9 +85,9 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
 
   return (
     <>
-      <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.tabProducts')}</h3>
+      <div className="glass-panel section-card">
+        <div className="flex-between mb-20">
+          <h3 className="text-gradient m-0">{t('staffDashboard.tabProducts')}</h3>
           <button className="dash-btn dash-btn-success" onClick={openProductCreate}>{t('staffDashboard.productsNewButton')}</button>
         </div>
         {products.length === 0 ? (
@@ -96,44 +96,44 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
             <p>{t('staffDashboard.servicesEmptyMessage')}</p>
           </div>
         ) : (
-          <div className="dash-table-responsive" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="dash-table-responsive table-wrapper">
+            <table className="table-full">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableName')}</th>
-                  <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableImage')}</th>
-                  <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableCategory')}</th>
-                  <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTablePrice')}</th>
-                  <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableCost')}</th>
-                  <th style={{ textAlign: 'right', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.productsTableStock')}</th>
-                  <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.servicesTableActive')}</th>
-                  <th style={{ textAlign: 'center', padding: 12, borderBottom: '1px solid rgba(148,163,184,0.25)' }}>{t('staffDashboard.staffTableActions')}</th>
+                  <th className="table-cell-left">{t('staffDashboard.servicesTableName')}</th>
+                  <th className="table-cell-center">{t('staffDashboard.productsTableImage')}</th>
+                  <th className="table-cell-left">{t('staffDashboard.productsTableCategory')}</th>
+                  <th className="table-cell-right">{t('staffDashboard.productsTablePrice')}</th>
+                  <th className="table-cell-right">{t('staffDashboard.productsTableCost')}</th>
+                  <th className="table-cell-right">{t('staffDashboard.productsTableStock')}</th>
+                  <th className="table-cell-center">{t('staffDashboard.servicesTableActive')}</th>
+                  <th className="table-cell-center">{t('staffDashboard.staffTableActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map(p => (
                   <tr key={p.id}>
-                    <td style={{ padding: 12, fontWeight: 600 }}>{p.name}</td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>
+                    <td className="table-cell-label">{p.name}</td>
+                    <td className="table-cell-pad-center">
                       {p.image_url ? (
                         <img src={p.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
-                        <span style={{ color: 'var(--text-muted)', opacity: 0.4 }}>—</span>
+                        <span className="text-muted" style={{ opacity: 0.4 }}>—</span>
                       )}
                     </td>
-                    <td style={{ padding: 12, color: 'var(--text-muted)' }}>{p.category || '-'}</td>
-                    <td style={{ padding: 12, textAlign: 'right' }}>${p.price}</td>
-                    <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
-                    <td style={{ padding: 12, textAlign: 'right' }}>
+                    <td className="p-12 text-muted">{p.category || '-'}</td>
+                    <td className="table-cell-pad-right">${p.price}</td>
+                    <td className="table-cell-pad-right text-muted">${p.cost}</td>
+                    <td className="table-cell-pad-right">
                       <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
                       {p.min_stock > 0 && <span className="fs-12" style={{ color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
                     </td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>
+                    <td className="table-cell-pad-center">
                       <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>
                         {p.active ? t('staffDashboard.servicesYes') : t('staffDashboard.servicesNo')}
                       </span>
                     </td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>
+                    <td className="table-cell-pad-center">
                       <button className="dash-btn dash-btn-success" onClick={() => openProductEdit(p)}>{t('staffDashboard.servicesEditButton')}</button>
                       <button className="dash-btn dash-btn-danger" onClick={() => deleteProduct(p.id, p.name)}>{t('staffDashboard.servicesDeleteButton')}</button>
                     </td>
@@ -146,7 +146,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
       </div>
 
       {productsModal.open && (
-        <div className="dash-modal-overlay" style={{ display: 'flex' }} onClick={() => setProductsModal({ open: false, editing: null })}>
+        <div className="dash-modal-overlay flex" onClick={() => setProductsModal({ open: false, editing: null })}>
           <div className="dash-modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="dash-modal-header">
               <h3 className="text-gradient">{productsModal.editing ? t('staffDashboard.productsModalEditTitle') : t('staffDashboard.productsModalNewTitle')}</h3>
@@ -161,7 +161,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
                 <label>{t('staffDashboard.productsModalDescriptionLabel')}</label>
                 <textarea className="glass-input" value={productsForm.description} onChange={e => setProductsForm(p => ({ ...p, description: e.target.value }))} placeholder={t('staffDashboard.productsModalDescriptionPlaceholder')} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="grid-2-sm">
                 <div className="dash-form-group">
                   <label>{t('staffDashboard.productsModalPriceLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.price} onChange={e => setProductsForm(p => ({ ...p, price: e.target.value }))} min="0" step="0.01" />
@@ -171,7 +171,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
                   <input type="number" className="glass-input" value={productsForm.cost} onChange={e => setProductsForm(p => ({ ...p, cost: e.target.value }))} min="0" step="0.01" />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="grid-2-sm">
                 <div className="dash-form-group">
                   <label>{t('staffDashboard.productsModalStockLabel')}</label>
                   <input type="number" className="glass-input" value={productsForm.stock} onChange={e => setProductsForm(p => ({ ...p, stock: e.target.value }))} min="0" />
@@ -181,7 +181,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
                   <input type="number" className="glass-input" value={productsForm.min_stock} onChange={e => setProductsForm(p => ({ ...p, min_stock: e.target.value }))} min="0" />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="grid-2-sm">
                 <div className="dash-form-group">
                   <label>{t('staffDashboard.productsModalSKULabel')}</label>
                   <input type="text" className="glass-input" value={productsForm.sku} onChange={e => setProductsForm(p => ({ ...p, sku: e.target.value }))} placeholder={t('staffDashboard.productsModalSKUPlaceholder')} />
@@ -201,7 +201,7 @@ export default function ProductsSection({ products, addToast, refreshProducts }:
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+              <div className="flex flex-gap-12 mt-8" style={{ justifyContent: 'flex-end' }}>
                 <button className="dash-btn dash-btn-danger" onClick={() => setProductsModal({ open: false, editing: null })}>{t('staffDashboard.productsModalCancel')}</button>
                 <button className="dash-btn dash-btn-success" onClick={saveProduct}>{productsModal.editing ? t('staffDashboard.productsModalSave') : t('staffDashboard.productsModalCreate')}</button>
               </div>

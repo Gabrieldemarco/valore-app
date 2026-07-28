@@ -73,16 +73,16 @@ export default function PosSection({ products, addToast, refreshProducts }: PosS
   };
 
   return (
-    <div className="glass-panel" style={{ marginTop: 24, padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 className="text-gradient" style={{ margin: 0 }}>{t('staffDashboard.posTitle')}</h3>
+    <div className="glass-panel section-card">
+      <div className="flex-between mb-20">
+        <h3 className="text-gradient m-0">{t('staffDashboard.posTitle')}</h3>
       </div>
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+      <div className="flex flex-gap-24 flex-wrap">
         <div style={{ flex: '2 1 400px' }}>
-          <input type="text" className="glass-input" placeholder={t('staffDashboard.posSearchPlaceholder')} value={posSearch} onChange={e => setPosSearch(e.target.value)} style={{ marginBottom: 12, width: '100%' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, maxHeight: 400, overflowY: 'auto' }}>
+          <input type="text" className="glass-input mb-12 w-full" placeholder={t('staffDashboard.posSearchPlaceholder')} value={posSearch} onChange={e => setPosSearch(e.target.value)} />
+          <div className="grid-auto-fill-140 overflow-y-auto" style={{ maxHeight: 400 }}>
             {products.filter(p => p.active && (p.stock < 1 || p.name.toLowerCase().includes(posSearch.toLowerCase()))).length === 0 && posSearch ? (
-              <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1' }}>{t('staffDashboard.posNoResults')}</p>
+              <p className="text-muted" style={{ gridColumn: '1 / -1' }}>{t('staffDashboard.posNoResults')}</p>
             ) : products.filter(p => p.active && (!posSearch || p.name.toLowerCase().includes(posSearch.toLowerCase()))).map(p => (
               <div key={p.id} onClick={() => p.stock > 0 && addToCart(p)} style={{
                 background: p.stock > 0 ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.08)',
@@ -90,61 +90,61 @@ export default function PosSection({ products, addToast, refreshProducts }: PosS
                 border: '1px solid rgba(99,102,241,0.15)', opacity: p.stock > 0 ? 1 : 0.5,
               }}>
                 {p.image_url && (
-                  <img src={p.image_url} alt="" style={{ width: '100%', height: 80, borderRadius: 6, objectFit: 'cover', marginBottom: 8 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img src={p.image_url} alt="" className="w-full mb-8" style={{ height: 80, borderRadius: 6, objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 )}
-                <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{p.name}</div>
-                <div className="fs-17" style={{ fontWeight: 700, color: '#c8827d', marginTop: 4 }}>${p.price}</div>
-                <div className="fs-12" style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#64748b', marginTop: 4 }}>{t('staffDashboard.posStock', { stock: p.stock })}</div>
+                <div className="font-600" style={{ color: 'var(--border-color)' }}>{p.name}</div>
+                <div className="fs-17 font-700 text-primary mt-4">${p.price}</div>
+                <div className="fs-12 mt-4" style={{ color: p.stock <= p.min_stock ? 'var(--danger-light)' : 'var(--text-secondary)' }}>{t('staffDashboard.posStock', { stock: p.stock })}</div>
               </div>
             ))}
           </div>
         </div>
         <div style={{ flex: '1 1 300px' }}>
-          <div className="glass-panel" style={{ padding: 16, marginBottom: 12 }}>
-            <h4 style={{ margin: '0 0 12px', color: '#e2e8f0' }}>{t('staffDashboard.posCartTitle', { count: posCart.length })}</h4>
+          <div className="glass-panel p-16 mb-12">
+            <h4 className="m-0 mb-12" style={{ color: 'var(--border-color)' }}>{t('staffDashboard.posCartTitle', { count: posCart.length })}</h4>
             {posCart.length === 0 ? (
               <p className="fs-14">{t('staffDashboard.posCartEmpty')}</p>
             ) : (
-              <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: 250 }}>
                 {posCart.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="fs-14" style={{ fontWeight: 600 }}>{item.name}</div>
-                      <div className="fs-12" style={{ color: '#94a3b8' }}>{t('staffDashboard.posUnitPrice', { price: item.unit_price })}</div>
+                  <div key={idx} className="flex-center flex-gap-8" style={{ padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
+                    <div className="flex-1">
+                      <div className="fs-14 font-600">{item.name}</div>
+                      <div className="fs-12 text-secondary">{t('staffDashboard.posUnitPrice', { price: item.unit_price })}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div className="flex-center flex-gap-4">
                       <button className="dash-btn" onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
-                      <span className="fs-14" style={{ minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
+                      <span className="fs-14 text-center" style={{ minWidth: 20 }}>{item.quantity}</span>
                       <button className="dash-btn" onClick={() => updateCartQty(item.product_id, item.quantity + 1)}>+</button>
                     </div>
-                    <div className="fs-14" style={{ fontWeight: 700, minWidth: 60, textAlign: 'right' }}>${item.total.toFixed(2)}</div>
+                    <div className="fs-14 font-700 text-right" style={{ minWidth: 60 }}>${item.total.toFixed(2)}</div>
                     <button className="dash-btn dash-btn-danger" onClick={() => removeFromCart(item.product_id)}>✕</button>
                   </div>
                 ))}
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(148,163,184,0.2)' }}>
-              <span style={{ fontWeight: 700 }}>{t('staffDashboard.posTotal')}</span>
-              <span className="fs-21" style={{ fontWeight: 700, color: '#c8827d' }}>${posTotal.toFixed(2)}</span>
+            <div className="flex-between mt-12 pt-12" style={{ borderTop: '1px solid rgba(148,163,184,0.2)' }}>
+              <span className="font-700">{t('staffDashboard.posTotal')}</span>
+              <span className="fs-21 font-700 text-primary">${posTotal.toFixed(2)}</span>
             </div>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <input type="text" className="glass-input" placeholder={t('staffDashboard.posClientPlaceholder')} value={posClientName} onChange={e => setPosClientName(e.target.value)} style={{ width: '100%', marginBottom: 6 }} />
-            <PhoneInput value={posClientPhone} onChange={setPosClientPhone} placeholder={t('staffDashboard.posPhonePlaceholder')} className="glass-input" style={{ width: '100%' }} />
+          <div className="mb-12">
+            <input type="text" className="glass-input w-full" placeholder={t('staffDashboard.posClientPlaceholder')} value={posClientName} onChange={e => setPosClientName(e.target.value)} style={{ marginBottom: 6 }} />
+            <PhoneInput value={posClientPhone} onChange={setPosClientPhone} placeholder={t('staffDashboard.posPhonePlaceholder')} className="glass-input w-full" />
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <select className="glass-input" value={posPaymentMethod} onChange={e => setPosPaymentMethod(e.target.value as any)} style={{ width: '100%' }}>
+          <div className="mb-12">
+            <select className="glass-input w-full" value={posPaymentMethod} onChange={e => setPosPaymentMethod(e.target.value as any)}>
               <option value="cash">{t('staffDashboard.posPaymentCash')}</option>
               <option value="card">{t('staffDashboard.posPaymentCard')}</option>
               <option value="mp">{t('staffDashboard.posPaymentMP')}</option>
             </select>
           </div>
 
-          <textarea className="glass-input" placeholder={t('staffDashboard.posNotesPlaceholder')} value={posNotes} onChange={e => setPosNotes(e.target.value)} style={{ width: '100%', minHeight: 50, marginBottom: 12 }} />
+          <textarea className="glass-input w-full mb-12" placeholder={t('staffDashboard.posNotesPlaceholder')} value={posNotes} onChange={e => setPosNotes(e.target.value)} style={{ minHeight: 50 }} />
 
-          <button className="btn btn-primary" style={{ width: '100%', padding: 14 }} onClick={checkout} disabled={posCart.length === 0}>
+          <button className="btn btn-primary w-full" style={{ padding: 14 }} onClick={checkout} disabled={posCart.length === 0}>
             {t('staffDashboard.posCheckout', { total: posTotal.toFixed(2) })}
           </button>
         </div>

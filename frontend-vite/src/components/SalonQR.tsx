@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { X, Share2, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   slug: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function SalonQR({ slug, services, onClose }: Props) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const selectedService = services.find(s => s.id === selectedServiceId);
@@ -51,21 +53,21 @@ export default function SalonQR({ slug, services, onClose }: Props) {
     }} onClick={onClose}>
       <div className="glass-panel" style={{ maxWidth: 340, width: '100%', padding: 32 }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 className="text-gradient" style={{ margin: 0, fontSize: 19 }}>Compartir peluquería</h3>
-          <button onClick={onClose} className="dash-close-btn" style={{ background: 'none', border: 'none', color: '#a1a1aa', fontSize: 21, cursor: 'pointer' }}><X size={20} /></button>
+          <h3 className="text-gradient" style={{ margin: 0, fontSize: 19 }}>{t('common.shareSalon', 'Compartir peluquería')}</h3>
+          <button onClick={onClose} className="dash-close-btn" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 21, cursor: 'pointer' }}><X size={20} /></button>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div ref={canvasRef}>
             <QRCodeCanvas value={url} size={200} bgColor="#120c0c" fgColor="#c8827d" level="M" />
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-            <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 14px' }}><Download size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Descargar</button>
-            <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 14px' }}><Share2 size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />Compartir</button>
+            <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 13, padding: '8px 14px' }}><Download size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />{t('common.download', 'Descargar')}</button>
+            <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 13, padding: '8px 14px' }}><Share2 size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />{t('common.share', 'Compartir')}</button>
           </div>
-          <p style={{ color: '#a1a1aa', fontSize: 14, marginTop: 16, wordBreak: 'break-all' }}>{url}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 16, wordBreak: 'break-all' }}>{url}</p>
           {services.length > 0 && (
             <div style={{ marginTop: 12, textAlign: 'left' }}>
-              <label style={{ color: '#a1a1aa', fontSize: 14, display: 'block', marginBottom: 4 }}>Servicio rápido (opcional)</label>
+              <label style={{ color: 'var(--text-muted)', fontSize: 14, display: 'block', marginBottom: 4 }}>{t('common.quickServiceOptional', 'Servicio rápido (opcional)')}</label>
               <select
                 value={selectedServiceId ?? ''}
                 onChange={e => setSelectedServiceId(e.target.value ? Number(e.target.value) : null)}
@@ -74,7 +76,7 @@ export default function SalonQR({ slug, services, onClose }: Props) {
                   background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', fontSize: 15, cursor: 'pointer',
                 }}
               >
-                <option value="">Sin servicio (reserva completa)</option>
+                <option value="">{t('salonQR.noService', 'Sin servicio (reserva completa)')}</option>
                 {services.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -82,11 +84,11 @@ export default function SalonQR({ slug, services, onClose }: Props) {
             </div>
           )}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
-            <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 14, padding: '8px 18px' }}>Descargar QR</button>
+            <button onClick={download} className="dash-btn dash-btn-primary" style={{ fontSize: 14, padding: '8px 18px' }}>{t('common.downloadQR', 'Descargar QR')}</button>
             {typeof navigator.share === 'function' ? (
-              <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 18px', textDecoration: 'none' }}>Compartir</button>
+              <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 18px', textDecoration: 'none' }}>{t('common.share', 'Compartir')}</button>
             ) : (
-              <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 18px', textDecoration: 'none' }}>Copiar enlace</button>
+              <button onClick={share} className="dash-btn btn btn-secondary" style={{ fontSize: 14, padding: '8px 18px', textDecoration: 'none' }}>{t('common.copyLink', 'Copiar enlace')}</button>
             )}
           </div>
         </div>

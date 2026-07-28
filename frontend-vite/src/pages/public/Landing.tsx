@@ -4,13 +4,16 @@ import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { api } from '../../api/client';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
+import ScrollReveal from '../../components/ScrollReveal';
 import { logger } from '../../services/logger';
 import '../../styles/landing.css';
+import { PLACEHOLDER_IMG, fixImageUrl } from '../../utils/imageUtils';
 import LandingSkeletonLoader from './LandingSkeletonLoader';
 import LandingHeroSection from './LandingHeroSection';
 import LandingServicesSection from './LandingServicesSection';
 import LandingTeamSection from './LandingTeamSection';
 import LandingBookingSection from './LandingBookingSection';
+import LandingLightbox from './LandingLightbox';
 
 interface TenantData {
   business_name: string;
@@ -95,16 +98,6 @@ interface StaffMember {
 interface SlotItem {
   time: string;
   available: boolean;
-}
-
-const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
-
-const CACHE_BUST = Date.now();
-function fixImageUrl(url: string | null | undefined): string {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads')) return window.location.origin + url + '?v=' + CACHE_BUST;
-  return url;
 }
 
 const DEFAULT_LAYOUT: LayoutBlock[] = [
@@ -382,10 +375,10 @@ export default function Landing() {
       };
       if (selectedStaff) body.staffId = selectedStaff;
       await api.post(`/p/${tenantSlug}/waitlist`, body);
-      setWaitlistMsg('Te agregamos a la lista de espera');
+      setWaitlistMsg(t('landing.waitlistSuccess', 'Te agregamos a la lista de espera'));
       setTimeout(() => setShowWaitlistForm(false), 2000);
     } catch (e: unknown) {
-      setWaitlistErr(e instanceof Error ? e.message : 'Error al unirse a la lista de espera');
+      setWaitlistErr(e instanceof Error ? e.message : t('landing.waitlistError', 'Error al unirse a la lista de espera'));
     }
   };
 
@@ -396,7 +389,7 @@ export default function Landing() {
     switch (block.type) {
       case 'hero':
         return (
-          <section key={block.id} id="hero">
+          <div key={block.id} id="hero">
             <LandingHeroSection
               businessName={tenant!.business_name}
               description={tenant!.landing_description}
@@ -405,90 +398,117 @@ export default function Landing() {
               fixImageUrl={fixImageUrl}
               category={tenant!.category}
             />
-          </section>
+          </div>
         );
 
       case 'services':
         return (
           <section key={block.id} id="servicios">
-            <LandingServicesSection
-              services={services}
-              fixImageUrl={fixImageUrl}
-              onSelectService={(serviceId) => {
-                setSelectedService(serviceId);
-                setStep(2);
-                document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              onOpenServiceLightbox={(imgs, idx) => {
-                setServiceLightboxImages(imgs);
-                setServiceLightboxIdx(idx);
-              }}
-            />
+            <ScrollReveal>
+              <div className="section-divider wide" />
+              <h2 className="section-title">{t('landing.servicesTitle', 'Servicios')}</h2>
+              <p className="section-subtitle">{t('landing.servicesSubtitle', 'Descubrí nuestra oferta de tratamientos y servicios premium')}</p>
+            </ScrollReveal>
+            <ScrollReveal delay={2}>
+              <LandingServicesSection
+                services={services}
+                fixImageUrl={fixImageUrl}
+                onSelectService={(serviceId) => {
+                  setSelectedService(serviceId);
+                  setStep(2);
+                  document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onOpenServiceLightbox={(imgs, idx) => {
+                  setServiceLightboxImages(imgs);
+                  setServiceLightboxIdx(idx);
+                }}
+              />
+            </ScrollReveal>
           </section>
         );
 
       case 'reviews':
         return reviews.length > 0 ? (
           <section key={block.id} id="resenas">
-            <h2 className="section-title">{t('landing.reviewsTitle', 'Reseñas')}</h2>
-            <div className="reviews-summary">
-              <span className="reviews-average">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} className={`star ${i < Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) ? 'filled' : ''}`}>&#9733;</span>
-                ))}
-                <span className="reviews-score">{(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)}</span>
-                <span className="reviews-count">({reviews.length} {t('landing.reviewsCount', 'opiniones')})</span>
-              </span>
-            </div>
-            <div className="reviews-list">
-              {reviews.slice(0, 6).map(r => (
-                <div key={r.id} className="review-card">
-                  <div className="review-stars">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className={`star ${i < r.rating ? 'filled' : ''}`}>&#9733;</span>
-                    ))}
+            <ScrollReveal>
+              <div className="section-divider" />
+              <h2 className="section-title">{t('landing.reviewsTitle', 'Reseñas')}</h2>
+            </ScrollReveal>
+            <ScrollReveal delay={1}>
+              <div className="reviews-summary">
+                <span className="reviews-average">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span key={i} className={`star ${i < Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length) ? 'filled' : ''}`}>&#9733;</span>
+                  ))}
+                  <span className="reviews-score">{(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)}</span>
+                  <span className="reviews-count">({reviews.length} {t('landing.reviewsCount', 'opiniones')})</span>
+                </span>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal delay={2}>
+              <div className="reviews-list">
+                {reviews.slice(0, 6).map(r => (
+                  <div key={r.id} className="review-card">
+                    <div className="review-stars">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span key={i} className={`star ${i < r.rating ? 'filled' : ''}`}>&#9733;</span>
+                      ))}
+                    </div>
+                    <p className="review-comment">{r.comment}</p>
+                    <span className="review-author">- {r.client_name}</span>
                   </div>
-                  <p className="review-comment">{r.comment}</p>
-                  <span className="review-author">- {r.client_name}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </ScrollReveal>
           </section>
         ) : null;
 
       case 'gallery':
         return gallery.length > 0 ? (
           <section key={block.id} id="galeria">
-            <h2 className="section-title">{t('landing.galleryTitle')}</h2>
-            <p className="section-subtitle">{t('landing.gallerySubtitle')}</p>
-            <div className="gallery-grid">
-              {gallery.map((g, i) => (
-                <div key={i} className="gallery-item" onClick={() => setLightboxIdx(i)}>
-                  <img src={fixImageUrl(g)} alt="" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} loading="lazy" />
-                </div>
-              ))}
-            </div>
+            <ScrollReveal>
+              <div className="section-divider" />
+              <h2 className="section-title">{t('landing.galleryTitle')}</h2>
+              <p className="section-subtitle">{t('landing.gallerySubtitle')}</p>
+            </ScrollReveal>
+            <ScrollReveal delay={1}>
+              <div className="gallery-grid">
+                {gallery.map((g, i) => (
+                  <div key={i} className="gallery-item" onClick={() => setLightboxIdx(i)}>
+                    <img src={fixImageUrl(g)} alt="" onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            </ScrollReveal>
           </section>
         ) : null;
 
       case 'team':
         return team.length > 0 ? (
           <section key={block.id} id="equipo">
-            <LandingTeamSection
-              team={team}
-              staff={staff}
-              gallery={[]}
-              fixImageUrl={fixImageUrl}
-              onSelectStaff={(id) => { setSelectedStaff(id); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); }}
-              onOpenLightbox={setLightboxIdx}
-            />
+            <ScrollReveal>
+              <LandingTeamSection
+                team={team}
+                staff={staff}
+                gallery={[]}
+                fixImageUrl={fixImageUrl}
+                onSelectStaff={(id) => { setSelectedStaff(id); setStep(1); document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' }); }}
+                onOpenLightbox={setLightboxIdx}
+              />
+            </ScrollReveal>
           </section>
         ) : null;
 
       case 'booking':
         return (
           <section key={block.id} id="reservar">
-            <LandingBookingSection
+            <ScrollReveal>
+              <div className="section-divider wide" />
+              <h2 className="section-title">{t('landing.bookingTitle', 'Reservá tu turno')}</h2>
+              <p className="section-subtitle">{t('landing.bookingSubtitle', 'Elegí el servicio, profesional y horario que prefieras')}</p>
+            </ScrollReveal>
+            <ScrollReveal delay={1}>
+              <LandingBookingSection
             staff={staff}
             services={services}
             onOpenServiceLightbox={(imgs, idx) => {
@@ -552,31 +572,37 @@ export default function Landing() {
             onSetShowWaitlistForm={setShowWaitlistForm}
             onJoinWaitlist={handleJoinWaitlist}
           />
+            </ScrollReveal>
           </section>
         );
 
       case 'hours':
         return (
           <section key={block.id} id="horarios">
-            <h2 className="section-title">{t('landing.hoursTitle')}</h2>
-            <p className="section-subtitle">{t('landing.hoursSubtitle')}</p>
-            <div style={{ maxWidth: 500, margin: '0 auto' }}>
-              {(() => {
-                const h = tenant?.opening_hours as Record<string, unknown> | null;
-                const startHour = (h?.startHour as number) ?? 9;
-                const endHour = (h?.endHour as number) ?? 19;
-                const workDays = (h?.workDays as number[]) ?? [1, 2, 3, 4, 5];
-                const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-                return dayNames.map((name, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <span style={{ fontWeight: 600 }}>{name}</span>
-                    <span style={{ color: workDays.includes(i) ? 'var(--primary)' : 'var(--text-muted)' }}>
-                      {workDays.includes(i) ? `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00` : 'Cerrado'}
-                    </span>
-                  </div>
-                ));
-              })()}
-            </div>
+            <ScrollReveal>
+              <div className="section-divider" />
+              <h2 className="section-title">{t('landing.hoursTitle')}</h2>
+              <p className="section-subtitle">{t('landing.hoursSubtitle')}</p>
+            </ScrollReveal>
+            <ScrollReveal delay={1}>
+              <div className="hours-table">
+                {(() => {
+                  const h = tenant?.opening_hours as Record<string, unknown> | null;
+                  const startHour = (h?.startHour as number) ?? 9;
+                  const endHour = (h?.endHour as number) ?? 19;
+                  const workDays = (h?.workDays as number[]) ?? [1, 2, 3, 4, 5];
+                  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                  return dayNames.map((name, i) => (
+                    <div key={i} className="hours-row">
+                      <span className="hours-day">{name}</span>
+                      <span className={`hours-time ${workDays.includes(i) ? 'open' : 'closed'}`}>
+                        {workDays.includes(i) ? `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00` : t('landing.closed', 'Cerrado')}
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </ScrollReveal>
           </section>
         );
 
@@ -638,56 +664,57 @@ export default function Landing() {
 
       {hasSocial && (
         <section id="redes">
-          <h2 className="section-title">{t('landing.socialTitle')}</h2>
-          <div className="social-links">
-            {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialInstagram')}</a>}
-            {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialFacebook')}</a>}
-            {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialWhatsApp')}</a>}
-            {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTikTok')}</a>}
-            {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTwitter')}</a>}
-          </div>
+          <ScrollReveal>
+            <div className="section-divider" />
+            <h2 className="section-title">{t('landing.socialTitle')}</h2>
+            <div className="social-links">
+              {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialInstagram')}</a>}
+              {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialFacebook')}</a>}
+              {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialWhatsApp')}</a>}
+              {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTikTok')}</a>}
+              {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="social-link">{t('landing.socialTwitter')}</a>}
+            </div>
+          </ScrollReveal>
         </section>
       )}
 
-      <footer className="footer">
-        <div className="footer-content">
-          <p><strong>{tenant.business_name}</strong></p>
-          {tenant.business_address && <p>{tenant.business_address}</p>}
-          {tenant.business_phone && <p>📞 {tenant.business_phone}</p>}
-          {hasSocial && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
-              {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>📷</a>}
-              {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>📘</a>}
-              {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>💬</a>}
-              {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>🎵</a>}
-              {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>🐦</a>}
-            </div>
-          )}
-          <p style={{ marginTop: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-            &copy; {new Date().getFullYear()} - {t('landing.footerRights')}
-          </p>
-        </div>
-      </footer>
+      <ScrollReveal>
+        <footer className="footer">
+          <div className="footer-content">
+            <p><strong>{tenant.business_name}</strong></p>
+            {tenant.business_address && <p>{tenant.business_address}</p>}
+            {tenant.business_phone && <p>📞 {tenant.business_phone}</p>}
+            {hasSocial && (
+              <div className="footer-socials">
+                {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="footer-social-link">📷</a>}
+                {social.facebook && <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="footer-social-link">📘</a>}
+                {social.whatsapp && <a href={`https://wa.me/${social.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="footer-social-link">💬</a>}
+                {social.tiktok && <a href={social.tiktok} target="_blank" rel="noopener noreferrer" className="footer-social-link">🎵</a>}
+                {social.twitter && <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="footer-social-link">🐦</a>}
+              </div>
+            )}
+            <p className="footer-copyright">
+              &copy; {new Date().getFullYear()} - {t('landing.footerRights')}
+            </p>
+          </div>
+        </footer>
+      </ScrollReveal>
 
-      {lightboxIdx !== null && gallery.length > 0 && (
-        <div className="lightbox-overlay" onClick={() => setLightboxIdx(null)}>
-          <button className="lightbox-close" onClick={() => setLightboxIdx(null)}>&times;</button>
-          <button className="lightbox-prev" onClick={e => { e.stopPropagation(); setLightboxIdx(lightboxIdx > 0 ? lightboxIdx - 1 : gallery.length - 1); }}>&lsaquo;</button>
-          <img src={fixImageUrl(gallery[lightboxIdx])} alt="" className="lightbox-image" onClick={e => e.stopPropagation()} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
-          <button className="lightbox-next" onClick={e => { e.stopPropagation(); setLightboxIdx(lightboxIdx < gallery.length - 1 ? lightboxIdx + 1 : 0); }}>&rsaquo;</button>
-          <div className="lightbox-counter">{lightboxIdx + 1} / {gallery.length}</div>
-        </div>
-      )}
+      <LandingLightbox
+        images={gallery}
+        currentIndex={lightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        onPrev={() => setLightboxIdx(lightboxIdx > 0 ? lightboxIdx - 1 : gallery.length - 1)}
+        onNext={() => setLightboxIdx(lightboxIdx < gallery.length - 1 ? lightboxIdx + 1 : 0)}
+      />
 
-      {serviceLightboxIdx !== null && serviceLightboxImages.length > 0 && (
-        <div className="lightbox-overlay" onClick={() => setServiceLightboxIdx(null)}>
-          <button className="lightbox-close" onClick={() => setServiceLightboxIdx(null)}>&times;</button>
-          <button className="lightbox-prev" onClick={e => { e.stopPropagation(); setServiceLightboxIdx(serviceLightboxIdx > 0 ? serviceLightboxIdx - 1 : serviceLightboxImages.length - 1); }}>&lsaquo;</button>
-          <img src={fixImageUrl(serviceLightboxImages[serviceLightboxIdx].url)} alt="" className="lightbox-image" onClick={e => e.stopPropagation()} onError={e => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
-          <button className="lightbox-next" onClick={e => { e.stopPropagation(); setServiceLightboxIdx(serviceLightboxIdx < serviceLightboxImages.length - 1 ? serviceLightboxIdx + 1 : 0); }}>&rsaquo;</button>
-          <div className="lightbox-counter">{serviceLightboxIdx + 1} / {serviceLightboxImages.length}</div>
-        </div>
-      )}
+      <LandingLightbox
+        images={serviceLightboxImages}
+        currentIndex={serviceLightboxIdx}
+        onClose={() => setServiceLightboxIdx(null)}
+        onPrev={() => setServiceLightboxIdx(serviceLightboxIdx > 0 ? serviceLightboxIdx - 1 : serviceLightboxImages.length - 1)}
+        onNext={() => setServiceLightboxIdx(serviceLightboxIdx < serviceLightboxImages.length - 1 ? serviceLightboxIdx + 1 : 0)}
+      />
     </div>
   );
 }

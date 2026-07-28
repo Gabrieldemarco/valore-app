@@ -52,8 +52,8 @@ export default function ProductsTab({ productsList, productsLoading, openProduct
                   <td style={{ padding: 12, textAlign: 'right' }}>${p.price}</td>
                   <td style={{ padding: 12, textAlign: 'right', color: 'var(--text-muted)' }}>${p.cost}</td>
                   <td style={{ padding: 12, textAlign: 'right' }}>
-                    <span style={{ color: p.stock <= p.min_stock ? '#fca5a5' : '#94a3b8' }}>{p.stock}</span>
-                    {p.min_stock > 0 && <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>/ {p.min_stock}</span>}
+                    <span style={{ color: p.stock <= p.min_stock ? 'var(--danger-light)' : 'var(--text-secondary)' }}>{p.stock}</span>
+                    {p.min_stock > 0 && <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 4 }}>/ {p.min_stock}</span>}
                   </td>
                   <td style={{ padding: 12, textAlign: 'center' }}>
                     <span className={`dash-appointment-status ${p.active ? 'dash-status-confirmed' : 'dash-status-cancelled'}`}>

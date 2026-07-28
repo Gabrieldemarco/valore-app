@@ -164,6 +164,7 @@ export default function(apiLimiter) {
           sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
                         t.landing_hero_image, t.landing_description, t.lat, t.lng, t.category,
                         (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
+                        (SELECT json_agg(st.name) FROM staff st WHERE st.tenant_id = t.id AND st.active = true) as staff_names,
                         (6371 * acos(cos(radians($1)) * cos(radians(t.lat)) * cos(radians(t.lng) - radians($2)) + sin(radians($1)) * sin(radians(t.lat)))) AS distance
                  FROM tenants t
                  WHERE t.status = 'active' AND t.landing_enabled = true AND t.lat IS NOT NULL AND t.lng IS NOT NULL
@@ -180,7 +181,8 @@ export default function(apiLimiter) {
         }
         sql = `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
                       t.landing_hero_image, t.landing_description, t.lat, t.lng, t.category,
-                      (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services
+                      (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
+                      (SELECT json_agg(st.name) FROM staff st WHERE st.tenant_id = t.id AND st.active = true) as staff_names
                FROM tenants t WHERE ${whereClause} ORDER BY t.created_at DESC`;
       }
 

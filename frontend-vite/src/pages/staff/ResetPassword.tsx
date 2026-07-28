@@ -13,13 +13,13 @@ const styles = {
     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
   },
   title: {
-    color: '#1e293b',
+    color: 'var(--bg-card)',
     fontSize: '24px',
     marginBottom: '8px',
     textAlign: 'center' as const,
   },
   subtitle: {
-    color: '#64748b',
+    color: 'var(--text-secondary)',
     textAlign: 'center' as const,
     marginBottom: '24px',
     fontSize: '14px',
@@ -28,25 +28,25 @@ const styles = {
     display: 'block',
     marginBottom: '8px',
     fontWeight: 500,
-    color: '#334155',
+    color: 'var(--bg-elevated)',
     fontSize: '14px',
   },
   input: {
     width: '100%',
     padding: '12px 16px',
-    border: '2px solid #e2e8f0',
+    border: '2px solid var(--border-color)',
     borderRadius: '8px',
     fontSize: '15px',
     outline: 'none',
     boxSizing: 'border-box' as const,
   },
   inputFocus: {
-    borderColor: '#667eea',
+    borderColor: 'var(--info)',
   },
   btn: {
     width: '100%',
     padding: '14px',
-    background: '#667eea',
+    background: 'var(--info)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
@@ -60,7 +60,7 @@ const styles = {
     fontSize: '14px',
   },
   backLinkA: {
-    color: '#64748b',
+    color: 'var(--text-secondary)',
     textDecoration: 'none',
   },
   message: {
@@ -70,21 +70,21 @@ const styles = {
     fontSize: '14px',
   },
   error: {
-    background: '#fee2e2',
-    color: '#991b1b',
-    border: '1px solid #fca5a5',
+    background: 'var(--danger-light)',
+    color: 'var(--danger-dark)',
+    border: '1px solid var(--danger-light)',
   },
   success: {
-    background: '#dcfce7',
-    color: '#166534',
-    border: '1px solid #86efac',
+    background: 'var(--success-light)',
+    color: 'var(--success)',
+    border: '1px solid var(--success-light)',
   },
   formGroup: {
     marginBottom: '20px',
   },
   req: {
     fontSize: '12px',
-    color: '#64748b',
+    color: 'var(--text-secondary)',
     marginTop: '6px',
   },
 };
@@ -113,12 +113,12 @@ export default function ResetPassword() {
     }
   };
 
-  const inputStyle = { ...styles.input, ...(error ? { borderColor: '#fca5a5' } : {}) };
+  const inputStyle = { ...styles.input, ...(error ? { borderColor: 'var(--danger-light)' } : {}) };
   const btnStyle = { ...styles.btn, ...(!password || !confirm ? { opacity: 0.6, cursor: 'not-allowed' as const } : {}) };
 
   if (!token) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
           <h1 style={styles.title}>{t('staffResetPassword.invalidLinkTitle')}</h1>
           <p style={styles.subtitle}>{t('staffResetPassword.invalidLinkMessage')}</p>
@@ -132,11 +132,11 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={styles.container}>
           <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>✅</div>
           <h1 style={styles.title}>{t('staffResetPassword.successTitle')}</h1>
-          <p style={{ ...styles.subtitle, color: '#166534' }}>{t('staffResetPassword.successMessage')}</p>
+          <p style={{ ...styles.subtitle, color: 'var(--success)' }}>{t('staffResetPassword.successMessage')}</p>
           <Link to="/staff/login" style={{ ...styles.btn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: 16 }}>{t('staffResetPassword.loginNow')}</Link>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, #764ba2 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={styles.container}>
         <h1 style={styles.title}>{t('staffResetPassword.title')}</h1>
         <p style={styles.subtitle}>{t('staffResetPassword.subtitle')}</p>

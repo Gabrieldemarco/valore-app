@@ -70,8 +70,8 @@ export default function ClientRegister() {
           </div>
 
           <div className="form-group">
-            <label>Email (opcional)</label>
-            <input type="email" className="glass-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="tucorreo@ejemplo.com" />
+            <label>{t('clientRegister.emailOptionalLabel')}</label>
+            <input type="email" className="glass-input" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('clientRegister.emailOptionalPlaceholder')} />
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10, fontSize: 15 }} disabled={loading}>
@@ -85,7 +85,7 @@ export default function ClientRegister() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
-          <span style={{ color: '#94a3b8', fontSize: 13 }}>O</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.or')}</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
         </div>
 

@@ -23,7 +23,7 @@ export default function AdminLogin() {
       login(res.token, 'superAdmin');
       navigate('/admin/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setError(err instanceof Error ? err.message : t('adminLogin.loginError', 'Error al iniciar sesión'));
     }
   };
 

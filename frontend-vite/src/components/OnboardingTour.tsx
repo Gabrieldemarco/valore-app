@@ -161,8 +161,8 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
         <button onClick={openTour} title={t('onboardingTour.trigger', 'Ayuda')} style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 99999,
           width: 44, height: 44, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #cfa86b, #dfc293)',
-          border: 'none', color: '#0d0d12', cursor: 'pointer',
+          background: 'linear-gradient(135deg, var(--accent), var(--accent))',
+          border: 'none', color: 'var(--bg-deep)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 20px rgba(207,168,107,0.35)',
           transition: 'transform 0.2s, box-shadow 0.2s',
@@ -213,18 +213,18 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
             boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(207,168,107,0.08)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            color: '#f4f4f5',
+            color: 'var(--text-main)',
             pointerEvents: 'auto',
             width: 280,
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <span style={{
-                background: 'linear-gradient(135deg, #cfa86b, #dfc293)',
-                color: '#0d0d12', borderRadius: '50%', width: 22, height: 22,
+                background: 'linear-gradient(135deg, var(--accent), var(--accent))',
+                color: 'var(--bg-deep)', borderRadius: '50%', width: 22, height: 22,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 11, fontWeight: 700, flexShrink: 0,
               }}>{currentStep + 1}</span>
-              <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600, color: '#dfc293', fontFamily: "'Cormorant Garamond', serif" }}>
+              <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--accent)', fontFamily: "'Cormorant Garamond', serif" }}>
                 {step.title}
               </h3>
               <button onClick={() => closeTour(false)} style={{
@@ -246,7 +246,7 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
               }}>
                 <input type="checkbox" checked={dontShowAgain}
                   onChange={e => setDontShowAgain(e.target.checked)}
-                  style={{ accentColor: '#cfa86b' }} />
+                  style={{ accentColor: 'var(--accent)' }} />
                 {t('onboardingTour.dontShowAgain', 'No mostrar más')}
               </label>
 
@@ -254,13 +254,13 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
                 {!isFirst && (
                   <button onClick={prev} style={{
                     background: 'transparent', border: '1px solid rgba(207,168,107,0.2)',
-                    color: '#cfa86b', borderRadius: 6, padding: '6px 12px',
+                    color: 'var(--accent)', borderRadius: 6, padding: '6px 12px',
                     cursor: 'pointer', fontSize: 12, fontWeight: 500,
                   }}>{t('onboardingTour.back', 'Atrás')}</button>
                 )}
                 <button onClick={next} style={{
-                  background: 'linear-gradient(135deg, #cfa86b, #dfc293)',
-                  border: 'none', color: '#0d0d12', borderRadius: 6,
+                  background: 'linear-gradient(135deg, var(--accent), var(--accent))',
+                  border: 'none', color: 'var(--bg-deep)', borderRadius: 6,
                   padding: '6px 16px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 }}>
                   {isLast ? t('onboardingTour.done', 'Finalizar') : t('onboardingTour.next', 'Siguiente')}
@@ -273,7 +273,7 @@ export default function OnboardingTour({ tourId, steps, enabled, onComplete }: P
                 <div key={i} style={{
                   width: i === currentStep ? 16 : 5, height: 5,
                   borderRadius: 2.5,
-                  background: i === currentStep ? 'linear-gradient(135deg, #cfa86b, #dfc293)' : 'rgba(255,255,255,0.1)',
+                  background: i === currentStep ? 'linear-gradient(135deg, var(--accent), var(--accent))' : 'rgba(255,255,255,0.1)',
                   transition: 'all 0.3s',
                 }} />
               ))}

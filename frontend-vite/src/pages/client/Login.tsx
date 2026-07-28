@@ -48,7 +48,7 @@ export default function ClientLogin() {
           <div className="form-group">
             <label>{t('clientLogin.passwordLabel')}</label>
             <input type="password" className="glass-input" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('clientLogin.passwordPlaceholder')} />
-            <div style={{ marginTop: 6, fontSize: 13 }}><Link to="/client/forgot-password" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('clientLogin.forgotPassword') || '¿Olvidaste tu contraseña?'}</Link></div>
+            <div style={{ marginTop: 6, fontSize: 13 }}><Link to="/client/forgot-password" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{t('clientLogin.forgotPassword') || '¿Olvidaste tu contraseña?'}</Link></div>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: 10, fontSize: 15 }} disabled={loading}>
@@ -62,7 +62,7 @@ export default function ClientLogin() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
-          <span style={{ color: '#94a3b8', fontSize: 13 }}>O</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.or')}</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.2)' }}></div>
         </div>
 

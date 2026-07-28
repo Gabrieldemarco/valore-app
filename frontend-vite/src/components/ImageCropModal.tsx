@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ImageCropModalProps {
   open: boolean;
@@ -9,6 +10,7 @@ interface ImageCropModalProps {
 }
 
 export default function ImageCropModal({ open, file, aspectRatio, onApply, onCancel }: ImageCropModalProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [objectUrl, setObjectUrl] = useState('');
@@ -155,8 +157,8 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
         display: 'flex', flexDirection: 'column', gap: 14,
       }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, color: '#e2e8f0', fontSize: 19 }}>Ajustar imagen</h3>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 21, padding: '4px 8px' }}>✕</button>
+          <h3 style={{ margin: 0, color: 'var(--border-color)', fontSize: 19 }}>{t('common.adjustImage', 'Ajustar imagen')}</h3>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 21, padding: '4px 8px' }}>✕</button>
         </div>
 
         <div ref={containerRef} style={{
@@ -191,8 +193,8 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
           {!imgLoaded && (
             <div style={{
               position: 'absolute', inset: 0, display: 'flex',
-              alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 15,
-            }}>Cargando imagen...</div>
+              alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 15,
+            }}>{t('common.loadingImage', 'Cargando imagen...')}</div>
           )}
           <div style={{
             position: 'absolute', left: cropX, top: cropY,
@@ -205,11 +207,11 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
         </div>
 
         {imgLoaded && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#94a3b8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <input type="range" min={0.5} max={5} step={0.05} value={zoom}
               onChange={e => setZoom(parseFloat(e.target.value))}
-              style={{ flex: 1, accentColor: '#667eea' }} />
+              style={{ flex: 1, accentColor: 'var(--info)' }} />
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <span style={{ fontSize: 13, minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{zoom.toFixed(1)}x</span>
           </div>
@@ -218,15 +220,15 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={onCancel} style={{
             padding: '10px 28px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.25)',
-            background: 'transparent', color: '#cbd5e1', cursor: 'pointer', fontSize: 15,
-          }}>Cancelar</button>
+            background: 'transparent', color: 'var(--border-color)', cursor: 'pointer', fontSize: 15,
+          }}>{t('common.cancel', 'Cancelar')}</button>
           <button onClick={handleApply} disabled={!imgLoaded} style={{
             padding: '10px 28px', borderRadius: 8, border: 'none',
-            background: imgLoaded ? 'linear-gradient(135deg, #667eea, #764ba2)' : 'rgba(148,163,184,0.15)',
-            color: imgLoaded ? '#fff' : '#64748b',
+            background: imgLoaded ? 'linear-gradient(135deg, var(--info), #764ba2)' : 'rgba(148,163,184,0.15)',
+            color: imgLoaded ? '#fff' : 'var(--text-secondary)',
             cursor: imgLoaded ? 'pointer' : 'not-allowed',
             fontSize: 15, fontWeight: 600,
-          }}>{imgLoaded ? 'Aplicar' : 'Cargando...'}</button>
+          }}>{imgLoaded ? t('common.apply', 'Aplicar') : t('common.loading', 'Cargando...')}</button>
         </div>
       </div>
     </div>

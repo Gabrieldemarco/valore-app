@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import PublicIndex from './PublicIndex';
 import * as apiClient from '../../api/client';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 const mockSalons = {
   tenants: [
@@ -26,7 +27,7 @@ function renderPublicIndex(salonResponse?: object) {
       return new Promise(() => {}); // never resolve (loading state)
     });
   }
-  return render(<MemoryRouter><PublicIndex /></MemoryRouter>);
+  return render(<MemoryRouter><ThemeProvider><PublicIndex /></ThemeProvider></MemoryRouter>);
 }
 
 beforeEach(() => {
@@ -46,7 +47,7 @@ describe('PublicIndex', () => {
       if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
       return Promise.reject(new Error('Network error'));
     });
-    render(<MemoryRouter><PublicIndex /></MemoryRouter>);
+    render(<MemoryRouter><ThemeProvider><PublicIndex /></ThemeProvider></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText('No pudimos cargar las peluquerías.')).toBeInTheDocument();
     });
@@ -55,7 +56,7 @@ describe('PublicIndex', () => {
   it('shows empty state when no salons match filter', async () => {
     renderPublicIndex({ tenants: [] });
     await waitFor(() => {
-      expect(screen.getByText(/No se encontraron peluquerías/)).toBeInTheDocument();
+      expect(screen.getByText(/No se encontraron resultados/)).toBeInTheDocument();
     }, { timeout: 3000 });
   });
 
@@ -121,7 +122,7 @@ describe('PublicIndex', () => {
     await waitFor(() => {
       expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
     });
-    const searchInput = screen.getByPlaceholderText('Buscar por nombre o ubicación...');
+    const searchInput = screen.getByPlaceholderText('Servicio');
     await user.type(searchInput, 'Elegance');
     await waitFor(() => {
       expect(screen.queryByText('Barbería Clásica')).not.toBeInTheDocument();
@@ -145,9 +146,9 @@ describe('PublicIndex', () => {
 
   it('renders hero section with title and subtitle', () => {
     renderPublicIndex(); // no response = loading
-    const titles = screen.getAllByText(/Salones Destacados/i);
+    const titles = screen.getAllByText(/Reservá servicios de belleza y bienestar|Reserva servicios de cuidado personal/i);
     expect(titles.length).toBeGreaterThanOrEqual(1);
-    const subs = screen.getAllByText(/firmas boutique/i);
+    const subs = screen.getAllByText(/Encuentra los mejores establecimientos/i);
     expect(subs.length).toBeGreaterThanOrEqual(1);
   });
 

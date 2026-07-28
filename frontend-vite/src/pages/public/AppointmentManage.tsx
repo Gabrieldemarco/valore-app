@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { api } from '../../api/client';
 
 interface Appointment {
   id: number;
@@ -49,23 +50,17 @@ export default function AppointmentManage() {
 
   async function loadAppointment() {
     try {
-      const res = await fetch(`/p/${slug}/appointments/manage/${token}`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || t('appointmentManage.notFound'));
-      }
-      const data = await res.json();
+      const data = await api.get<{ appointment: Appointment; recurring_appointments?: RecurringAppointment[] }>(`/p/${slug}/appointments/manage/${token}`);
       setAppointment(data.appointment);
 
       if (data.recurring_appointments) {
         setRecurringAppointments(data.recurring_appointments);
       }
 
-      const servicesRes = await fetch(`/p/${slug}/services`);
-      if (servicesRes.ok) {
-        const servicesData = await servicesRes.json();
+      try {
+        const servicesData = await api.get<{ services: { id: number; name: string }[] }>(`/p/${slug}/services`);
         setServices(servicesData.services || []);
-      }
+      } catch { /* services are optional */ }
 
     } catch (err: any) {
       setError(err.message);
@@ -78,9 +73,7 @@ export default function AppointmentManage() {
     if (!confirm(t('appointmentManage.cancelConfirm'))) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`/p/${slug}/appointments/manage/${token}/cancel`, { method: 'PUT' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      await api.put(`/p/${slug}/appointments/manage/${token}/cancel`);
       setMessage(t('appointmentManage.cancelSuccess'));
       setAppointment(prev => prev ? { ...prev, status: 'cancelled' } : null);
     } catch (err: any) {
@@ -98,11 +91,8 @@ export default function AppointmentManage() {
       const endpoint = appointment.staff_id
         ? `/p/${slug}/staff/${appointment.staff_id}/availability?date=${date}&serviceId=${service.id}`
         : `/p/${slug}/availability?date=${date}&serviceId=${service.id}`;
-      const res = await fetch(endpoint);
-      if (res.ok) {
-        const data = await res.json();
-        setAvailableSlots(data.slots || []);
-      }
+      const data = await api.get<{ slots: { time: string; available: boolean }[] }>(endpoint);
+      setAvailableSlots(data.slots || []);
     } catch { /* ignore */ }
   }
 
@@ -113,13 +103,7 @@ export default function AppointmentManage() {
       const appointmentDate = `${newDate}T${newTime}:00`;
       const body: any = { appointmentDate };
       if (appointment?.staff_id) body.staffId = appointment.staff_id;
-      const res = await fetch(`/p/${slug}/appointments/manage/${token}/reschedule`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await api.put<{ appointment: Appointment }>(`/p/${slug}/appointments/manage/${token}/reschedule`, body);
       setMessage(t('appointmentManage.rescheduleSuccess'));
       setAppointment(data.appointment);
       setRescheduling(false);
@@ -146,22 +130,22 @@ export default function AppointmentManage() {
   return renderContainer(t, slug, (
     <>
       {message && (
-        <div style={{ background: '#d1fae5', color: '#065f46', padding: '12px 20px', borderRadius: 8, marginBottom: 20, fontSize: 15, fontWeight: 500 }}>
+        <div className="mb-20" style={{ background: 'var(--success-light)', color: 'var(--success-dark)', padding: '12px 20px', borderRadius: 8, fontSize: 15, fontWeight: 500 }}>
           {message}
         </div>
       )}
       {error && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 20px', borderRadius: 8, marginBottom: 20, fontSize: 15, fontWeight: 500 }}>
+        <div className="mb-20" style={{ background: 'var(--danger-light)', color: 'var(--danger-dark)', padding: '12px 20px', borderRadius: 8, fontSize: 15, fontWeight: 500 }}>
           {error}
         </div>
       )}
 
       {appointment && (
         <>
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div className="card-padded" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16 }}>
+            <div className="flex-gap-8 mb-16" style={{ alignItems: 'center' }}>
               <StatusBadge t={t} status={appointment.status} />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>
+              <span className="text-muted" style={{ fontSize: 13 }}>
                 #{appointment.id}
               </span>
             </div>
@@ -178,22 +162,21 @@ export default function AppointmentManage() {
             </div>
 
             {recurringAppointments.length > 1 && (
-              <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#60a5fa', margin: '0 0 8px' }}>
+              <div className="mt-16" style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                <p className="font-600 m-0 mb-8" style={{ fontSize: 14, color: 'var(--info)' }}>
                   {t('appointmentManage.recurringTitle')} ({recurringAppointments.length})
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="flex-col flex-gap-4">
                   {recurringAppointments.map(ra => {
                     const d = new Date(ra.appointment_date);
                     const isCurrent = ra.id === appointment.id;
                     return (
-                      <div key={ra.id} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      <div key={ra.id} className="flex-between" style={{
                         padding: '4px 8px', borderRadius: 6,
                         background: isCurrent ? 'rgba(59,130,246,0.15)' : 'transparent',
                         fontSize: 13,
                       }}>
-                        <span style={{ color: isCurrent ? '#93c5fd' : '#9ca3af', fontWeight: isCurrent ? 600 : 400 }}>
+                        <span style={{ color: isCurrent ? 'var(--info-light)' : 'var(--text-muted)', fontWeight: isCurrent ? 600 : 400 }}>
                           {d.toLocaleDateString('es-UY', { weekday: 'short', day: 'numeric', month: 'short' })} - {d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <StatusBadge t={t} status={ra.status} />
@@ -205,17 +188,17 @@ export default function AppointmentManage() {
             )}
 
             {appointment.deposit_amount && parseFloat(appointment.deposit_amount) > 0 && (
-              <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 10, background: appointment.deposit_paid ? '#d1fae5' : '#fef3c7' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: appointment.deposit_paid ? '#065f46' : '#92400e' }}>
+              <div className="mt-16" style={{ padding: '12px 16px', borderRadius: 10, background: appointment.deposit_paid ? 'var(--success-light)' : '#fef3c7' }}>
+                <div className="flex-between">
+                  <span className="font-600" style={{ fontSize: 14, color: appointment.deposit_paid ? 'var(--success-dark)' : 'var(--warning-dark)' }}>
                     {t('appointmentManage.depositLabel')}: ${parseFloat(appointment.deposit_amount).toLocaleString('es-UY')}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: appointment.deposit_paid ? '#065f46' : '#92400e' }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: appointment.deposit_paid ? 'var(--success-dark)' : 'var(--warning-dark)' }}>
                     {appointment.deposit_paid ? t('appointmentManage.depositPaid') : t('appointmentManage.depositPending')}
                   </span>
                 </div>
                 {!appointment.deposit_paid && appointment.status === 'pending' && (
-                  <p style={{ fontSize: 13, color: '#92400e', margin: '8px 0 0' }}>
+                  <p style={{ fontSize: 13, color: 'var(--warning-dark)', margin: '8px 0 0' }}>
                     {t('appointmentManage.depositHint')}
                   </p>
                 )}
@@ -224,16 +207,16 @@ export default function AppointmentManage() {
           </div>
 
           {!rescheduling && (
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div className="flex-gap-12 flex-wrap">
               {canReschedule && (
                 <button onClick={() => { setRescheduling(true); setNewDate(''); setNewTime(''); }}
-                  style={buttonStyle('#f59e0b')}>
+                  style={buttonStyle('var(--warning)')}>
                   {t('appointmentManage.rescheduleButton')}
                 </button>
               )}
               {canCancel && (
                 <button onClick={handleCancel} disabled={actionLoading}
-                  style={{ ...buttonStyle('#ef4444'), opacity: actionLoading ? 0.6 : 1 }}>
+                  style={{ ...buttonStyle('var(--danger)'), opacity: actionLoading ? 0.6 : 1 }}>
                   {actionLoading ? t('appointmentManage.cancelling') : t('appointmentManage.cancelButton')}
                 </button>
               )}
@@ -241,17 +224,17 @@ export default function AppointmentManage() {
           )}
 
           {rescheduling && (
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-              <h3 style={{ color: '#fff', margin: '0 0 16px', fontSize: 18 }}>{t('appointmentManage.rescheduleTitle')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label style={{ color: '#9ca3af', fontSize: 14 }}>{t('appointmentManage.newDateLabel')}</label>
+            <div className="p-24" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16 }}>
+              <h3 className="text-main m-0 mb-16" style={{ fontSize: 18 }}>{t('appointmentManage.rescheduleTitle')}</h3>
+              <div className="flex-col flex-gap-12">
+                <label className="text-muted">{t('appointmentManage.newDateLabel')}</label>
                 <input type="date"
                   value={newDate}
                   onChange={e => { setNewDate(e.target.value); loadSlots(e.target.value); }}
                   style={inputStyle()} />
                 {availableSlots.length > 0 && (
                   <>
-                    <label style={{ color: '#9ca3af', fontSize: 14, marginTop: 8 }}>{t('appointmentManage.newTimeLabel')}</label>
+                    <label className="text-muted mt-8">{t('appointmentManage.newTimeLabel')}</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                       {availableSlots.map(slot => (
                         <button key={slot.time}
@@ -268,15 +251,15 @@ export default function AppointmentManage() {
                   </>
                 )}
                 {availableSlots.length === 0 && newDate && (
-                  <p style={{ color: '#ef4444', fontSize: 14 }}>{t('appointmentManage.noSlots')}</p>
+                  <p style={{ color: 'var(--danger)', fontSize: 14 }}>{t('appointmentManage.noSlots')}</p>
                 )}
-                <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                <div className="flex-gap-12 mt-16">
                   <button onClick={handleReschedule} disabled={!newDate || !newTime || actionLoading}
-                    style={{ ...buttonStyle('#10b981'), opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
+                    style={{ ...buttonStyle('var(--success)'), opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
                     {actionLoading ? t('appointmentManage.rescheduling') : t('appointmentManage.confirmNewDate')}
                   </button>
                   <button onClick={() => setRescheduling(false)}
-                    style={{ ...buttonStyle('#6b7280'), background: 'transparent', border: '1px solid #4b5563' }}>
+                    style={{ ...buttonStyle('var(--text-muted)'), background: 'transparent', border: '1px solid var(--text-secondary)' }}>
                     {t('appointmentManage.backButton')}
                   </button>
                 </div>
@@ -291,11 +274,11 @@ export default function AppointmentManage() {
 
 function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   const colors: Record<string, string> = {
-    confirmed: '#10b981',
-    pending: '#f59e0b',
-    cancelled: '#ef4444',
-    completed: '#3b82f6',
-    'no-show': '#6b7280',
+    confirmed: 'var(--success)',
+    pending: 'var(--warning)',
+    cancelled: 'var(--danger)',
+    completed: 'var(--info)',
+    'no-show': 'var(--text-muted)',
   };
   const labels: Record<string, string> = {
     confirmed: t('appointmentManage.statusConfirmed'),
@@ -306,7 +289,7 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
   };
   return (
     <span style={{
-      background: colors[status] || '#6b7280',
+      background: colors[status] || 'var(--text-muted)',
       color: '#fff',
       padding: '4px 12px',
       borderRadius: 20,
@@ -320,24 +303,22 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
-      <span style={{ color: '#9ca3af', fontSize: 14 }}>{label}</span>
-      <span style={{ color: '#fff', fontSize: 14, fontWeight: 500, textAlign: 'right' }}>{value}</span>
+    <div className="flex-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
+      <span className="text-muted">{label}</span>
+      <span className="text-main text-right" style={{ fontWeight: 500 }}>{value}</span>
     </div>
   );
 }
 
 function renderContainer(t: (key: string) => string, slug?: string, children?: any) {
   return (
-    <div style={{
+    <div className="flex-center-center" style={{
       minHeight: '100vh',
-      background: '#120c0c',
-      display: 'flex',
-      justifyContent: 'center',
+      background: 'var(--bg-deep)',
       fontFamily: 'Outfit, sans-serif',
     }}>
       <div style={{ width: '100%', maxWidth: 480, padding: '40px 20px' }}>
-        <a href={`/p/${slug}`} style={{ color: '#9ca3af', fontSize: 14, textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}>
+        <a href={`/p/${slug}`} className="text-muted no-underline inline-block mb-24">
           {t('appointmentManage.backLink')}
         </a>
         {children}
@@ -348,8 +329,8 @@ function renderContainer(t: (key: string) => string, slug?: string, children?: a
 
 function renderLoading(t: (key: string) => string) {
   return (
-    <div style={{ textAlign: 'center', paddingTop: 80, color: '#6b7280' }}>
-      <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: '#c8827d', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
+    <div className="text-center text-muted" style={{ paddingTop: 80 }}>
+      <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
       {t('appointmentManage.loading')}
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -358,8 +339,8 @@ function renderLoading(t: (key: string) => string) {
 
 function renderError(msg: string) {
   return (
-    <div style={{ textAlign: 'center', paddingTop: 80, color: '#ef4444' }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>😕</div>
+    <div className="text-center" style={{ paddingTop: 80, color: 'var(--danger)' }}>
+      <div className="mb-16" style={{ fontSize: 48 }}>😕</div>
       <p>{msg}</p>
     </div>
   );
@@ -383,9 +364,9 @@ function inputStyle() {
     width: '100%',
     padding: '12px 16px',
     borderRadius: 10,
-    border: '1px solid #374151',
-    background: '#1f2937',
-    color: '#fff',
+    border: '1px solid var(--border-color, #374151)',
+    background: 'var(--input-bg, #1f2937)',
+    color: 'var(--text-main, #fff)',
     fontSize: 15,
     outline: 'none',
     boxSizing: 'border-box' as const,
@@ -396,9 +377,9 @@ function slotStyle(selected: boolean) {
   return {
     padding: '8px 12px',
     borderRadius: 8,
-    border: selected ? `2px solid #10b981` : '1px solid #374151',
-    background: selected ? 'rgba(16,185,129,0.15)' : '#1f2937',
-    color: '#fff',
+    border: selected ? `2px solid var(--success)` : '1px solid var(--border-color, #374151)',
+    background: selected ? 'rgba(16,185,129,0.15)' : 'var(--input-bg, #1f2937)',
+    color: 'var(--text-main, #fff)',
     fontSize: 13,
     fontWeight: selected ? 600 : 400,
     cursor: 'pointer',

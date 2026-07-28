@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
-
-const PLACEHOLDER_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="%23334155"%3E%3Crect width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%236366f1" font-size="40"%3E📷%3C/text%3E%3C/svg%3E';
+import { PLACEHOLDER_IMG } from '../../utils/imageUtils';
 
 interface LandingHeroSectionProps {
   businessName: string;
@@ -11,14 +10,17 @@ interface LandingHeroSectionProps {
   category?: string;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  peluqueria: 'Peluquería / Barbería',
-  cejas: 'Cejas & Pestañas',
-  uñas: 'Manicura & Pedicura',
-  maquillaje: 'Maquillaje',
-  facial: 'Cuidado Facial',
-  depilacion: 'Depilación',
-  masajes: 'Masajes & Bienestar',
+const getCategoryLabel = (category: string, t: (key: string, fallback?: string) => string): string => {
+  const labels: Record<string, string> = {
+    peluqueria: t('landingHero.categoryLabels.barber'),
+    cejas: t('landingHero.categoryLabels.eyebrows'),
+    uñas: t('landingHero.categoryLabels.nails'),
+    maquillaje: t('landingHero.categoryLabels.makeup'),
+    facial: t('landingHero.categoryLabels.facial'),
+    depilacion: t('landingHero.categoryLabels.depilation'),
+    masajes: t('landingHero.categoryLabels.massages'),
+  };
+  return labels[category] || category;
 };
 
 export default function LandingHeroSection({
@@ -48,7 +50,7 @@ export default function LandingHeroSection({
           />
         )}
         <h1>{businessName}</h1>
-        {category && <span className="hero-category-badge">{CATEGORY_LABELS[category] || category}</span>}
+        {category && <span className="hero-category-badge">{getCategoryLabel(category, t)}</span>}
         {description && <p>{description}</p>}
         <a href="#reservar" className="btn btn-primary btn-lg">{t('landingHero.reserveButton')}</a>
         <div className="hero-trust">

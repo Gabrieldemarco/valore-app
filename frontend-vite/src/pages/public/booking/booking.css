@@ -1,0 +1,624 @@
+/* ============================================
+   Stepper
+   ============================================ */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+}
+
+.step::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #e0e0e0;
+  z-index: 0;
+}
+
+.step:last-child::after {
+  display: none;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 1;
+  transition: all 0.2s;
+}
+
+.step.active .step-number {
+  background: #000;
+  color: #fff;
+}
+
+.step.completed .step-number {
+  background: #4caf50;
+  color: #fff;
+}
+
+.step-label {
+  margin-top: 0.4rem;
+  font-size: 0.7rem;
+  color: #999;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.step.active .step-label {
+  color: #000;
+  font-weight: 600;
+}
+
+.step.completed .step-label {
+  color: #4caf50;
+}
+
+/* ============================================
+   Date Picker
+   ============================================ */
+.booking-date-picker {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.cal-nav {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.cal-nav:hover {
+  background: #f5f5f5;
+}
+
+.cal-month-year {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 0.25rem;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #999;
+  padding: 0.3rem 0;
+}
+
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.15s;
+}
+
+.cal-day.empty {
+  cursor: default;
+}
+
+.cal-day:hover:not(.disabled):not(.empty) {
+  background: #f0f0f0;
+}
+
+.cal-day.selected {
+  background: #000 !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.cal-day.today {
+  border: 2px solid #000;
+  font-weight: 600;
+}
+
+.cal-day.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Time Slots
+   ============================================ */
+.booking-time-slots {
+  margin-top: 1rem;
+}
+
+.slots-title {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.slot-btn {
+  padding: 0.6rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.slot-btn:hover:not(.unavailable) {
+  border-color: #000;
+}
+
+.slot-btn.selected {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.slot-btn.unavailable {
+  background: #f5f5f5;
+  color: #ccc;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.slots-loading {
+  text-align: center;
+  color: #999;
+  padding: 1rem;
+}
+
+.slots-empty {
+  text-align: center;
+  color: #999;
+  padding: 1rem;
+}
+
+/* ============================================
+   Waitlist
+   ============================================ */
+.waitlist-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.waitlist-btn {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid #000;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.waitlist-btn:hover {
+  background: #000;
+  color: #fff;
+}
+
+.waitlist-form {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.waitlist-form h4 {
+  margin-bottom: 1rem;
+}
+
+.waitlist-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.waitlist-msg {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.waitlist-msg.success {
+  color: #4caf50;
+}
+
+.waitlist-msg.error {
+  color: #e53935;
+}
+
+/* ============================================
+   Booking Summary
+   ============================================ */
+.booking-summary {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-service {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.summary-service-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.summary-service-info h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.summary-price {
+  font-weight: 600;
+  margin: 0;
+}
+
+.summary-duration {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.summary-datetime p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* ============================================
+   Booking Actions
+   ============================================ */
+.booking-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.booking-btn {
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.booking-btn.primary {
+  background: #000;
+  color: #fff;
+}
+
+.booking-btn.primary:hover {
+  background: #333;
+}
+
+.booking-btn.secondary {
+  background: #fff;
+  color: #000;
+  border: 1px solid #ddd;
+}
+
+.booking-btn.secondary:hover {
+  border-color: #000;
+}
+
+/* ============================================
+   Booking Success
+   ============================================ */
+.booking-success {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.success-checkmark {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #4caf50;
+  color: #fff;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+/* ============================================
+   Accordion
+   ============================================ */
+.booking-accordion {
+  margin-top: 1rem;
+}
+
+.accordion-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.accordion-header:hover {
+  background: #f0f0f0;
+}
+
+.accordion-body {
+  padding: 1rem;
+}
+
+/* ============================================
+   Service Card
+   ============================================ */
+.booking-service-card {
+  border: 2px solid #eee;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.booking-service-card:hover {
+  border-color: #999;
+}
+
+.booking-service-card.selected {
+  border-color: #000;
+  background: #f9f9f9;
+}
+
+.service-book-btn {
+  margin-top: 0.75rem;
+  padding: 0.4rem 1rem;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.service-book-btn:hover {
+  background: #333;
+}
+
+/* ============================================
+   Staff Selection
+   ============================================ */
+.booking-staff-selection {
+  margin-top: 1rem;
+}
+
+.staff-section-title {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.staff-card-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 0.75rem;
+}
+
+.staff-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.staff-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e0e0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.staff-card-info {
+  text-align: center;
+}
+
+.staff-name {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.staff-specialties {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.staff-bio {
+  font-size: 0.8rem;
+  color: #999;
+  margin: 0;
+}
+
+/* ============================================
+   Client Form
+   ============================================ */
+.booking-client-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.phone-input {
+  font-size: 0.9rem;
+}
+
+.coupon-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.coupon-row .form-input {
+  flex: 1;
+}
+
+.coupon-btn {
+  min-width: 80px;
+}
+
+.coupon-success {
+  color: #4caf50;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.coupon-error {
+  color: #e53935;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.recurring-options {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.captcha-group {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0;
+}

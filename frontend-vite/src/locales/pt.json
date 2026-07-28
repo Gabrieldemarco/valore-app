@@ -29,7 +29,25 @@
     "yes": "Sim",
     "no": "Não",
     "or": "ou",
-    "all": "Todos"
+    "all": "Todos",
+    "themeLight": "Modo claro",
+    "themeDark": "Modo escuro",
+    "shareSalon": "Compartilhar salão",
+    "download": "Baixar",
+    "share": "Compartilhar",
+    "quickServiceOptional": "Serviço rápido (opcional)",
+    "downloadQR": "Baixar QR",
+    "copyLink": "Copiar link",
+    "adjustImage": "Ajustar imagem",
+    "apply": "Aplicar",
+    "close": "Fechar",
+    "installIOS": "📲 Instale o app no seu iPhone: toque em Compartilhar ⎋ e depois em \"Adicionar à tela de início\"",
+    "installAndroid": "📲 Instale a Velsoie no seu celular — use o menu do navegador: Instalar app ou Adicionar à tela de início",
+    "pushNotifications": "Notificações push",
+    "termsAndConditions": "Termos e Condições",
+    "privacyPolicy": "Política de Privacidade",
+    "cancellationPolicy": "Política de Cancelamento",
+    "loadingImage": "Carregando imagem..."
   },
   "publicIndex": {
     "error": "Não foi possível carregar os salões.",
@@ -42,11 +60,14 @@
     "salonCollectionSub": "Cor, estilo e estética premium",
     "groomingCollection": "Grooming Collection",
     "groomingCollectionSub": "Barbearias e experiências de autor",
+    "altFemale": "Velsoie estilo feminino",
+    "altMale": "Velsoie estilo masculino",
     "heroTitle": "Reserve serviços de cuidado pessoal",
     "heroTitleNoCountry": "Reserve serviços de cuidado pessoal",
     "heroSubtitle": "Encontre os melhores estabelecimentos e profissionais de beleza e bem-estar em todo o mundo",
-    "searchPlaceholder": "Todos os tratamentos",
-    "searchLocationPlaceholder": "Localização atual",
+    "searchPlaceholder": "Serviço",
+    "searchProfessionalPlaceholder": "Profissional",
+    "searchLocationPlaceholder": "Localização",
     "searchDatePlaceholder": "Em qualquer momento",
     "searchButton": "Buscar",
     "filterAll": "Todos",
@@ -89,7 +110,20 @@
     "termsLink": "Termos e Condições",
     "privacyLink": "Política de Privacidade",
     "cancellationPolicyLink": "Política de Cancelamento",
-    "appointmentsCounter": "{{count}} agendamentos reservados hoje"
+    "appointmentsCounter": "{{count}} agendamentos reservados hoje",
+    "catCejas": "Sobrancelhas & Cílios",
+    "catUnas": "Manicure & Pedicure",
+    "catMaquillaje": "Maquiagem",
+    "catFacial": "Cuidados Faciais",
+    "catDepilacion": "Depilação",
+    "catMasajes": "Massagens & Bem-estar",
+    "treatmentsTitle": "Tratamentos",
+    "treatmentsSubtitle": "Explore por tipo de serviço",
+    "useMyLocation": "Usar minha localização atual",
+    "locationError": "Não foi possível obter a localização",
+    "geoNotSupported": "Geolocalização não suportada",
+    "noEstablishmentsForCategory": "Nenhum estabelecimento encontrado para {{category}}",
+    "noResultsForQuery": "Nenhum resultado encontrado para \"{{query}}\""
   },
   "landing": {
     "noSlugTitle": "Salão não encontrado",
@@ -112,6 +146,8 @@
     "loadError": "Erro ao carregar",
     "bookError": "Erro ao agendar",
     "bookSuccess": "Agendamento realizado com sucesso",
+    "waitlistSuccess": "Você foi adicionado à lista de espera",
+    "waitlistError": "Erro ao entrar na lista de espera",
     "reviewsTitle": "Avaliações",
     "reviewsCount": "avaliações",
     "monthNames": [
@@ -141,7 +177,16 @@
   "landingHero": {
     "reserveButton": "Agendar horário",
     "trust1": "Atendimento personalizado",
-    "trust2": "Resultados garantidos"
+    "trust2": "Resultados garantidos",
+    "categoryLabels": {
+      "barber": "Barbearia / Cabeleireiro",
+      "eyebrows": "Sobrancelhas & Cílios",
+      "nails": "Manicure & Pedicure",
+      "makeup": "Maquiagem",
+      "facial": "Cuidados Faciais",
+      "depilation": "Depilação",
+      "massages": "Massagens & Bem-estar"
+    }
   },
   "landingServices": {
     "title": "Serviços",
@@ -194,6 +239,7 @@
     "backButton": "Voltar",
     "submitButton": "Confirmar agendamento",
     "cancelButton": "Cancelar",
+    "nextButton": "Próximo",
     "successReminder": "Enviamos um lembrete antes do agendamento.",
     "bookAnother": "Agendar outro horário",
     "quickBookLoading": "Preparando reserva rápida...",
@@ -287,10 +333,19 @@
     "phonePlaceholder": "+55 11...",
     "addressLabel": "Endereço (Opcional)",
     "addressPlaceholder": "Av. Sempre Viva 123",
+    "acceptThe": "Aceito os",
     "acceptTerms": "Aceito os {{terms}}, a {{privacy}} e a {{cancellation}} da Velsoie.",
     "createButton": "Criar Conta",
     "hasAccount": "Já tem conta?",
     "loginLink": "Faça login aqui",
+    "businessCategory": "Categoria do Negócio",
+    "categoryBarber": "Barbearia / Cabeleireiro",
+    "categoryEyebrows": "Sobrancelhas & Cílios",
+    "categoryNails": "Manicure & Pedicure",
+    "categoryMakeup": "Maquiagem",
+    "categoryFacial": "Cuidados Faciais",
+    "categoryDepilation": "Depilação",
+    "categoryMassages": "Massagens & Bem-estar",
     "registerError": "Erro ao cadastrar"
   },
   "staffForgotPassword": {
@@ -559,9 +614,19 @@
     "servicesModalImagePlaceholder": "https://...",
     "servicesModalGalleryLabel": "Galeria de Imagens",
     "servicesModalAddImage": "Adicionar",
+    "servicesModalImageUrlPlaceholder": "URL da imagem",
     "servicesModalCancel": "Cancelar",
     "servicesModalSave": "Salvar Alterações",
     "servicesModalCreate": "Criar Serviço",
+    "categoryModalEditTitle": "Editar Categoria",
+    "categoryModalNewTitle": "Nova Categoria",
+    "categoryModalNameLabel": "Nome",
+    "categoryModalNamePlaceholder": "Ex: Cortes",
+    "categoryModalParentLabel": "Categoria pai (opcional)",
+    "categoryModalNoParent": "— Nenhuma (raiz) —",
+    "categoryModalCancel": "Cancelar",
+    "categoryModalSave": "Salvar",
+    "categoryModalCreate": "Criar",
     "newAppointmentModalTitle": "Novo Agendamento",
     "newApptNameLabel": "Nome do Cliente *",
     "newApptNamePlaceholder": "Nome e sobrenome",
@@ -855,6 +920,9 @@
     "customBlockAddButton": "Adicionar bloco",
     "previewLabel": "Visualização ao Vivo",
     "previewUpdated": "Atualizado",
+    "preview": "Pré-visualização",
+    "togglePreview": "Alternar pré-visualização",
+    "closePreview": "Fechar pré-visualização",
     "customBlockModalTitle": "Novo Bloco Personalizado",
     "customBlockNameLabel": "Nome do bloco",
     "customBlockNamePlaceholder": "Ex: Instagram, Mapa, Vídeo",
@@ -895,7 +963,14 @@
     "blockedDatesReasonHeader": "Motivo",
     "calendarDisconnectConfirm": "Desconectar Google Agenda?",
     "notAvailable": "Não disponível",
-    "posUnitPrice": "${{price}} c/u"
+    "posUnitPrice": "${{price}} c/u",
+    "latitudeLabel": "Latitude",
+    "longitudeLabel": "Longitude",
+    "typographyTitle": "Tipografia",
+    "primaryFontLabel": "Fonte Principal (títulos)",
+    "secondaryFontLabel": "Fonte Secundária (corpo)",
+    "fontsHint": "As fontes são carregadas do Google Fonts automaticamente.",
+    "imagesTitle": "Imagens"
   },
   "salonQR": {
     "title": "Compartilhar salão",
@@ -947,7 +1022,8 @@
     "passwordLabel": "Senha",
     "passwordPlaceholder": "••••••••",
     "loginButton": "Entrar",
-    "backLink": "← Voltar ao início"
+    "backLink": "← Voltar ao início",
+    "loginError": "Erro ao iniciar sessão"
   },
   "adminDashboard": {
     "title": "Painel de Administração",
@@ -1041,7 +1117,8 @@
     "toastTwilioSaved": "Configuração do Twilio salva",
     "toastTwilioError": "Erro ao salvar Twilio",
     "toastTrialSet": "Conta colocada em teste corretamente",
-    "toastTrialError": "Erro ao colocar em teste"
+    "toastTrialError": "Erro ao colocar em teste",
+    "toastLoadError": "Erro ao carregar detalhes"
   },
   "clientLogin": {
     "title": "Bem-vindo de volta!",
@@ -1080,7 +1157,9 @@
     "submitButton": "Criar minha conta",
     "hasAccount": "Já tem conta?",
     "loginLink": "Entrar",
-    "backHome": "← Voltar ao início"
+    "backHome": "← Voltar ao início",
+    "emailOptionalLabel": "Email (opcional)",
+    "emailOptionalPlaceholder": "seu@exemplo.com"
   },
   "clientDashboard": {
     "welcome": "Olá, {{name}}",
@@ -1109,7 +1188,97 @@
     "agendaTableDate": "Data",
     "editButton": "Editar",
     "deleteButton": "Excluir",
-    "confirmDeleteEvent": "Excluir este evento?"
+    "confirmDeleteEvent": "Excluir este evento?",
+    "profileTitle": "Meu Perfil",
+    "profileNameLabel": "Nome completo",
+    "profileNamePlaceholder": "Seu nome",
+    "profilePhoneLabel": "Telefone",
+    "profileSaveButton": "Salvar",
+    "profileUpdated": "Dados atualizados",
+    "profileError": "Erro ao salvar",
+    "exploreTitle": "Explorar Negócios",
+    "exploreEmpty": "Nenhum negócio disponível",
+    "exploreBookButton": "Agendar horário →",
+    "tourWelcomeTitle": "Bem-vindo à sua conta",
+    "tourWelcomeContent": "Este é seu painel de cliente. Aqui você pode ver seus agendamentos, editar seu perfil e explorar novos negócios.",
+    "tourUpcomingTitle": "Próximos agendamentos",
+    "tourUpcomingContent": "Todos os seus agendamentos confirmados e pendentes aparecem aqui. Nunca perca um.",
+    "tourProfileTitle": "Meu Perfil",
+    "tourProfileContent": "Atualize seu nome e telefone para que os salões possam entrar em contato.",
+    "tourExploreTitle": "Explorar Negócios",
+    "tourExploreContent": "Descubra novos salões e agende horários diretamente daqui.",
+    "tourHistoryTitle": "Histórico",
+    "tourHistoryContent": "Revise seus agendamentos anteriores, concluídos e cancelados.",
+    "tourAgendaTitle": "Agenda Pessoal",
+    "tourAgendaContent": "Crie seus próprios eventos e lembretes pessoais."
+  },
+  "clientForgotPassword": {
+    "title": "Recuperar Senha",
+    "subtitle": "Enviaremos um link para redefinir sua senha",
+    "sentMessage": "Se o email estiver cadastrado, você receberá um link para redefinir sua senha.",
+    "emailLabel": "Email cadastrado",
+    "emailPlaceholder": "seu@exemplo.com",
+    "sendButton": "Enviar link",
+    "backLink": "← Voltar ao login",
+    "error": "Erro ao enviar o email"
+  },
+  "clientResetPassword": {
+    "invalidLinkTitle": "Link inválido",
+    "invalidLinkMessage": "O link de redefinição não é válido ou expirou.",
+    "requestNewLink": "Solicitar novo link",
+    "successTitle": "Senha atualizada",
+    "successMessage": "Sua senha foi atualizada!",
+    "loginNow": "Entrar agora",
+    "title": "Nova Senha",
+    "subtitle": "Digite sua nova senha",
+    "newPasswordLabel": "Nova senha",
+    "passwordRequirement": "• Mínimo 6 caracteres",
+    "confirmPasswordLabel": "Confirmar senha",
+    "submitButton": "Redefinir senha",
+    "backLink": "← Voltar ao login",
+    "passwordMismatch": "As senhas não coincidem",
+    "error": "Erro ao redefinir a senha"
+  },
+  "verifyEmail": {
+    "tokenNotFound": "Token de verificação não encontrado.",
+    "successMessage": "Email verificado com sucesso. Você já pode fazer login.",
+    "errorMessage": "Erro ao verificar email.",
+    "verifying": "Verificando email...",
+    "verified": "Email verificado!",
+    "loginButton": "Fazer login",
+    "errorTitle": "Erro",
+    "goToLogin": "Ir para o login"
+  },
+  "phoneInput": {
+    "uy": "Uruguai",
+    "ar": "Argentina",
+    "br": "Brasil",
+    "cl": "Chile",
+    "py": "Paraguai",
+    "bo": "Bolívia",
+    "pe": "Peru",
+    "ec": "Equador",
+    "co": "Colômbia",
+    "ve": "Venezuela",
+    "mx": "México",
+    "es": "Espanha",
+    "us": "Estados Unidos",
+    "pa": "Panamá",
+    "cr": "Costa Rica",
+    "do": "República Dominicana",
+    "pr": "Porto Rico"
+  },
+  "languageSwitcher": {
+    "spanish": "Espanhol",
+    "english": "Inglês",
+    "portuguese": "Português"
+  },
+  "brandingTab": {
+    "altLogo": "Logo",
+    "altHero": "Hero"
+  },
+  "galleryTab": {
+    "altGallery": "Galeria"
   }
 }
 

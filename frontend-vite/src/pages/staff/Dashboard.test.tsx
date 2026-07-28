@@ -119,6 +119,11 @@ function setupFetchResponses() {
     if (u.includes('/api/tenant/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaffList) });
     if (u.includes('/api/tenant/services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockServicesList) });
     if (u.includes('/api/tenant/clients')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockClients) });
+    if (u.includes('/api/tenant/categories')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ categories: [] }) });
+    if (u.includes('/api/tenant/coupons')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ coupons: [] }) });
+    if (u.includes('/api/tenant/products')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ products: [] }) });
+    if (u.includes('/api/calendar/status')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ connected: false }) });
+    if (u.includes('/api/tenant/blocked-dates')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ blockedDates: [] }) });
     if (u.includes('/api/appointments')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAppointments) });
     if (u.includes('/api/tenant/stats/summary')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAnalyticsSummary) });
     if (u.includes('/api/tenant/stats/revenue-by-month')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockRevenueByMonth) });
@@ -160,7 +165,7 @@ describe('StaffDashboard', () => {
     setupFetchResponses();
     renderDashboard();
     expect(await screen.findByText('Gestión de Turnos')).toBeInTheDocument();
-    expect(screen.getByText('Carlos')).toBeInTheDocument();
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
     expect(screen.getByText('Sofia')).toBeInTheDocument();
     expect(screen.getAllByText('Turnos')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Staff')[0]).toBeInTheDocument();
@@ -251,6 +256,11 @@ describe('StaffDashboard', () => {
       if (u.includes('/api/tenant/staff')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStaffList) });
       if (u.includes('/api/tenant/services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockServicesList) });
       if (u.includes('/api/tenant/clients')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockClients) });
+      if (u.includes('/api/tenant/categories')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ categories: [] }) });
+      if (u.includes('/api/tenant/coupons')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ coupons: [] }) });
+      if (u.includes('/api/tenant/products')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ products: [] }) });
+      if (u.includes('/api/calendar/status')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ connected: false }) });
+      if (u.includes('/api/tenant/blocked-dates')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ blockedDates: [] }) });
       if (u.includes('/api/appointments')) {
         if (u.includes('page=2')) {
           return Promise.resolve({ ok: true, json: () => Promise.resolve({ appointments: [{ id: 3, client_name: 'Page2', service: 'Test', date: '2026-06-02', time: '11:00', appointment_date: '2026-06-02T11:00:00', status: 'confirmed', client_phone: '+59899333333' }], total: 25, totalPages: 2 }) });

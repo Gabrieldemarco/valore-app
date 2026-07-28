@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -25,11 +27,12 @@ const ClientForgotPassword = lazy(() => import('./pages/client/ForgotPassword'))
 const ClientResetPassword = lazy(() => import('./pages/client/ResetPassword'));
 
 function Loading() {
+  const { t } = useTranslation();
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#120c0c', color: '#94a3b8', fontFamily: 'Outfit, sans-serif' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep)', color: 'var(--text-secondary)', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: '#c8827d', borderRadius: '50%', animation: 'ls 0.8s linear infinite', margin: '0 auto 16px' }}></div>
-        Cargando...
+        <div style={{ width: 40, height: 40, border: '3px solid rgba(148,163,184,0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'ls 0.8s linear infinite', margin: '0 auto 16px' }}></div>
+        {t('common.loading', 'Cargando...')}
         <style>{`@keyframes ls{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -41,6 +44,7 @@ const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
+      <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
           <ErrorBoundary>
@@ -71,6 +75,7 @@ function App() {
           </ErrorBoundary>
         </BrowserRouter>
       </AuthProvider>
+      </ThemeProvider>
     </GoogleOAuthProvider>
   );
 }

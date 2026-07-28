@@ -7,13 +7,13 @@ const LANGUAGES = [
 ];
 
 export default function LanguageSwitcher({ className }: { className?: string }) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   return (
     <div className={className} style={{ display: 'inline-flex', gap: 2 }}>
       {LANGUAGES.map(lang => (
         <button
           key={lang.code}
-          aria-label={lang.code === 'es' ? 'Español' : lang.code === 'en' ? 'English' : 'Português'}
+          aria-label={lang.code === 'es' ? t('languageSwitcher.spanish') : lang.code === 'en' ? t('languageSwitcher.english') : t('languageSwitcher.portuguese')}
           onClick={() => i18n.changeLanguage(lang.code)}
           style={{
             background: i18n.language === lang.code ? 'var(--glass-bg)' : 'transparent',

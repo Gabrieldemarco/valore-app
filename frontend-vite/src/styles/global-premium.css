@@ -18,8 +18,27 @@
   /* Typography */
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;
+  --text-secondary: #94a3b8;
   --text-dark: #0a0a0c;
-  
+
+  /* Semantic Status Colors */
+  --success: #059669;
+  --success-light: #d1fae5;
+  --success-dark: #065f46;
+  --info: #60a5fa;
+  --info-light: #dbeafe;
+  --danger-light: #fca5a5;
+  --danger-dark: #991b1b;
+  --warning-dark: #92400e;
+  --warning-light: #fef3c7;
+
+  /* Borders & Surfaces */
+  --border-color: #2a2222;
+  --border-subtle: #1e1818;
+  --bg-card: #1a1515;
+  --bg-elevated: #1e1818;
+  --bg-input: #141010;
+
   /* Glass Effects with Subtle Rose Gold Tint */
   --glass-bg: rgba(22, 22, 26, 0.75);
   --glass-bg-hover: rgba(30, 30, 36, 0.9);
@@ -31,6 +50,99 @@
   --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slow: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] {
+  --bg-deep: #faf6f3;
+  --bg-gradient-start: #f5f0ed;
+  --bg-gradient-end: #ede6e1;
+
+  --primary: #b0706b;
+  --primary-hover: #c8827d;
+  --secondary: #e8e0da;
+  --accent: #c8827d;
+
+  --text-main: #1a1a1e;
+  --text-muted: #6b6b73;
+  --text-secondary: #64748b;
+  --text-dark: #1a1a1e;
+
+  --success: #166534;
+  --success-light: #dcfce7;
+  --success-dark: #065f46;
+  --info: #667eea;
+  --info-light: #dbeafe;
+  --danger-light: #fee2e2;
+  --danger-dark: #991b1b;
+  --warning-dark: #92400e;
+  --warning-light: #fef3c7;
+
+  --border-color: #e2e8f0;
+  --border-subtle: #f0ebe6;
+  --bg-card: #ffffff;
+  --bg-elevated: #f5f0ed;
+  --bg-input: #faf6f3;
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-hover: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(200, 130, 125, 0.2);
+  --glass-border-hover: rgba(200, 130, 125, 0.4);
+  --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 20px 48px 0 rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .glass-input {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(200, 130, 125, 0.2);
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .glass-input:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #b0706b;
+}
+
+[data-theme="light"] .logo-text {
+  color: #1a1a1e !important;
+}
+
+[data-theme="light"] .install-banner {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(200, 130, 125, 0.2);
+  color: #1a1a1e;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .btn-primary {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .btn-primary:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .btn-secondary {
+  background: rgba(255, 255, 255, 0.7);
+  color: #1a1a1e;
+  border-color: rgba(200, 130, 125, 0.2);
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #b0706b;
 }
 
 /* Base Styles */
@@ -52,6 +164,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 .container {

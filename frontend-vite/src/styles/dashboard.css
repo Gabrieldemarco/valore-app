@@ -1334,3 +1334,60 @@
     .dash-category-children {
       margin-top: 2px;
     }
+
+/* ===== LIGHT THEME - Dashboard ===== */
+[data-theme="light"] .dash-header {
+  background: rgba(250, 246, 243, 0.95);
+  border-bottom-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .dash-sidebar {
+  background: rgba(255, 255, 255, 0.85);
+  border-right-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .dash-sidebar a,
+[data-theme="light"] .dash-sidebar button {
+  color: #6b6b73;
+}
+
+[data-theme="light"] .dash-sidebar a:hover,
+[data-theme="light"] .dash-sidebar button:hover {
+  background: rgba(200, 130, 125, 0.08);
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .dash-card {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .dash-card h3,
+[data-theme="light"] .dash-card h2 {
+  color: #1a1a1e;
+}
+
+[data-theme="light"] .dash-modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .dash-modal-content {
+  background: #fff;
+  border-color: rgba(200, 130, 125, 0.15);
+}
+
+[data-theme="light"] .fc .fc-col-header-cell {
+  background: rgba(250, 246, 243, 0.95);
+}
+
+[data-theme="light"] .fc .fc-daygrid-day:hover {
+  background-color: rgba(200, 130, 125, 0.05);
+}
+
+[data-theme="light"] .fc .fc-list-day-cushion {
+  background: rgba(250, 246, 243, 0.95) !important;
+}
+
+[data-theme="light"] .fc .fc-list-event:hover td {
+  background-color: rgba(200, 130, 125, 0.05) !important;
+}

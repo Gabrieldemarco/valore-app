@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { api } from '../api/client';
+import { logger } from '../services/logger';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
@@ -21,7 +22,7 @@ export default function GoogleLoginButton({ mode }: Props) {
       if (res.name) localStorage.setItem('clientDisplayName', res.name);
       navigate('/client/dashboard');
     } catch (err: any) {
-      console.error('Google login error:', err);
+      logger.error('Google login error:', err);
     }
   };
 
@@ -29,7 +30,7 @@ export default function GoogleLoginButton({ mode }: Props) {
     <div>
       <GoogleLogin
         onSuccess={handleSuccess}
-        onError={() => console.error('Google login failed')}
+        onError={() => logger.error('Google login failed')}
         text={mode === 'login' ? 'signin_with' : 'signup_with'}
         shape="rectangular"
         theme="outline"
