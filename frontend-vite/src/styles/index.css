@@ -1018,6 +1018,16 @@
   color: var(--text-main);
 }
 
+.section-eyebrow {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
 .section-header::after {
   content: '';
   display: block;
@@ -1135,6 +1145,7 @@
     text-align: center;
     margin: 0 auto;
   }
+}
 
 /* Light theme overrides for search */
 [data-theme="light"] .search-box {
@@ -1181,6 +1192,29 @@
   color: var(--text-main);
 }
 
+[data-theme="light"] .calendar-month-year {
+  color: var(--text-main);
+}
+
+[data-theme="light"] .calendar-weekday {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .calendar-nav {
+  color: var(--text-main);
+  border-color: rgba(200, 130, 125, 0.25);
+}
+
+[data-theme="light"] .calendar-nav:hover {
+  background: rgba(200, 130, 125, 0.1);
+  border-color: rgba(200, 130, 125, 0.4);
+}
+
+[data-theme="light"] .calendar-day.today {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 [data-theme="light"] .calendar-day {
   color: var(--text-main);
 }
@@ -1200,7 +1234,6 @@
     border-bottom: 1px solid rgba(200, 130, 125, 0.15);
     padding: 0;
   }
-}
 
   .hero h1 {
     font-size: 44px;
@@ -1244,9 +1277,6 @@
     justify-content: center;
     gap: 16px;
   }
-}
-
-@media (max-width: 768px) {
 }
 
 /* Light Theme Overrides - PublicIndex */
@@ -1308,6 +1338,10 @@
 
 [data-theme="light"] .section-title {
   color: var(--text-main);
+}
+
+[data-theme="light"] .section-eyebrow {
+  color: var(--primary);
 }
 
 [data-theme="light"] .section-subtitle {

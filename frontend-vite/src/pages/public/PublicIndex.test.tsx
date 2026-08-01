@@ -63,19 +63,19 @@ describe('PublicIndex', () => {
   it('renders salon cards after loading', async () => {
     renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
+      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
     });
-    expect(screen.getByText('Salón Elegance')).toBeInTheDocument();
-    expect(screen.getByText('Unisex Moderno')).toBeInTheDocument();
+    expect(screen.getAllByText('Salón Elegance').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Unisex Moderno').length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays salon address and services', async () => {
     renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Centro')).toBeInTheDocument();
+      expect(screen.getAllByText('Centro').length).toBeGreaterThanOrEqual(1);
     });
-    expect(screen.getByText('Corte')).toBeInTheDocument();
-    expect(screen.getByText('Barba')).toBeInTheDocument();
+    expect(screen.getAllByText('Corte').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Barba').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows initials fallback when no image', async () => {
@@ -83,14 +83,14 @@ describe('PublicIndex', () => {
     await waitFor(() => {
       const initials = document.querySelector('.salon-initials');
       expect(initials).toBeInTheDocument();
-      expect(screen.getByText('BC')).toBeInTheDocument();
+      expect(screen.getAllByText('BC').length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('salon card links to correct URL', async () => {
     renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
+      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
     });
     const links = screen.getAllByRole('link');
     const salonLink = links.find(l => l.getAttribute('href') === '/p/barberia-clasica');
@@ -120,21 +120,21 @@ describe('PublicIndex', () => {
     const user = userEvent.setup();
     renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
+      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
     });
     const searchInput = screen.getByPlaceholderText('Servicio');
     await user.type(searchInput, 'Elegance');
     await waitFor(() => {
-      expect(screen.queryByText('Barbería Clásica')).not.toBeInTheDocument();
+      expect(screen.queryAllByText('Barbería Clásica').length).toBe(0);
     });
-    expect(screen.getByText('Salón Elegance')).toBeInTheDocument();
+    expect(screen.getAllByText('Salón Elegance').length).toBeGreaterThanOrEqual(1);
   });
 
   it('hero collage click sets gender filter', async () => {
     const user = userEvent.setup();
     renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Barbería Clásica')).toBeInTheDocument();
+      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
     });
     const collageCards = document.querySelectorAll('.collage-card');
     expect(collageCards.length).toBe(2);

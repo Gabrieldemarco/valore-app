@@ -2,10 +2,10 @@ body { margin: 0; }
 .app-header { background: rgba(15,23,42,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 1rem 2rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
 .main-container { display: flex; flex: 1; overflow: hidden; }
 .editor-pane { width: 45%; min-width: 400px; background: var(--bg-deep); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; overflow: hidden; }
-.tabs-nav { padding: 1rem; border-bottom: 1px solid var(--glass-border); display: flex; gap: 0.5rem; overflow-x: auto; background: rgba(0,0,0,0.2); flex-shrink: 0; }
-.tab-btn { padding: 0.5rem 0.75rem; border: 1px solid transparent; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); transition: all 0.2s; white-space: nowrap; flex: 1; min-width: 0; text-align: center; }
-.tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-.tab-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
+.tabs-nav { padding: 0.9rem; border-bottom: 1px solid var(--glass-border); display: flex; flex-wrap: wrap; gap: 0.5rem; background: rgba(0,0,0,0.25); flex-shrink: 0; }
+.tab-btn { padding: 0.55rem 0.6rem; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.2px; color: var(--text-muted); transition: all 0.2s cubic-bezier(0.16,1,0.3,1); white-space: nowrap; flex: 1 1 128px; min-width: 0; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+.tab-btn:hover:not(.active) { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.22); color: var(--text-main); transform: translateY(-1px); }
+.tab-btn.active { background: var(--primary); color: var(--text-dark); border-color: transparent; box-shadow: 0 4px 18px rgba(0,0,0,0.35); transform: translateY(-1px); }
 .editor-content { padding: 2rem; flex: 1; overflow-y: auto; }
 .preview-pane { flex: 1; background: var(--bg-deep); display: flex; flex-direction: column; position: relative; }
 .preview-toolbar { background: rgba(0,0,0,0.5); color: var(--text-main); padding: 0.5rem 1rem; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }

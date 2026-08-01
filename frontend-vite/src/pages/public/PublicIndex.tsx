@@ -39,6 +39,9 @@ export default function PublicIndex() {
   const featuredGridRef = useRef<HTMLDivElement>(null);
   const trendingGridRef = useRef<HTMLDivElement>(null);
   const newGridRef = useRef<HTMLDivElement>(null);
+  const femCollectionGridRef = useRef<HTMLDivElement>(null);
+  const menCollectionGridRef = useRef<HTMLDivElement>(null);
+  const allSalonsGridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     api.get<TenantsResponse>('/api/tenants')
       .then(data => {
@@ -165,6 +168,12 @@ export default function PublicIndex() {
     };
   }, [filtered]);
 
+  const collectionSalons = useMemo(() => {
+    const fem = filtered.filter(s => getGenderCategory(s) === 'mujer');
+    const men = filtered.filter(s => getGenderCategory(s) === 'hombre');
+    return { fem, men };
+  }, [filtered]);
+
   const defaultServices = useMemo(() => [
     t('publicIndex.defaultService1'),
     t('publicIndex.defaultService2'),
@@ -246,6 +255,47 @@ export default function PublicIndex() {
             defaultServices={defaultServices}
             dotCount={getDotCount(newGridRef, categorizedSalons.new.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, newGridRef)}
+            headerStyle={{ marginTop: 60 }}
+          />
+        )}
+
+        {!loading && !error && collectionSalons.fem.length > 0 && (
+          <SalonGridSection
+            eyebrow={t('publicIndex.collectionFemSectionTitle')}
+            title={t('publicIndex.salonCollection')}
+            subtitle={t('publicIndex.salonCollectionSub')}
+            salons={collectionSalons.fem}
+            gridRef={femCollectionGridRef}
+            defaultServices={defaultServices}
+            dotCount={getDotCount(femCollectionGridRef, collectionSalons.fem.length)} // eslint-disable-line react-hooks/refs
+            onDotClick={(idx) => scrollToSalon(idx, femCollectionGridRef)}
+            headerStyle={{ marginTop: 60 }}
+          />
+        )}
+
+        {!loading && !error && collectionSalons.men.length > 0 && (
+          <SalonGridSection
+            eyebrow={t('publicIndex.collectionMenSectionTitle')}
+            title={t('publicIndex.groomingCollection')}
+            subtitle={t('publicIndex.groomingCollectionSub')}
+            salons={collectionSalons.men}
+            gridRef={menCollectionGridRef}
+            defaultServices={defaultServices}
+            dotCount={getDotCount(menCollectionGridRef, collectionSalons.men.length)} // eslint-disable-line react-hooks/refs
+            onDotClick={(idx) => scrollToSalon(idx, menCollectionGridRef)}
+            headerStyle={{ marginTop: 60 }}
+          />
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
+          <SalonGridSection
+            title={t('publicIndex.allSalonsTitle')}
+            subtitle={t('publicIndex.allSalonsSubtitle')}
+            salons={filtered}
+            gridRef={allSalonsGridRef}
+            defaultServices={defaultServices}
+            dotCount={getDotCount(allSalonsGridRef, filtered.length)} // eslint-disable-line react-hooks/refs
+            onDotClick={(idx) => scrollToSalon(idx, allSalonsGridRef)}
             headerStyle={{ marginTop: 60 }}
           />
         )}

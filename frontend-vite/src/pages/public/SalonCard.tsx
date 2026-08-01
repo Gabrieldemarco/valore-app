@@ -31,7 +31,7 @@ export function getGenderCategory(salon: Salon): 'hombre' | 'mujer' | 'unisex' {
   const allText = `${name} ${desc} ${services}`;
   const menKeywords = ['barber', 'barbería', 'barbero', 'afeitado', 'barba', 'caballero', 'hombre', 'men', 'beard', 'masculino', 'corte de hombre', 'corte masculino'];
   const womenKeywords = ['alisado', 'dama', 'mujer', 'peinado', 'color', 'tintura', 'uñas', 'nails', 'maquillaje', 'makeup', 'balayage', 'mechas', 'femenino', 'corte de dama', 'corte femenino'];
-  const hasMen = menKeywords.some(kw => allText.includes(kw));
+  const hasMen = menKeywords.some(kw => kw === 'men' ? /\bmen\b/.test(allText) : allText.includes(kw));
   const hasWomen = womenKeywords.some(kw => allText.includes(kw));
   if (hasMen && hasWomen) return 'unisex';
   if (hasMen) return 'hombre';

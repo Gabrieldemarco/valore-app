@@ -85,7 +85,7 @@ function EditorInner() {
         <aside className="editor-pane">
           <nav className="tabs-nav">
             {tabs.map(tab => (
-              <button key={tab.key} className={`tab-btn${activeTab === tab.key ? ' active' : ''}`} onClick={() => setActiveTab(tab.key)}>
+              <button key={tab.key} type="button" className={`tab-btn${activeTab === tab.key ? ' active' : ''}`} onClick={() => setActiveTab(tab.key)}>
                 {tab.label}
               </button>
             ))}

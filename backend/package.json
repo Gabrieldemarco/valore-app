@@ -15,6 +15,7 @@
     "lint": "eslint . --ext .ts,.js",
     "typecheck": "tsc --noEmit",
     "seed:noba": "tsx seed-noba-spa.ts",
+    "seed:demo": "node seed-demo-salons.js",
     "audit": "npm audit --audit-level=high"
   },
   "dependencies": {
