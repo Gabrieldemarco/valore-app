@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
 
 interface ImageCropModalProps {
   open: boolean;
@@ -19,6 +20,9 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
+  const [rotation, setRotation] = useState(0);
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
   const [containerSize, setContainerSize] = useState({ w: 500, h: 400 });
 
   const [isDragging, setIsDragging] = useState(false);
@@ -32,6 +36,9 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
     setZoom(1);
     setPanX(0);
     setPanY(0);
+    setRotation(0);
+    setFlipH(false);
+    setFlipV(false);
     setImgLoaded(false);
     setNatural({ w: 1, h: 1 });
     return () => { URL.revokeObjectURL(url); };
@@ -52,12 +59,17 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
 
   if (!open || !file) return null;
 
-  const baseScale = Math.max(containerSize.w / natural.w, containerSize.h / natural.h);
+  const rotated = rotation % 180 !== 0;
+  const effW = rotated ? natural.h : natural.w;
+  const effH = rotated ? natural.w : natural.h;
+  const baseScale = Math.max(containerSize.w / effW, containerSize.h / effH);
   const scale = baseScale * zoom;
-  const dispW = natural.w * scale;
-  const dispH = natural.h * scale;
-  const imgX = (containerSize.w - dispW) / 2 + panX;
-  const imgY = (containerSize.h - dispH) / 2 + panY;
+  const dispW = effW * scale;
+  const dispH = effH * scale;
+  const cssW = rotated ? dispH : dispW;
+  const cssH = rotated ? dispW : dispH;
+  const imgX = (containerSize.w - cssW) / 2 + panX;
+  const imgY = (containerSize.h - cssH) / 2 + panY;
 
   const ca = containerSize.w / containerSize.h;
   let cropW: number, cropH: number;
@@ -93,17 +105,30 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
 
   const handleApply = () => {
     if (!imgRef.current || !imgLoaded) return;
-    const canvas = document.createElement('canvas');
+    const src = imgRef.current;
+    const rotatedApply = rotation % 180 !== 0;
+    const outRotW = rotatedApply ? src.naturalHeight : src.naturalWidth;
+    const outRotH = rotatedApply ? src.naturalWidth : src.naturalHeight;
+    const rotCanvas = document.createElement('canvas');
+    rotCanvas.width = outRotW;
+    rotCanvas.height = outRotH;
+    const rotCtx = rotCanvas.getContext('2d')!;
+    rotCtx.translate(outRotW / 2, outRotH / 2);
+    rotCtx.rotate((rotation * Math.PI) / 180);
+    rotCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+    rotCtx.drawImage(src, -src.naturalWidth / 2, -src.naturalHeight / 2, src.naturalWidth, src.naturalHeight);
+
     const srcX = (cropX - imgX) / scale;
     const srcY = (cropY - imgY) / scale;
     const srcW = cropW / scale;
     const srcH = cropH / scale;
     const outW = Math.round(Math.max(1, srcW));
     const outH = Math.round(Math.max(1, srcH));
+    const canvas = document.createElement('canvas');
     canvas.width = outW;
     canvas.height = outH;
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(imgRef.current, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
+    ctx.drawImage(rotCanvas, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
     onApply(canvas.toDataURL('image/jpeg', 0.92), file);
   };
 
@@ -183,7 +208,9 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
               onLoad={handleImgLoad}
               style={{
                 position: 'absolute', left: imgX, top: imgY,
-                width: dispW, height: dispH,
+                width: cssW, height: cssH,
+                transform: `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+                transformOrigin: 'center center',
                 pointerEvents: 'none', userSelect: 'none',
                 opacity: imgLoaded ? 1 : 0,
               }}
@@ -202,17 +229,53 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
             border: '2px solid rgba(255,255,255,0.8)',
             borderRadius: aspectRatio === 1 ? '50%' : 4,
             boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)',
+            overflow: 'hidden',
             pointerEvents: 'none',
-          }} />
+          }}>
+            {imgLoaded && (
+              <>
+                <div style={{ position: 'absolute', left: cropW / 3, top: 0, width: 1, height: cropH, background: 'rgba(255,255,255,0.35)' }} />
+                <div style={{ position: 'absolute', left: (cropW * 2) / 3, top: 0, width: 1, height: cropH, background: 'rgba(255,255,255,0.35)' }} />
+                <div style={{ position: 'absolute', left: 0, top: cropH / 3, width: cropW, height: 1, background: 'rgba(255,255,255,0.35)' }} />
+                <div style={{ position: 'absolute', left: 0, top: (cropH * 2) / 3, width: cropW, height: 1, background: 'rgba(255,255,255,0.35)' }} />
+              </>
+            )}
+          </div>
         </div>
 
         {imgLoaded && (
+          <div className="flex-center gap-8">
+            <button onClick={() => setRotation(r => (r + 90) % 360)} title={t('common.rotate')} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              padding: 8, borderRadius: 8, border: '1px solid rgba(148,163,184,0.25)',
+              background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer',
+            }}>
+              <RotateCw size={17} />
+            </button>
+            <button onClick={() => setFlipH(f => !f)} title={t('common.flipHorizontal')} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              padding: 8, borderRadius: 8, border: flipH ? '1px solid var(--info)' : '1px solid rgba(148,163,184,0.25)',
+              background: flipH ? 'rgba(100,150,255,0.15)' : 'transparent', color: flipH ? 'var(--info)' : 'var(--text-secondary)', cursor: 'pointer',
+            }}>
+              <FlipHorizontal size={17} />
+            </button>
+            <button onClick={() => setFlipV(f => !f)} title={t('common.flipVertical')} style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              padding: 8, borderRadius: 8, border: flipV ? '1px solid var(--info)' : '1px solid rgba(148,163,184,0.25)',
+              background: flipV ? 'rgba(100,150,255,0.15)' : 'transparent', color: flipV ? 'var(--info)' : 'var(--text-secondary)', cursor: 'pointer',
+            }}>
+              <FlipVertical size={17} />
+            </button>
+          </div>
+        )}
+
+        {imgLoaded && (
           <div className="flex-center gap-10 text-secondary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <input type="range" min={0.5} max={5} step={0.05} value={zoom}
               onChange={e => setZoom(parseFloat(e.target.value))}
               className="flex-1 accent-info" />
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <span style={{ fontSize: 13, minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{zoom.toFixed(1)}x</span>
           </div>
         )}

@@ -47,7 +47,7 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
       }
       const res: Record<string, unknown> = await api.post(`/p/${tenantSlug}/appointments`, body);
       if (res.deposit_required && res.checkout_url) {
-        window.location.href = res.checkout_url;
+        window.location.href = res.checkout_url as string;
         return;
       }
       setMsg(res.recurring ? `${res.recurring_count} ${t('landing.appointmentsCreated')}` : t('landing.bookSuccess'));

@@ -136,8 +136,8 @@ export default function AppointmentManage() {
           />
           <AppointmentActions
             t={t}
-            canCancel={canCancel}
-            canReschedule={canReschedule}
+            canCancel={canCancel ?? false}
+            canReschedule={canReschedule ?? false}
             actionLoading={actionLoading}
             rescheduling={rescheduling}
             newDate={newDate}

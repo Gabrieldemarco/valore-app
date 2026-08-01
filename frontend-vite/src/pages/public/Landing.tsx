@@ -21,6 +21,13 @@ import useLandingKeyboard from './components/useLandingKeyboard';
 import useLandingQuickBook from './components/useLandingQuickBook';
 import useLandingBooking from './components/useLandingBooking';
 
+declare global {
+  interface Window {
+    __INITIAL_DATA__?: { tenant: TenantData; services: ServiceItem[] };
+    __CAPTCHA_SITE_KEY__?: string;
+  }
+}
+
 export default function Landing() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -83,12 +90,12 @@ export default function Landing() {
 
   useEffect(() => {
     if (!tenantSlug) { setLoading(false); return; } // eslint-disable-line react-hooks/set-state-in-effect
-    const initial = (window as Record<string, unknown>).__INITIAL_DATA__;
+    const initial = window.__INITIAL_DATA__;
     if (initial?.tenant && initial?.services) {
       setTenant(initial.tenant);
       setServices(initial.services || []);
       setLoading(false);
-      delete (window as Record<string, unknown>).__INITIAL_DATA__;
+      delete window.__INITIAL_DATA__;
       return;
     }
     Promise.all([
@@ -164,8 +171,8 @@ export default function Landing() {
     setServiceLightboxIdx(idx);
   }, []);
 
-  const captchaEnabled = !!(tenant as Record<string, unknown>)?.['captcha_enabled'];
-  const captchaSiteKey = (window as Record<string, unknown>).__CAPTCHA_SITE_KEY__ as string || '';
+  const captchaEnabled = !!(tenant as { captcha_enabled?: boolean } | null)?.captcha_enabled;
+  const captchaSiteKey = window.__CAPTCHA_SITE_KEY__ || '';
 
   if (!tenantSlug) return <LandingNoSlugState />;
   if (loading) return <LandingSkeletonLoader />;
@@ -211,8 +218,8 @@ export default function Landing() {
         calMonth={calMonth}
         calYear={calYear}
         today={today}
-        monthNames={t('landing.monthNames', { returnObjects: true })}
-        dayNames={t('landing.dayNames', { returnObjects: true })}
+        monthNames={t('landing.monthNames', { returnObjects: true }) as string[]}
+        dayNames={t('landing.dayNames', { returnObjects: true }) as string[]}
         daysInMonth={daysInMonth}
         firstDayOfMonth={firstDayOfMonth}
         onSetStep={setStep}
@@ -265,16 +272,16 @@ export default function Landing() {
         images={gallery}
         currentIndex={lightboxIdx}
         onClose={() => setLightboxIdx(null)}
-        onPrev={() => setLightboxIdx(lightboxIdx > 0 ? lightboxIdx - 1 : gallery.length - 1)}
-        onNext={() => setLightboxIdx(lightboxIdx < gallery.length - 1 ? lightboxIdx + 1 : 0)}
+        onPrev={() => setLightboxIdx(lightboxIdx !== null && lightboxIdx > 0 ? lightboxIdx - 1 : gallery.length - 1)}
+        onNext={() => setLightboxIdx(lightboxIdx !== null && lightboxIdx < gallery.length - 1 ? lightboxIdx + 1 : 0)}
       />
 
       <LandingLightbox
         images={serviceLightboxImages}
         currentIndex={serviceLightboxIdx}
         onClose={() => setServiceLightboxIdx(null)}
-        onPrev={() => setServiceLightboxIdx(serviceLightboxIdx > 0 ? serviceLightboxIdx - 1 : serviceLightboxImages.length - 1)}
-        onNext={() => setServiceLightboxIdx(serviceLightboxIdx < serviceLightboxImages.length - 1 ? serviceLightboxIdx + 1 : 0)}
+        onPrev={() => setServiceLightboxIdx(serviceLightboxIdx !== null && serviceLightboxIdx > 0 ? serviceLightboxIdx - 1 : serviceLightboxImages.length - 1)}
+        onNext={() => setServiceLightboxIdx(serviceLightboxIdx !== null && serviceLightboxIdx < serviceLightboxImages.length - 1 ? serviceLightboxIdx + 1 : 0)}
       />
     </div>
   );

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
+import type { StaffMember } from '../dashboardContext';
 import StaffModal from '../modals/StaffModal';
 
 export default function StaffTab() {
   const { t } = useTranslation();
   const { staffList } = useDashboard();
   const { deleteStaffMember } = useDashboardCRUD();
-  const [modal, setModal] = useState<{ open: boolean; editing: unknown | null }>({ open: false, editing: null });
+  const [modal, setModal] = useState<{ open: boolean; editing: StaffMember | null }>({ open: false, editing: null });
 
   return (
     <div className="glass-panel mt-24 p-24">

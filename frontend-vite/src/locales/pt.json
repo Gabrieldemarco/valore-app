@@ -47,7 +47,10 @@
     "termsAndConditions": "Termos e Condições",
     "privacyPolicy": "Política de Privacidade",
     "cancellationPolicy": "Política de Cancelamento",
-    "loadingImage": "Carregando imagem..."
+    "loadingImage": "Carregando imagem...",
+    "rotate": "Rotacionar",
+    "flipHorizontal": "Inverter horizontal",
+    "flipVertical": "Inverter vertical"
   },
   "publicIndex": {
     "error": "Não foi possível carregar os salões.",

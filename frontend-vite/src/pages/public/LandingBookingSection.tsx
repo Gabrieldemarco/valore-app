@@ -81,7 +81,7 @@ export default function LandingBookingSection({
   onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
   onSetClientName, onSetClientPhone, onSetClientEmail, onSetClientNotes,
   onSetCouponCode, onSetCouponDiscount,
-  onSetCalMonth, onSetCalYear, onFetchSlots, onSubmit,
+  onSetCalMonth, onSetCalYear, onSubmit,
   recurringEnabled, recurringFrequency, recurringCount,
   onSetRecurringEnabled, onSetRecurringFrequency, onSetRecurringCount,
   captchaEnabled, captchaSiteKey, captchaToken, onSetCaptchaToken,
@@ -208,7 +208,6 @@ export default function LandingBookingSection({
               selectedTime={selectedTime}
               onSetSelectedTime={onSetSelectedTime}
               onSetStep={onSetStep}
-              onFetchSlots={onFetchSlots}
               showWaitlistForm={showWaitlistForm}
               waitlistMsg={waitlistMsg}
               waitlistErr={waitlistErr}
@@ -230,7 +229,6 @@ export default function LandingBookingSection({
               couponDiscount={couponDiscount} onSetCouponDiscount={onSetCouponDiscount}
               tenantSlug={tenantSlug}
               captchaEnabled={captchaEnabled} captchaSiteKey={captchaSiteKey}
-              captchaToken={captchaToken} onSetCaptchaToken={onSetCaptchaToken}
               recurringEnabled={recurringEnabled} onSetRecurringEnabled={onSetRecurringEnabled}
               recurringFrequency={recurringFrequency} onSetRecurringFrequency={onSetRecurringFrequency}
               recurringCount={recurringCount} onSetRecurringCount={onSetRecurringCount}

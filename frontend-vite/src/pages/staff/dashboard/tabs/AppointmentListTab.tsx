@@ -121,11 +121,11 @@ export default function AppointmentListTab() {
 
       {totalPages > 1 && (
         <div className="glass-panel flex-center-center gap-8 mt-20 p-12">
-          <button className="dash-btn dash-btn-success" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ opacity: page <= 1 ? 0.4 : 1 }}>{t('staffDashboard.paginationPrev')}</button>
+          <button className="dash-btn dash-btn-success" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))} style={{ opacity: page <= 1 ? 0.4 : 1 }}>{t('staffDashboard.paginationPrev')}</button>
           <span style={{ color: 'var(--text-muted)', padding: '0 8px' }}>
             {t('staffDashboard.paginationInfo', { page, totalPages, totalAppointments })}
           </span>
-          <button className="dash-btn dash-btn-success" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} style={{ opacity: page >= totalPages ? 0.4 : 1 }}>{t('staffDashboard.paginationNext')}</button>
+          <button className="dash-btn dash-btn-success" disabled={page >= totalPages} onClick={() => setPage(Math.min(totalPages, page + 1))} style={{ opacity: page >= totalPages ? 0.4 : 1 }}>{t('staffDashboard.paginationNext')}</button>
         </div>
       )}
 

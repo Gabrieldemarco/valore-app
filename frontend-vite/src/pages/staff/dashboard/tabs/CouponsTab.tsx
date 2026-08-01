@@ -4,11 +4,23 @@ import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import CouponModal from '../modals/CouponModal';
 
+type CouponRow = {
+  id: number;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  current_uses: number;
+  max_uses: number | null;
+  expires_at: string | null;
+  active: boolean;
+};
+
 export default function CouponsTab() {
   const { t } = useTranslation();
   const { couponsList } = useDashboard();
   const { deleteCoupon } = useDashboardCRUD();
-  const [modal, setModal] = useState<{ open: boolean; editing: unknown | null }>({ open: false, editing: null });
+  const coupons = couponsList as CouponRow[];
+  const [modal, setModal] = useState<{ open: boolean; editing: CouponRow | null }>({ open: false, editing: null });
 
   return (
     <div className="glass-panel mt-24 p-24">
@@ -35,7 +47,7 @@ export default function CouponsTab() {
               </tr>
             </thead>
             <tbody>
-              {couponsList.map(c => (
+              {coupons.map(c => (
                 <tr key={c.id}>
                   <td className="p-12 font-600">{c.code}</td>
                   <td className="p-12 text-center">{c.discount_type === 'percentage' ? `${c.discount_value}%` : `$${c.discount_value}`}</td>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 
 export default function SocialTab() {

@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 
 interface UseLandingKeyboardParams {
   lightboxIdx: number | null;
-  setLightboxIdx: (v: number | ((prev: number | null) => number | null)) => void;
+  setLightboxIdx: (v: number | null | ((prev: number | null) => number | null)) => void;
   serviceLightboxIdx: number | null;
-  setServiceLightboxIdx: (v: number | ((prev: number | null) => number | null)) => void;
+  setServiceLightboxIdx: (v: number | null | ((prev: number | null) => number | null)) => void;
   galleryLength: number;
   serviceLightboxImagesLength: number;
 }

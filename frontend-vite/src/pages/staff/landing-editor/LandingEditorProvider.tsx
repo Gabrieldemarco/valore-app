@@ -60,13 +60,15 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
 
   useEffect(() => { if (loaded) updatePreview(); }, [loaded, updatePreview]);
 
-  const { dirty, saving, debounceSave, saveChanges, collectPayload } = useLandingAutoSave({
+  const saving = false;
+
+  const { dirty, debounceSave, saveChanges, collectPayload } = useLandingAutoSave({
     tenant, services, gallery, team, social, hours, layout,
     showStatus, t, updatePreview,
     setServices, setTenant, setLayout,
   });
 
-  const { cropFile, cropAspect, cropTarget, handleImageUpload } = useLandingImageUpload({
+  const { cropFile, cropAspect, cropTarget, handleImageUpload, handleCropApply, cancelCrop } = useLandingImageUpload({
     showStatus, t, debounceSave,
     setServices, setStaffList, setGallery, setTenant,
   });
@@ -250,7 +252,7 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
       addGalleryUrl, removeGallery, setGallery,
       updateStaff, saveStaff, addStaffUI, setStaffList,
       toggleLayoutSection, removeCustomBlock, addCustomBlock, setLayout,
-      handleImageUpload,
+      handleImageUpload, handleCropApply, cancelCrop,
       setTenant,
       saveChanges, debounceSave,
       updateCustomBackgroundAndHero, applyPresetTheme,

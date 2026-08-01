@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../../api/client';
@@ -7,10 +7,16 @@ import DashboardContext from './dashboardContext';
 import type {
   Appointment, PlanInfo, Invoice, StaffMember, ServiceItem,
   CategoryItem, TenantSettings, ClientSummary, ProductItem,
-  CalendarStatus, AnalyticsSummary, Tab, Toast,
+  CalendarStatus, AnalyticsSummary, Tab, Toast, DashboardContextType,
 } from './dashboardContext';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useDashboardSync } from './hooks/useDashboardSync';
+
+declare module './dashboardContext' {
+  interface DashboardContextType {
+    setStaffList: Dispatch<SetStateAction<StaffMember[]>>;
+  }
+}
 
 export default function DashboardProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();

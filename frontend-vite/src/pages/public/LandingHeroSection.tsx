@@ -10,7 +10,7 @@ interface LandingHeroSectionProps {
   category?: string;
 }
 
-const getCategoryLabel = (category: string, t: (key: string, fallback?: string) => string): string => {
+const getCategoryLabel = (category: string, t: (key: string) => string): string => {
   const labels: Record<string, string> = {
     peluqueria: t('landingHero.categoryLabels.barber'),
     cejas: t('landingHero.categoryLabels.eyebrows'),

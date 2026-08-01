@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import { formatPrice } from '../dashboardContext';
+import type { ServiceItem } from '../dashboardContext';
 import ServiceModal from '../modals/ServiceModal';
 
 export default function ServicesTab() {
   const { t } = useTranslation();
   const { servicesList } = useDashboard();
   const { deleteService, toggleServiceActive } = useDashboardCRUD();
-  const [modal, setModal] = useState<{ open: boolean; editing: object | null }>({ open: false, editing: null });
+  const [modal, setModal] = useState<{ open: boolean; editing: ServiceItem | null }>({ open: false, editing: null });
 
   return (
     <div className="glass-panel mt-24 p-24">

@@ -29,7 +29,7 @@ const TAB_COMPONENTS: Record<EditorTab, React.FC> = {
 };
 
 function EditorInner() {
-  const { t, activeTab, setActiveTab, tenant, saving, saveChanges, statusMsg, statusLoading, showMobilePreview, setShowMobilePreview, previewSlug, cropFile, cropAspect } = useLandingEditor();
+  const { t, activeTab, setActiveTab, tenant, saving, saveChanges, statusMsg, statusLoading, showMobilePreview, setShowMobilePreview, previewSlug, cropFile, cropAspect, handleCropApply, cancelCrop } = useLandingEditor();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeSrc = previewSlug ? `/p/${previewSlug}?t=${Date.now()}` : ''; // eslint-disable-line react-hooks/purity
 
@@ -116,8 +116,8 @@ function EditorInner() {
           open
           file={cropFile}
           aspectRatio={cropAspect}
-          onApply={() => {}}
-          onCancel={() => {}}
+          onApply={handleCropApply}
+          onCancel={cancelCrop}
         />
       )}
 

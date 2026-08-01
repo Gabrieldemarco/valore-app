@@ -209,7 +209,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="dash-container p-24">
-      <ClientDashboardHeader clientName={clientName} onLogout={handleLogout} />
+      <ClientDashboardHeader clientName={clientName ?? ''} onLogout={handleLogout} />
 
       <OnboardingTour tourId="client-dashboard" steps={clientTourSteps} enabled={!!clientToken} onComplete={() => {}} />
 

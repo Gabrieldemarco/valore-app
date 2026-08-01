@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 import { DAY_LABELS } from '../landingEditorUtils';
 

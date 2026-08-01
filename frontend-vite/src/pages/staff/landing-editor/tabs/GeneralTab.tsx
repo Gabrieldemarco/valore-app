@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 import PhoneInput from '../../../../components/PhoneInput';
 

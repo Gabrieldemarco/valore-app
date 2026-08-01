@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import type { CredentialResponse } from '@react-oauth/google';
 import { api } from '../api/client';
 import { logger } from '../services/logger';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,10 +13,10 @@ export default function GoogleLoginButton({ mode }: Props) {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSuccess = async (response: { credential: string }) => {
+  const handleSuccess = async (response: CredentialResponse) => {
     try {
       const res = await api.post<{ token: string; name?: string; username?: string; phone?: string }>('/api/auth/google/token', { credential: response.credential });
-      login(res.token, 'client', res.name || res.username || '', res.phone);
+      login(res.token, 'client', res.name || res.username || '');
       if (res.phone) localStorage.setItem('clientPhone', res.phone);
       if (res.name) localStorage.setItem('clientDisplayName', res.name);
       navigate('/client/dashboard');

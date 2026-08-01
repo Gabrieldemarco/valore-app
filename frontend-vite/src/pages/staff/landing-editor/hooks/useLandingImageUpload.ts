@@ -61,5 +61,10 @@ export function useLandingImageUpload({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cropTarget, showStatus, t, debounceSave]);
 
-  return { cropFile, cropAspect, cropTarget, handleImageUpload, handleCropApply };
+  const cancelCrop = useCallback(() => {
+    setCropFile(null);
+    setCropTarget(null);
+  }, []);
+
+  return { cropFile, cropAspect, cropTarget, handleImageUpload, handleCropApply, cancelCrop };
 }

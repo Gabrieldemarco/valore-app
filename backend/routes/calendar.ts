@@ -19,7 +19,7 @@ export default function calendarRoutes() {
       try {
         const decoded: any = jwt.verify(staffToken, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
         staffId = decoded.id;
-      } catch {}
+      } catch { /* token inválido: continuar sin staffId */ }
     }
     if (!staffId) return res.redirect(`${FRONTEND_URL}/staff/dashboard?calendar=error&reason=auth_required`);
     const state = Buffer.from(JSON.stringify({ staff_id: staffId, redirect: '/staff/dashboard' })).toString('base64');
@@ -55,14 +55,14 @@ export default function calendarRoutes() {
         try {
           const decoded: any = jwt.verify(staffToken, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
           staffId = decoded.id;
-        } catch {}
+        } catch { /* token inválido: continuar sin staffId */ }
       }
 
       if (!staffId) {
         try {
           const stateData = JSON.parse(Buffer.from((state as string) || '{}', 'base64').toString('utf-8'));
           if (stateData.staff_id) staffId = stateData.staff_id;
-        } catch {}
+        } catch { /* state inválido: continuar sin staffId */ }
       }
 
       if (!staffId) {

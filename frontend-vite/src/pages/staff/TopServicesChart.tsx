@@ -1,10 +1,17 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from 'recharts';
+import type { RenderableText } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
   data: { service: string; count: number; avg_price: number }[];
+}
+
+interface ServiceTooltipPayload {
+  service: string;
+  count: number;
+  avg_price: number;
 }
 
 export default function TopServicesChart({ data }: Props) {
@@ -26,9 +33,10 @@ export default function TopServicesChart({ data }: Props) {
         <YAxis type="category" dataKey="service" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} width={80} />
         <Tooltip
           contentStyle={{ background: 'rgba(26,26,31,0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(197,168,128,0.25)', borderRadius: 10, color: 'var(--text-main)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-          formatter={(value: number, name: string, props: { payload?: { count: number; avg_price: number } }) => {
+          formatter={(value, name, props) => {
             if (name === 'count') {
-              const item = props.payload;
+              const item = props.payload as ServiceTooltipPayload | undefined;
+              if (!item) return [value, name];
               const pct = totalCount > 0 ? ((item.count / totalCount) * 100).toFixed(1) : '0';
               const totalRev = Math.round(item.count * item.avg_price).toLocaleString();
               return [
@@ -51,7 +59,7 @@ export default function TopServicesChart({ data }: Props) {
             fill="var(--text-muted)"
             fontSize={11}
             fontWeight={600}
-            formatter={(value: number) => `${value} (${totalCount > 0 ? ((value / totalCount) * 100).toFixed(0) : 0}%)`}
+            formatter={(value: RenderableText) => `${value} (${totalCount > 0 ? ((Number(value) / totalCount) * 100).toFixed(0) : 0}%)`}
           />
         </Bar>
       </BarChart>

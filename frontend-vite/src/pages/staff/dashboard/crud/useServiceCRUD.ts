@@ -95,7 +95,7 @@ export function useServiceCRUD() {
     }
   }, [addToast]);
 
-  const uploadServiceImage = useCallback(async (file: File, dataUrl?: string): Promise<string | null> => {
+  const uploadServiceImage = useCallback(async (_file: File, dataUrl?: string): Promise<string | null> => {
     try {
       const res = await api.post<{ success: boolean; url: string; message: string }>('/api/upload-image', { image: dataUrl, filename: `service-${Date.now()}.jpg` });
       if (res.success && res.url) {

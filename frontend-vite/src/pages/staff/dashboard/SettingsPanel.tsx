@@ -19,7 +19,7 @@ export default function SettingsPanel() {
   const [calendarSyncing, setCalendarSyncing] = useState(false);
 
   const handleSave = async () => {
-    await saveSettings(settings, openingHours);
+    await saveSettings(settings as unknown as Record<string, unknown>, openingHours as unknown as Record<string, unknown>);
   };
 
   const handleAddBlockedDate = async () => {

@@ -51,7 +51,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     api.get<Stats>('/api/super-admin/stats/billing').then(setStats).catch(() => {});
     api.get<{ tenants: Tenant[] }>('/api/super-admin/tenants').then(r => setTenants(r.tenants)).catch(() => {});
     api.get<{ config: Record<string, unknown> }>('/api/super-admin/config').then(r => {
-      if (r.config?.twilio) setTwilioConfig(r.config.twilio);
+      if (r.config?.twilio) setTwilioConfig(r.config.twilio as TwilioConfig);
     }).catch(() => {});
   }, []);
 

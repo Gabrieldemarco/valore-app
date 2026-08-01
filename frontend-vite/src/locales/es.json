@@ -48,7 +48,10 @@
     "termsAndConditions": "Términos y Condiciones",
     "privacyPolicy": "Política de Privacidad",
     "cancellationPolicy": "Política de Cancelaciones",
-    "loadingImage": "Cargando imagen..."
+    "loadingImage": "Cargando imagen...",
+    "rotate": "Rotar",
+    "flipHorizontal": "Voltear horizontal",
+    "flipVertical": "Voltear vertical"
   },
   "publicIndex": {
     "error": "No pudimos cargar las peluquerías.",

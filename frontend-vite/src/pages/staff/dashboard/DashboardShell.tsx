@@ -155,7 +155,7 @@ export default function DashboardShell({ children }: Props) {
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
-          <button className="dash-tab" onClick={() => exportAppointmentsPdf(appointments, settings)}>{t('staffDashboard.exportPDF')}</button>
+          <button className="dash-tab" onClick={() => exportAppointmentsPdf(appointments as unknown as Record<string, unknown>[], settings)}>{t('staffDashboard.exportPDF')}</button>
         </div>
 
         {showStaffFilter && (

@@ -94,7 +94,7 @@ export default function WaitlistSection({ addToast }: Props) {
                       {e.status === 'waiting' ? t('staffDashboard.waitlistStatusWaiting') : e.status === 'notified' ? t('staffDashboard.waitlistStatusNotified') : e.status === 'converted' ? t('staffDashboard.waitlistStatusConverted') : t('staffDashboard.waitlistStatusExpired')}
                     </span>
                   </td>
-                  <td className="p-12 text-center text-muted">{new Date(e.created_at || e.date).toLocaleDateString(i18n.language)}</td>
+                  <td className="p-12 text-center text-muted">{new Date(e.created_at || e.date || '').toLocaleDateString(i18n.language)}</td>
                   <td className="p-12 text-center">
                     {e.status === 'waiting' && (
                       <button className="dash-btn dash-btn-success mr-8" onClick={() => notifyWaitlistEntry(e.id)}>

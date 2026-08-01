@@ -44,6 +44,8 @@ export interface LandingEditorContextValue {
   setLayout: React.Dispatch<React.SetStateAction<LayoutBlock[]>>;
 
   handleImageUpload: (targetKey: string, file: File | undefined, serviceIndex?: number, staffIndex?: number) => void;
+  handleCropApply: (dataUrl: string) => Promise<void>;
+  cancelCrop: () => void;
 
   setTenant: React.Dispatch<React.SetStateAction<TenantData>>;
 

@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
+import type { CouponForm } from '../crud/types';
 
 export default function CouponModal({ editing, onClose }: { editing: Record<string, unknown> | null; onClose: () => void }) {
   const { t } = useTranslation();
   const { saveCoupon } = useDashboardCRUD();
-  const [form, setForm] = useState({
-    code: editing?.code || '',
-    discount_type: editing?.discount_type || 'percentage',
+  const [form, setForm] = useState<CouponForm>({
+    code: (editing?.code as string | undefined) || '',
+    discount_type: (editing?.discount_type as string | undefined) || 'percentage',
     discount_value: editing?.discount_value ? String(editing.discount_value) : '',
     min_appointment_amount: editing?.min_appointment_amount ? String(editing.min_appointment_amount) : '',
     max_uses: editing?.max_uses ? String(editing.max_uses) : '',
-    expires_at: editing?.expires_at ? editing.expires_at.slice(0, 16) : '',
+    expires_at: (editing?.expires_at as string | undefined)?.slice(0, 16) || '',
   });
 
   const handleSave = async () => {

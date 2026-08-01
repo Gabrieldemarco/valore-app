@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 import { fixImageUrl, PLACEHOLDER_IMG } from '../landingEditorUtils';
 import { X } from 'lucide-react';

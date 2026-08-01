@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import type { CellInput, RowInput } from 'jspdf-autotable'
 
 interface InvoiceData {
   id: number
@@ -89,14 +90,14 @@ export function exportAppointmentsPdf(appointments: Record<string, unknown>[], t
   doc.setTextColor(100, 100, 100)
   doc.text(`Reporte de Turnos - ${new Date().toLocaleDateString('es-UY')}`, 14, 30)
 
-  const body = appointments.map(a => [
+  const body: RowInput[] = appointments.map(a => ([
     a.client_name,
     a.service_name || a.service || '-',
     a.staff_name || '-',
-    a.date || (a.appointment_date ? new Date(a.appointment_date).toLocaleDateString('es-UY') : ''),
+    a.date || (a.appointment_date ? new Date(a.appointment_date as string).toLocaleDateString('es-UY') : ''),
     a.time || '',
     a.status || '',
-  ])
+  ] as CellInput[]))
 
   autoTable(doc, {
     startY: 40,

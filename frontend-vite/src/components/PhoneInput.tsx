@@ -76,13 +76,12 @@ export default function PhoneInput({ value, onChange, placeholder, className, st
       </select>
       <input
         type="tel"
-        className={className || 'glass-input'}
+        className={`${className || 'glass-input'} flex-1 min-w-0`}
         value={number}
         onChange={handleNumberChange}
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        className="flex-1 min-w-0"
       />
     </div>
   );

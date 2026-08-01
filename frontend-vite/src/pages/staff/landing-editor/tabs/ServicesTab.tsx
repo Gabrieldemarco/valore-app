@@ -1,12 +1,12 @@
-import React from 'react';
 import { useLandingEditor } from '../landingEditorContext';
 import { fixImageUrl, PLACEHOLDER_IMG } from '../landingEditorUtils';
+import type { CategoryItem } from '../types';
 import { RotateCcw, Trash2 } from 'lucide-react';
 
 export default function ServicesTab() {
   const { t, services, categories, updateService, toggleDeleteService, addService, handleImageUpload } = useLandingEditor();
 
-  function flatten(items: { id: number; name: string; children: { id: number; name: string; children: { id: number; name: string; children: { id: number; name: string; children: { id: number; name: string; children: { id: number; name: string; children: { id: number; name: string; children: never[] }[] }[] }[] }[] }[] }[] }[], depth = 0): { id: number; name: string; depth: number }[] {
+  function flatten(items: CategoryItem[], depth = 0): { id: number; name: string; depth: number }[] {
     const r: { id: number; name: string; depth: number }[] = [];
     for (const c of items) { r.push({ id: c.id, name: c.name, depth }); r.push(...flatten(c.children, depth + 1)); }
     return r;
@@ -53,7 +53,7 @@ export default function ServicesTab() {
                 <label className="text-sm text-muted mb-4 block">
                   Categoría
                 </label>
-                <select className="glass-input" value={s.category_id ?? ''} onChange={e => updateService(i, 'category_id', e.target.value ? parseInt(e.target.value, 10) : null)}>
+                <select className="glass-input" value={s.category_id ?? ''} onChange={e => updateService(i, 'category_id', e.target.value ? parseInt(e.target.value, 10) : (null as unknown as string | number))}>
                   <option value="">Sin categoría</option>
                   {flatten(categories).map(c => (
                     <option key={c.id} value={c.id}>{'── '.repeat(c.depth)}{c.name}</option>

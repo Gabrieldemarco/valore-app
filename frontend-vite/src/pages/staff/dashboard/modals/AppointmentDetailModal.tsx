@@ -47,7 +47,7 @@ export default function AppointmentDetailModal() {
     const trimmed = val.trim();
     if (trimmed !== (selectedAppointment.internal_notes || '')) {
       api.put(`/api/appointments/${selectedAppointment.id}/notes`, { internalNotes: trimmed }).then(() => {
-        setSelectedAppointment(p => p ? { ...p, internal_notes: trimmed } : null);
+        setSelectedAppointment({ ...selectedAppointment, internal_notes: trimmed });
       }).catch(() => addToast(t('staffDashboard.toastSaveNotesError'), 'error'));
     }
   };
