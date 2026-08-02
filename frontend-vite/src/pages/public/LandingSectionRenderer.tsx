@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import ScrollReveal from '../../components/ScrollReveal';
 import LandingHeroSection from './LandingHeroSection';
@@ -95,8 +94,6 @@ export default function LandingSectionRenderer({
   captchaEnabled, captchaSiteKey, captchaToken, onSetCaptchaToken,
   showWaitlistForm, waitlistMsg, waitlistErr, onSetShowWaitlistForm, onJoinWaitlist,
 }: Props) {
-  const { t } = useTranslation();
-
   const renderSection = (block: LayoutBlock) => {
     if (!block.enabled) return null;
 
@@ -120,8 +117,6 @@ export default function LandingSectionRenderer({
           <section key={block.id} id="servicios">
             <ScrollReveal>
               <div className="section-divider wide" />
-              <h2 className="section-title">{t('landing.servicesTitle')}</h2>
-              <p className="section-subtitle">{t('landing.servicesSubtitle')}</p>
             </ScrollReveal>
             <ScrollReveal delay={2}>
               <LandingServicesSection
@@ -169,8 +164,6 @@ export default function LandingSectionRenderer({
           <section key={block.id} id="reservar">
             <ScrollReveal>
               <div className="section-divider wide" />
-              <h2 className="section-title">{t('landing.bookingTitle')}</h2>
-              <p className="section-subtitle">{t('landing.bookingSubtitle')}</p>
             </ScrollReveal>
             <ScrollReveal delay={1}>
               <LandingBookingSection
