@@ -607,7 +607,15 @@
     border-radius: 16px;
   }
   .landing-view .stepper {
-    overflow-x: hidden;
+    overflow-x: auto;
+  }
+  .landing-view .step {
+    min-width: 64px;
+  }
+  .landing-view .step-label {
+    white-space: normal;
+    font-size: 0.65rem;
+    line-height: 1.2;
   }
   .landing-view .step::after {
     display: none;
