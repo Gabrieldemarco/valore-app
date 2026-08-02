@@ -6,8 +6,8 @@ import PhoneInput from '../PhoneInput';
 interface ProductItem {
   id: number;
   name: string;
-  price: number;
-  cost: number;
+  price: number | string;
+  cost: number | string;
   stock: number;
   min_stock: number;
   category: string;
@@ -37,7 +37,7 @@ export default function PosSection({ products, addToast, refreshProducts }: PosS
       if (existing) {
         return prev.map(i => i.product_id === p.id ? { ...i, quantity: i.quantity + 1, total: (i.quantity + 1) * i.unit_price } : i);
       }
-      return [...prev, { product_id: p.id, name: p.name, quantity: 1, unit_price: p.price, total: p.price }];
+      return [...prev, { product_id: p.id, name: p.name, quantity: 1, unit_price: Number(p.price), total: Number(p.price) }];
     });
   };
 
@@ -110,7 +110,7 @@ export default function PosSection({ products, addToast, refreshProducts }: PosS
                   <div key={idx} className="flex-center flex-gap-8" style={{ padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
                     <div className="flex-1">
                       <div className="fs-14 font-600">{item.name}</div>
-                      <div className="fs-12 text-secondary">{t('staffDashboard.posUnitPrice', { price: item.unit_price })}</div>
+                      <div className="fs-12 text-secondary">{t('staffDashboard.posUnitPrice', { price: item.unit_price.toFixed(2) })}</div>
                     </div>
                     <div className="flex-center flex-gap-4">
                       <button className="dash-btn" onClick={() => updateCartQty(item.product_id, item.quantity - 1)}>-</button>
