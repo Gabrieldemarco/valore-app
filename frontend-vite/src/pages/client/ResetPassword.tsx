@@ -19,10 +19,6 @@ const styles = {
     width: '100%', padding: '12px 16px',     border: '2px solid var(--border-color)', borderRadius: '8px',
     fontSize: '15px', outline: 'none', boxSizing: 'border-box' as const,
   },
-  btn: {
-    width: '100%', padding: '14px', background: 'var(--info)', color: 'white',
-    border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-  },
   backLink: { textAlign: 'center' as const, marginTop: '20px', fontSize: '14px' },
   backLinkA: { color: 'var(--text-secondary)', textDecoration: 'none' },
   message: { padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' },
@@ -54,7 +50,7 @@ export default function ClientResetPassword() {
   };
 
   const inputStyle = { ...styles.input, ...(error ? { borderColor: 'var(--danger-light)' } : {}) };
-  const btnStyle = { ...styles.btn, ...(!password || !confirm ? { opacity: 0.6, cursor: 'not-allowed' as const } : {}) };
+  const btnStyle = { width: '100%', opacity: !password || !confirm ? 0.6 : 1 };
 
   if (!token) {
     return (
@@ -77,7 +73,7 @@ export default function ClientResetPassword() {
           <div className="fs-48 mb-16 text-center">✓</div>
           <h1 style={styles.title}>{t('clientResetPassword.successTitle')}</h1>
           <p style={{ ...styles.subtitle, color: 'var(--success)' }}>{t('clientResetPassword.successMessage')}</p>
-          <Link to="/client/login" style={{ ...styles.btn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: 16 }}>{t('clientResetPassword.loginNow')}</Link>
+          <Link to="/client/login" className="btn btn-primary no-underline inline-block" style={{ width: '100%', textAlign: 'center', marginTop: 16 }}>{t('clientResetPassword.loginNow')}</Link>
         </div>
       </div>
     );
@@ -101,7 +97,7 @@ export default function ClientResetPassword() {
             <label style={styles.label}>{t('clientResetPassword.confirmPasswordLabel')}</label>
             <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required minLength={6} placeholder="••••••" style={inputStyle} />
           </div>
-          <button type="submit" disabled={!password || !confirm} style={btnStyle}>{t('clientResetPassword.submitButton')}</button>
+          <button type="submit" className="btn btn-primary" disabled={!password || !confirm} style={btnStyle}>{t('clientResetPassword.submitButton')}</button>
         </form>
 
         <div style={styles.backLink}>

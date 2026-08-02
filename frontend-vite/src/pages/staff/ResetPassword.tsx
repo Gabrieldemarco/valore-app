@@ -43,17 +43,6 @@ const styles = {
   inputFocus: {
     borderColor: 'var(--info)',
   },
-  btn: {
-    width: '100%',
-    padding: '14px',
-    background: 'var(--info)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
   backLink: {
     textAlign: 'center' as const,
     marginTop: '20px',
@@ -114,7 +103,7 @@ export default function ResetPassword() {
   };
 
   const inputStyle = { ...styles.input, ...(error ? { borderColor: 'var(--danger-light)' } : {}) };
-  const btnStyle = { ...styles.btn, ...(!password || !confirm ? { opacity: 0.6, cursor: 'not-allowed' as const } : {}) };
+  const btnStyle = { width: '100%', opacity: !password || !confirm ? 0.6 : 1 };
 
   if (!token) {
     return (
@@ -137,7 +126,7 @@ export default function ResetPassword() {
           <div className="fs-48 mb-16 text-center">✓</div>
           <h1 style={styles.title}>{t('staffResetPassword.successTitle')}</h1>
           <p style={{ ...styles.subtitle, color: 'var(--success)' }}>{t('staffResetPassword.successMessage')}</p>
-          <Link to="/staff/login" style={{ ...styles.btn, display: 'inline-block', textDecoration: 'none', textAlign: 'center', marginTop: 16 }}>{t('staffResetPassword.loginNow')}</Link>
+          <Link to="/staff/login" className="btn btn-primary no-underline inline-block" style={{ width: '100%', textAlign: 'center', marginTop: 16 }}>{t('staffResetPassword.loginNow')}</Link>
         </div>
       </div>
     );
@@ -161,7 +150,7 @@ export default function ResetPassword() {
             <label style={styles.label}>{t('staffResetPassword.confirmPasswordLabel')}</label>
             <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required minLength={6} placeholder={t('staffResetPassword.confirmPasswordPlaceholder')} style={inputStyle} />
           </div>
-          <button type="submit" disabled={!password || !confirm} style={btnStyle}>{t('staffResetPassword.submitButton')}</button>
+          <button type="submit" className="btn btn-primary" disabled={!password || !confirm} style={btnStyle}>{t('staffResetPassword.submitButton')}</button>
         </form>
 
         <div style={styles.backLink}>

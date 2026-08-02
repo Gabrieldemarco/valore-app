@@ -21,7 +21,7 @@ export default function VerifyEmail() {
     <div style={{ background: 'linear-gradient(135deg, var(--info) 0%, var(--purple-gradient) 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ background: 'white', padding: '40px', borderRadius: '16px', maxWidth: '450px', width: '100%', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)', textAlign: 'center' }}>
         {status === 'loading' && <><div className="fs-48 mb-16">⏳</div><h2>{t('verifyEmail.verifying')}</h2></>}
-        {status === 'success' && <><div className="fs-48 mb-16">✓</div><h2>{t('verifyEmail.verified')}</h2><p className="text-success mb-16">{message}</p><Link to="/client/login" className="btn btn-primary fs-16 no-underline inline-block" style={{ background: 'var(--info)', color: 'white', padding: '12px 24px', borderRadius: 8 }}>{t('verifyEmail.loginButton')}</Link></>}
+        {status === 'success' && <><div className="fs-48 mb-16">✓</div><h2>{t('verifyEmail.verified')}</h2><p className="text-success mb-16">{message}</p><Link to="/client/login" className="btn btn-primary fs-16 no-underline inline-block" style={{ padding: '12px 24px' }}>{t('verifyEmail.loginButton')}</Link></>}
         {status === 'error' && <><div className="fs-48 mb-16">❌</div><h2>{t('verifyEmail.errorTitle')}</h2><p className="text-danger-dark mb-16">{message}</p><p><Link to="/client/login" className="text-info">{t('verifyEmail.goToLogin')}</Link></p></>}
       </div>
     </div>

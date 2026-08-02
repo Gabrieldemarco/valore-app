@@ -62,7 +62,7 @@ function DashboardInner() {
               minWidth: 180,
             }}
           />
-          <button onClick={() => { logout(); navigate('/admin/login'); }} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--danger-light)', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontFamily: "'Outfit', sans-serif", cursor: 'pointer' }}>{t('adminDashboard.logoutButton')}</button>
+          <button onClick={() => { logout(); navigate('/admin/login'); }} className="admin-view btn" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-secondary)', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontFamily: "'Outfit', sans-serif", cursor: 'pointer' }}>{t('adminDashboard.logoutButton')}</button>
         </div>
       </header>
 

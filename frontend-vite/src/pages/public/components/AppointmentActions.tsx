@@ -27,13 +27,13 @@ export default function AppointmentActions({
         <div className="flex-gap-12 flex-wrap">
           {canReschedule && (
             <button onClick={onStartReschedule}
-              style={buttonStyle('var(--warning)')}>
+              className="btn btn-secondary">
               {t('appointmentManage.rescheduleButton')}
             </button>
           )}
           {canCancel && (
             <button onClick={onCancel} disabled={actionLoading}
-              style={{ ...buttonStyle('var(--danger)'), opacity: actionLoading ? 0.6 : 1 }}>
+              className="btn btn-secondary" style={{ opacity: actionLoading ? 0.6 : 1 }}>
               {actionLoading ? t('appointmentManage.cancelling') : t('appointmentManage.cancelButton')}
             </button>
           )}
@@ -72,11 +72,11 @@ export default function AppointmentActions({
             )}
             <div className="flex-gap-12 mt-16">
               <button onClick={onConfirmReschedule} disabled={!newDate || !newTime || actionLoading}
-                style={{ ...buttonStyle('var(--success)'), opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
+                className="btn btn-primary" style={{ opacity: !newDate || !newTime || actionLoading ? 0.6 : 1 }}>
                 {actionLoading ? t('appointmentManage.rescheduling') : t('appointmentManage.confirmNewDate')}
               </button>
               <button onClick={onCancelReschedule}
-                style={{ ...buttonStyle('var(--text-muted)'), background: 'transparent', border: '1px solid var(--text-secondary)' }}>
+                className="btn btn-accent">
                 {t('appointmentManage.backButton')}
               </button>
             </div>
@@ -85,19 +85,6 @@ export default function AppointmentActions({
       )}
     </>
   );
-}
-
-function buttonStyle(color: string) {
-  return {
-    background: color,
-    color: 'var(--text-white)',
-    border: 'none',
-    padding: '10px 24px',
-    borderRadius: 10,
-    fontSize: 15,
-    fontWeight: 600,
-    cursor: 'pointer',
-  };
 }
 
 function inputStyle() {

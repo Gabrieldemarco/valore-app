@@ -81,11 +81,13 @@
 }
 
 .confirm-modal-actions .btn-danger {
-  background: rgba(225, 29, 72, 0.15);
-  border: 1px solid rgba(225, 29, 72, 0.4);
-  color: var(--danger-light);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
 }
 
 .confirm-modal-actions .btn-danger:hover {
-  background: rgba(225, 29, 72, 0.3);
+  background: var(--glass-bg-hover);
+  border-color: var(--primary);
+  color: var(--text-main);
 }

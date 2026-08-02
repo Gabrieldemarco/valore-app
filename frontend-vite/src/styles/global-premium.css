@@ -504,3 +504,53 @@ h1, h2, h3, h4, .serif-text {
   font-size: 19px;
   vertical-align: middle;
 }
+
+/* ===== Dashboard & misc button variants harmonized with the global design ===== */
+.dash-btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: var(--text-dark);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dash-btn-primary:hover {
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  color: var(--text-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dash-btn-secondary,
+.btn-danger,
+.btn-success,
+.btn-warning,
+.btn-reactivate {
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.dash-btn-secondary:hover,
+.btn-danger:hover,
+.btn-success:hover,
+.btn-warning:hover,
+.btn-reactivate:hover {
+  background: var(--glass-bg-hover);
+  color: var(--text-main);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.dash-btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  border-radius: 30px;
+}
+
+.dash-btn-ghost:hover {
+  color: var(--text-main);
+  border-color: var(--primary);
+}
