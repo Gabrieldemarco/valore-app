@@ -26,7 +26,7 @@ export default function DashboardShell({ children }: Props) {
     activeTab, setActiveTab,
     showSettings, setShowSettings,
     settings, staffName, plan,
-    servicesList, appointments, filterDate,
+    appointments, filterDate,
     selectedStaff, setSelectedStaff, setPage,
     staffList, toasts,
   } = useDashboard();
@@ -176,7 +176,7 @@ export default function DashboardShell({ children }: Props) {
       <AppointmentDetailModal />
       <ClientHistoryModal />
 
-      {showQR && settings.slug && <SalonQR slug={settings.slug} services={servicesList} onClose={() => setShowQR(false)} />}
+      {showQR && settings.slug && <SalonQR slug={settings.slug} onClose={() => setShowQR(false)} />}
     </div>
   );
 }

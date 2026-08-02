@@ -1,21 +1,18 @@
-import { useState, useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { X, Share2, Download, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
   slug: string;
-  services: { id: number; name: string }[];
   onClose: () => void;
 }
 
-export default function SalonQR({ slug, services, onClose }: Props) {
+export default function SalonQR({ slug, onClose }: Props) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
-  const selectedService = services.find(s => s.id === selectedServiceId);
-  const url = `${window.location.origin}/p/${slug}${selectedServiceId ? `?sid=${selectedServiceId}` : ''}`;
+  const url = `${window.location.origin}/p/${slug}`;
 
   const download = useCallback(() => {
     const canvas = canvasRef.current?.querySelector('canvas');
@@ -39,14 +36,14 @@ export default function SalonQR({ slug, services, onClose }: Props) {
       try {
         await navigator.share({
           title: t('salonQR.shareTitle'),
-          text: `${t('salonQR.shareText')}${selectedService ? ` - ${selectedService.name}` : ''}`,
+          text: t('salonQR.shareText'),
           url,
         });
         return;
       } catch { /* user cancelled or error */ }
     }
     await copyLink();
-  }, [t, url, selectedService, copyLink]);
+  }, [t, url, copyLink]);
 
   const canShare = typeof navigator.share === 'function';
 
@@ -66,24 +63,6 @@ export default function SalonQR({ slug, services, onClose }: Props) {
           <div ref={canvasRef}>
             <QRCodeCanvas value={url} size={200} bgColor="var(--bg-deep)" fgColor="var(--primary)" level="M" />
           </div>
-          {services.length > 0 && (
-            <div className="mt-16 text-left">
-              <label className="text-muted fs-14 block mb-4">{t('salonQR.quickServiceLabel')}</label>
-              <select
-                value={selectedServiceId ?? ''}
-                onChange={e => setSelectedServiceId(e.target.value ? Number(e.target.value) : null)}
-                style={{
-                  width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--glass-border)',
-                  background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', fontSize: 15, cursor: 'pointer',
-                }}
-              >
-                <option value="">{t('salonQR.noService')}</option>
-                {services.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
           <div className="flex-center-center gap-10 flex-wrap mt-20">
             <button onClick={download} className="dash-btn dash-btn-primary fs-14 px-18 py-8">
               <Download size={14} className="mr-8 vertical-align-middle" />{t('salonQR.downloadButton')}
