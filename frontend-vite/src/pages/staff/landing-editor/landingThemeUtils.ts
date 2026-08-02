@@ -41,7 +41,7 @@ ${fontImport}${secondaryFontImport}
 
 export function generatePresetCSS(preset: string, _primary: string, _secondary: string): string {
   if (preset === 'barber') {
-    return `/* 🧡 ESTILO BARBERIA CLASICA: Split Hero & Lista de Precios */
+    return `/* ESTILO BARBERIA CLASICA: Split Hero & Lista de Precios */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 :root { --font-heading: 'Playfair Display', serif; }
 h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: var(--font-heading) !important; letter-spacing: 1px; font-weight: 800; }
@@ -68,7 +68,7 @@ footer { order: 100 !important; }
 @media (max-width: 768px) { .service-card { flex-direction: column !important; height: auto !important; } .service-image { width: 100% !important; height: 180px !important; } }`;
   }
   if (preset === 'zen') {
-    return `/* 💚 ESTILO SPA & WELLNESS: Ultra-Suave & Conversión Inmediata */
+    return `/* ESTILO SPA & WELLNESS: Ultra-Suave & Conversión Inmediata */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 :root { --font-heading: 'Plus Jakarta Sans', sans-serif; }
 * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
@@ -87,7 +87,7 @@ footer { order: 100 !important; }
 .booking-form { max-width: 750px !important; margin: 0 auto !important; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important; background: rgba(255, 255, 255, 0.04) !important; }`;
   }
   if (preset === 'light') {
-    return `/* ☀️ ESTILO CLARO: Fondo Blanco & Diseño Limpio */
+    return `/* ESTILO CLARO: Fondo Blanco & Diseño Limpio */
 .landing-view { background: var(--text-white) !important; color: var(--text-dark) !important; }
 .landing-view .hero { background: var(--text-white) !important; }
 .landing-view .glass-panel { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important; }

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Image, X } from 'lucide-react';
+import { Image, X, Palette } from 'lucide-react';
 import LandingEditorProvider from './landing-editor/LandingEditorProvider';
 import { useLandingEditor } from './landing-editor/landingEditorContext';
 import GeneralTab from './landing-editor/tabs/GeneralTab';
@@ -59,7 +59,7 @@ function EditorInner() {
     <div style={{ background: 'var(--bg-deep)', color: 'var(--text-main)', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <header className="app-header">
         <div className="flex-row-gap">
-          <span className="text-1-55">{t('staffLandingEditor.headerIcon')}</span>
+          <span className="text-1-55"><Palette size={22} /></span>
           <h1 className="text-1-25 font-700 m-0">{t('staffLandingEditor.headerTitle')}</h1>
         </div>
         <div className="flex-row-gap-lg">
