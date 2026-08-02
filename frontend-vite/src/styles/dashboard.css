@@ -1405,6 +1405,27 @@
   border-color: rgba(200, 130, 125, 0.15);
 }
 
+[data-theme="light"] .dash-status-confirmed,
+[data-theme="light"] .dash-status-noshow,
+[data-theme="light"] .dash-btn-noshow {
+  color: var(--info);
+}
+
+[data-theme="light"] .dash-status-completed,
+[data-theme="light"] .dash-btn-complete {
+  color: var(--success);
+}
+
+[data-theme="light"] .dash-status-cancelled,
+[data-theme="light"] .dash-btn-cancel,
+[data-theme="light"] .dash-btn-danger {
+  color: var(--danger);
+}
+
+[data-theme="light"] .dash-status-pending {
+  color: var(--warning-dark);
+}
+
 [data-theme="light"] .fc .fc-col-header-cell {
   background: rgba(250, 246, 243, 0.95);
 }
