@@ -1031,7 +1031,8 @@
     "shareButton": "Compartir",
     "copyLinkButton": "Copiar enlace",
     "shareText": "Reservá tu turno en esta peluquería",
-    "shareTitle": "Velsoie"
+    "shareTitle": "Velsoie",
+    "linkCopied": "¡Enlace copiado!"
   },
   "onboardingTour": {
     "dontShowAgain": "No mostrar más",

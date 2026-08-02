@@ -1031,7 +1031,8 @@
     "shareButton": "Share",
     "copyLinkButton": "Copy link",
     "shareText": "Book your appointment at this salon",
-    "shareTitle": "Velsoie"
+    "shareTitle": "Velsoie",
+    "linkCopied": "Link copied!"
   },
   "onboardingTour": {
     "dontShowAgain": "Don't show again",

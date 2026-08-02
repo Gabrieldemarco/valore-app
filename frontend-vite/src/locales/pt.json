@@ -1031,7 +1031,8 @@
     "shareButton": "Compartilhar",
     "copyLinkButton": "Copiar link",
     "shareText": "Agende seu horário neste salão",
-    "shareTitle": "Velsoie"
+    "shareTitle": "Velsoie",
+    "linkCopied": "Link copiado!"
   },
   "onboardingTour": {
     "dontShowAgain": "Não mostrar novamente",
