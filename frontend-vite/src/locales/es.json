@@ -426,6 +426,7 @@
     "businessNamePlaceholder": "Mi Peluquería",
     "addressLabel": "Dirección",
     "addressPlaceholder": "Av. Corrientes 1234",
+    "locationLoading": "Obteniendo ubicación...",
     "notificationEmailLabel": "Email para recibir alertas",
     "notificationEmailPlaceholder": "tu@email.com",
     "notificationEmailHint": "Aquí recibirás notificaciones de nuevos turnos",

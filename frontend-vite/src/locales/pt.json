@@ -426,6 +426,7 @@
     "businessNamePlaceholder": "Meu Salão",
     "addressLabel": "Endereço",
     "addressPlaceholder": "Av. Paulista 1234",
+    "locationLoading": "Obtendo localização...",
     "notificationEmailLabel": "Email para receber alertas",
     "notificationEmailPlaceholder": "seu@email.com",
     "notificationEmailHint": "Aqui você receberá notificações de novos agendamentos",

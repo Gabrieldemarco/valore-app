@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MapPin } from 'lucide-react';
 import { useDashboard } from './dashboardContext';
 import { useDashboardCRUD } from './useDashboardCRUD';
 import { api } from '../../../api/client';
@@ -17,6 +18,38 @@ export default function SettingsPanel() {
 
   const [newBlockedDate, setNewBlockedDate] = useState({ date: '', reason: '' });
   const [calendarSyncing, setCalendarSyncing] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  const useMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert(t('publicIndex.locationNotSupported'));
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`);
+          const data = await res.json();
+          const a = data.address || {};
+          const street = [a.road, a.house_number].filter(Boolean).join(' ');
+          const area = a.suburb || a.neighbourhood || '';
+          const city = a.city || a.town || a.village || a.county || '';
+          const country = a.country || '';
+          const full = [street, area, city, country].filter(Boolean).join(', ');
+          setSettings(p => ({ ...p, business_address: full || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+        } catch {
+          setSettings(p => ({ ...p, business_address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+        }
+        setLocating(false);
+      },
+      () => {
+        alert(t('publicIndex.locationError'));
+        setLocating(false);
+      }
+    );
+  }, [t, i18n, setSettings]);
 
   const handleSave = async () => {
     await saveSettings(settings as unknown as Record<string, unknown>, openingHours as unknown as Record<string, unknown>);
@@ -50,7 +83,12 @@ export default function SettingsPanel() {
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.addressLabel')}</label>
-            <input type="text" className="glass-input" value={settings.business_address} onChange={e => setSettings(p => ({ ...p, business_address: e.target.value }))} placeholder={t('staffDashboard.addressPlaceholder')} />
+            <div className="flex flex-gap-8">
+              <input type="text" className="glass-input flex-1" value={settings.business_address} onChange={e => setSettings(p => ({ ...p, business_address: e.target.value }))} placeholder={t('staffDashboard.addressPlaceholder')} />
+              <button type="button" className="dash-btn btn btn-secondary fs-13 nowrap" onClick={useMyLocation} disabled={locating}>
+                <MapPin size={14} className="mr-8 vertical-align-middle" />{locating ? t('staffDashboard.locationLoading') : t('publicIndex.useMyLocation')}
+              </button>
+            </div>
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.notificationEmailLabel')}</label>

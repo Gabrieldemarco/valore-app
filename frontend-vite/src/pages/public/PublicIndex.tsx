@@ -97,10 +97,12 @@ export default function PublicIndex() {
       );
     }
     if (searchLocation.trim()) {
-      const loc = searchLocation.toLowerCase().trim();
-      result = result.filter(s =>
-        s.business_address?.toLowerCase().includes(loc)
-      );
+      const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const tokens = normalize(searchLocation.trim()).split(/\s+/).filter(Boolean);
+      result = result.filter(s => {
+        const addr = normalize(s.business_address || '');
+        return tokens.every(token => addr.includes(token));
+      });
     }
     if (currentGenderFilter !== 'all') {
       result = result.filter(s => getGenderCategory(s) === currentGenderFilter);

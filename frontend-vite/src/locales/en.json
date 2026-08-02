@@ -426,6 +426,7 @@
     "businessNamePlaceholder": "My Salon",
     "addressLabel": "Address",
     "addressPlaceholder": "123 Main Street",
+    "locationLoading": "Getting location...",
     "notificationEmailLabel": "Email to receive alerts",
     "notificationEmailPlaceholder": "you@email.com",
     "notificationEmailHint": "You'll receive new appointment notifications here",
