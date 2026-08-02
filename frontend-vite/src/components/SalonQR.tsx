@@ -14,6 +14,11 @@ export default function SalonQR({ slug, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/p/${slug}`;
 
+  const cssVar = (name: string, fallback: string) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+  const bgColor = cssVar('--bg-deep', '#120c0c');
+  const fgColor = cssVar('--primary', '#c8827d');
+
   const download = useCallback(() => {
     const canvas = canvasRef.current?.querySelector('canvas');
     if (!canvas) return;
@@ -61,7 +66,7 @@ export default function SalonQR({ slug, onClose }: Props) {
         </div>
         <div className="text-center">
           <div ref={canvasRef}>
-            <QRCodeCanvas value={url} size={200} bgColor="var(--bg-deep)" fgColor="var(--primary)" level="M" />
+            <QRCodeCanvas value={url} size={200} bgColor={bgColor} fgColor={fgColor} level="M" />
           </div>
           <div className="flex-center-center gap-10 flex-wrap mt-20">
             <button onClick={download} className="dash-btn dash-btn-primary fs-14 px-18 py-8">
