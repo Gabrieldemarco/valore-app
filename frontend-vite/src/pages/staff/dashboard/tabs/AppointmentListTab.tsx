@@ -98,7 +98,7 @@ export default function AppointmentListTab() {
               {a.notes && <div className="dash-appointment-notes">{a.notes}</div>}
               {(a.phone || a.client_phone) && (
                 <div style={{ padding: '0 16px 8px' }}>
-                  <a href={buildWhatsAppUrl(a.phone || a.client_phone || '')} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)', padding: '4px 12px', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{t('staffDashboard.apptWhatsApp')}</a>
+                  <a href={buildWhatsAppUrl(a.phone || a.client_phone || '')} target="_blank" rel="noopener noreferrer" className="dash-btn dash-btn-whatsapp">{t('staffDashboard.apptWhatsApp')}</a>
                 </div>
               )}
               <div className="dash-appointment-actions" onClick={e => e.stopPropagation()}>
