@@ -11,7 +11,8 @@
       "message": "Página não encontrada",
       "goHome": "Voltar ao início",
       "staffAccess": "Acesso Staff"
-    }
+    },
+    "name": "Velsoie"
   },
   "common": {
     "loading": "Carregando...",
@@ -130,7 +131,8 @@
     "locationError": "Não foi possível obter a localização",
     "geoNotSupported": "Geolocalização não suportada",
     "noEstablishmentsForCategory": "Nenhum estabelecimento encontrado para {{category}}",
-    "noResultsForQuery": "Nenhum resultado encontrado para \"{{query}}\""
+    "noResultsForQuery": "Nenhum resultado encontrado para \"{{query}}\"",
+    "locationNotSupported": "A geolocalização não está disponível neste navegador."
   },
   "landing": {
     "noSlugTitle": "Salão não encontrado",
@@ -179,7 +181,22 @@
       "Sex",
       "Sáb",
       "Dom"
-    ]
+    ],
+    "appointmentsCreated": "agendamentos criados",
+    "bookingTitle": "Reserve seu Horário",
+    "bookingSubtitle": "Escolha o serviço, data e hora que melhor se adequa a você",
+    "servicesTitle": "Serviços",
+    "servicesSubtitle": "Tudo o que temos a oferecer",
+    "hoursTitle": "Horários de Atendimento",
+    "hoursSubtitle": "Visite-nos em nosso horário comercial",
+    "closed": "Fechado",
+    "sunday": "Domingo",
+    "monday": "Segunda-feira",
+    "tuesday": "Terça-feira",
+    "wednesday": "Quarta-feira",
+    "thursday": "Quinta-feira",
+    "friday": "Sexta-feira",
+    "saturday": "Sábado"
   },
   "landingHero": {
     "reserveButton": "Agendar horário",
@@ -255,7 +272,13 @@
     "joinWaitlist": "Entrar na lista de espera",
     "waitlistFormTitle": "Lista de Espera",
     "waitlistFormHint": "Avisaremos quando houver um horário disponível.",
-    "waitlistConfirm": "Sim, me avise"
+    "waitlistConfirm": "Sim, me avise",
+    "applyCoupon": "Aplicar",
+    "loadingSlots": "Carregando horários...",
+    "priceOnRequest": "Preço a consultar",
+    "recurringCountLabel": "Repetições",
+    "recurringFrequencyLabel": "Frequência",
+    "skipStaffHint": "Você pode escolher um profissional ou continuar para atribuição automática"
   },
   "appointmentManage": {
     "notFound": "Agendamento não encontrado",
@@ -703,8 +726,8 @@
     "toastStaffEmailRequired": "O email do profissional é obrigatório",
     "toastStaffPhotoUploadError": "Erro ao carregar foto do profissional",
     "toastStaffPhotoUploadSuccess": "Foto carregada com sucesso",
-    "toastServiceImageUploadError": "Erro ao carregar imagem do serviço",
-    "toastServiceImageUploadSuccess": "Imagem do serviço carregada com sucesso",
+    "toastServiceImageUploadError": "Erro ao enviar imagem",
+    "toastServiceImageUploadSuccess": "Imagem enviada com sucesso",
     "toastServiceUpdated": "Serviço atualizado",
     "toastServiceCreated": "Serviço criado",
     "toastServiceDeleted": "Serviço excluído",
@@ -715,8 +738,6 @@
     "toastServiceSaveError": "Erro ao salvar serviço",
     "toastServiceDeleteError": "Erro ao excluir serviço",
     "toastServiceToggleError": "Erro ao alterar status",
-    "toastServiceImageUploadSuccess": "Imagem enviada com sucesso",
-    "toastServiceImageUploadError": "Erro ao enviar imagem",
     "toastCreateAppointmentError": "Erro ao criar agendamento",
     "toastUpdateError": "Erro ao atualizar",
     "toastSaveError": "Erro ao salvar",
@@ -841,7 +862,24 @@
     "calendarSyncSyncError": "Erro ao sincronizar",
     "calendarSyncConnectHint": "Conecte seu Google Calendar para sincronizar automaticamente os agendamentos.",
     "calendarSyncConnectError": "Erro ao conectar com Google Calendar",
-    "calendarSyncDisconnected": "Google Calendar desconectado"
+    "calendarSyncDisconnected": "Google Calendar desconectado",
+    "blockedDatesDateHeader": "Data",
+    "blockedDatesReasonHeader": "Motivo",
+    "actionComplete": "completar",
+    "actionCancel": "cancelar",
+    "actionConfirm": "confirmar",
+    "actionNoShow": "marcar como no-show",
+    "calendarDisconnectConfirm": "Desconectar Google Agenda?",
+    "notAvailable": "Não disponível",
+    "posUnitPrice": "${{price}} c/u",
+    "tabCategories": "Categorias",
+    "categoriesTitle": "Categorias",
+    "categoriesNewButton": "+ Nova Categoria",
+    "categoriesEmptyTitle": "Sem categorias ainda",
+    "categoriesEmptyMessage": "Adicione sua primeira categoria para organizar os serviços.",
+    "clientsHistoryTotal": "Histórico total:",
+    "toastError": "Ocorreu um erro",
+    "toastLoadWaitlistError": "Erro ao carregar a lista de espera"
   },
   "staffLandingEditor": {
     "headerTitle": "Editor de Landing",
@@ -964,22 +1002,15 @@
     "trialExpired": "Teste Expirado",
     "staffCreatedAlert": "Profissional criado com sucesso. Senha temporária: {{password}}\nPor favor, entregue esta senha ao profissional.",
     "customBlockValidationAlert": "Informe pelo menos um nome ou o código HTML.",
-    "actionComplete": "completar",
-    "actionCancel": "cancelar",
-    "actionConfirm": "confirmar",
-    "actionNoShow": "marcar como no-show",
-    "blockedDatesDateHeader": "Data",
-    "blockedDatesReasonHeader": "Motivo",
-    "calendarDisconnectConfirm": "Desconectar Google Agenda?",
-    "notAvailable": "Não disponível",
-    "posUnitPrice": "${{price}} c/u",
     "latitudeLabel": "Latitude",
     "longitudeLabel": "Longitude",
     "typographyTitle": "Tipografia",
     "primaryFontLabel": "Fonte Principal (títulos)",
     "secondaryFontLabel": "Fonte Secundária (corpo)",
     "fontsHint": "As fontes são carregadas do Google Fonts automaticamente.",
-    "imagesTitle": "Imagens"
+    "imagesTitle": "Imagens",
+    "heroWidthLabel": "Largura do Hero (%)",
+    "heroWidthHint": "Largura da seção de capa (50-200%)"
   },
   "salonQR": {
     "title": "Compartilhar salão",
@@ -1127,7 +1158,8 @@
     "toastTwilioError": "Erro ao salvar Twilio",
     "toastTrialSet": "Conta colocada em teste corretamente",
     "toastTrialError": "Erro ao colocar em teste",
-    "toastLoadError": "Erro ao carregar detalhes"
+    "toastLoadError": "Erro ao carregar detalhes",
+    "error": "Erro"
   },
   "clientLogin": {
     "title": "Bem-vindo de volta!",
@@ -1142,15 +1174,16 @@
     "submitButton": "Entrar na minha conta",
     "noAccount": "Ainda não tem conta?",
     "registerLink": "Criar uma conta",
-    "backHome": "← Voltar ao início"
+    "backHome": "← Voltar ao início",
+    "forgotPassword": "Esqueceu sua senha?"
   },
   "clientRegister": {
     "title": "Criar sua conta",
     "subtitle": "Cadastre-se e nunca perca seus agendamentos",
-"nameLabel": "Nome",
-      "namePlaceholder": "Seu nome",
-      "usernameLabel": "Email",
-      "usernamePlaceholder": "voce@exemplo.com",
+    "nameLabel": "Nome",
+    "namePlaceholder": "Seu nome",
+    "usernameLabel": "Email",
+    "usernamePlaceholder": "voce@exemplo.com",
     "passwordLabel": "Senha",
     "passwordPlaceholder": "Mínimo 6 caracteres",
     "confirmPasswordLabel": "Repetir senha",
@@ -1290,4 +1323,3 @@
     "altGallery": "Galeria"
   }
 }
-

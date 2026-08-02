@@ -131,7 +131,8 @@
     "locationError": "Could not get location",
     "geoNotSupported": "Geolocation not supported",
     "noEstablishmentsForCategory": "No establishments found for {{category}}",
-    "noResultsForQuery": "No results found for \"{{query}}\""
+    "noResultsForQuery": "No results found for \"{{query}}\"",
+    "locationNotSupported": "Geolocation is not available in this browser."
   },
   "landing": {
     "noSlugTitle": "Salon not found",
@@ -194,7 +195,8 @@
       "Fri",
       "Sat",
       "Sun"
-    ]
+    ],
+    "appointmentsCreated": "appointments created"
   },
   "landingHero": {
     "reserveButton": "Book appointment",
@@ -724,8 +726,8 @@
     "toastStaffEmailRequired": "Staff member email is required",
     "toastStaffPhotoUploadError": "Error uploading staff photo",
     "toastStaffPhotoUploadSuccess": "Photo uploaded successfully",
-    "toastServiceImageUploadError": "Error uploading service image",
-    "toastServiceImageUploadSuccess": "Service image uploaded successfully",
+    "toastServiceImageUploadError": "Error uploading image",
+    "toastServiceImageUploadSuccess": "Image uploaded successfully",
     "toastServiceUpdated": "Service updated",
     "toastServiceCreated": "Service created",
     "toastServiceDeleted": "Service deleted",
@@ -736,8 +738,6 @@
     "toastServiceSaveError": "Error saving service",
     "toastServiceDeleteError": "Error deleting service",
     "toastServiceToggleError": "Error changing status",
-    "toastServiceImageUploadSuccess": "Image uploaded successfully",
-    "toastServiceImageUploadError": "Error uploading image",
     "toastCreateAppointmentError": "Error creating appointment",
     "toastUpdateError": "Error updating",
     "toastSaveError": "Error saving",
@@ -862,7 +862,24 @@
     "calendarSyncSyncError": "Sync error",
     "calendarSyncConnectHint": "Connect your Google Calendar to automatically sync appointments.",
     "calendarSyncConnectError": "Error connecting to Google Calendar",
-    "calendarSyncDisconnected": "Google Calendar disconnected"
+    "calendarSyncDisconnected": "Google Calendar disconnected",
+    "blockedDatesDateHeader": "Date",
+    "blockedDatesReasonHeader": "Reason",
+    "actionComplete": "complete",
+    "actionCancel": "cancel",
+    "actionConfirm": "confirm",
+    "actionNoShow": "mark as no-show",
+    "calendarDisconnectConfirm": "Disconnect Google Calendar?",
+    "notAvailable": "Not available",
+    "posUnitPrice": "${{price}} each",
+    "tabCategories": "Categories",
+    "categoriesTitle": "Categories",
+    "categoriesNewButton": "+ New Category",
+    "categoriesEmptyTitle": "No categories yet",
+    "categoriesEmptyMessage": "Add your first category to organize your services.",
+    "clientsHistoryTotal": "Total history:",
+    "toastError": "An error occurred",
+    "toastLoadWaitlistError": "Error loading the waitlist"
   },
   "staffLandingEditor": {
     "headerTitle": "Landing Editor",
@@ -985,22 +1002,15 @@
     "trialExpired": "Trial Expired",
     "staffCreatedAlert": "Stylist created successfully. Temporary password: {{password}}\nPlease give this password to the stylist.",
     "customBlockValidationAlert": "Please enter at least a name or the HTML code.",
-    "actionComplete": "complete",
-    "actionCancel": "cancel",
-    "actionConfirm": "confirm",
-    "actionNoShow": "mark as no-show",
-    "blockedDatesDateHeader": "Date",
-    "blockedDatesReasonHeader": "Reason",
-    "calendarDisconnectConfirm": "Disconnect Google Calendar?",
-    "notAvailable": "Not available",
-    "posUnitPrice": "${{price}} each",
     "latitudeLabel": "Latitude",
     "longitudeLabel": "Longitude",
     "typographyTitle": "Typography",
     "primaryFontLabel": "Primary Font (headings)",
     "secondaryFontLabel": "Secondary Font (body)",
     "fontsHint": "Fonts are loaded from Google Fonts automatically.",
-    "imagesTitle": "Images"
+    "imagesTitle": "Images",
+    "heroWidthLabel": "Hero Width (%)",
+    "heroWidthHint": "Width of the hero section (50-200%)"
   },
   "salonQR": {
     "title": "Share salon",
@@ -1148,7 +1158,8 @@
     "toastTwilioError": "Error saving Twilio",
     "toastTrialSet": "Account set to trial successfully",
     "toastTrialError": "Error setting to trial",
-    "toastLoadError": "Error loading details"
+    "toastLoadError": "Error loading details",
+    "error": "Error"
   },
   "clientLogin": {
     "title": "Welcome Back!",
@@ -1163,15 +1174,16 @@
     "submitButton": "Sign in to my account",
     "noAccount": "Don't have an account yet?",
     "registerLink": "Create an account",
-    "backHome": "← Back to home"
+    "backHome": "← Back to home",
+    "forgotPassword": "Forgot your password?"
   },
   "clientRegister": {
     "title": "Create your account",
     "subtitle": "Register and never miss your appointments",
-"nameLabel": "Name",
-      "namePlaceholder": "Your name",
-      "usernameLabel": "Email",
-      "usernamePlaceholder": "you@example.com",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "usernameLabel": "Email",
+    "usernamePlaceholder": "you@example.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Minimum 6 characters",
     "confirmPasswordLabel": "Confirm Password",
@@ -1311,4 +1323,3 @@
     "altGallery": "Gallery"
   }
 }
-

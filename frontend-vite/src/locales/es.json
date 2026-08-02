@@ -131,7 +131,8 @@
     "locationError": "No se pudo obtener la ubicación",
     "geoNotSupported": "Geolocalización no soportada",
     "noEstablishmentsForCategory": "No se encontraron establecimientos de {{category}}",
-    "noResultsForQuery": "No se encontraron resultados para \"{{query}}\""
+    "noResultsForQuery": "No se encontraron resultados para \"{{query}}\"",
+    "locationNotSupported": "La geolocalización no está disponible en este navegador."
   },
   "landing": {
     "noSlugTitle": "Salón no encontrado",
@@ -194,7 +195,8 @@
       "Vie",
       "Sáb",
       "Dom"
-    ]
+    ],
+    "appointmentsCreated": "turnos creados"
   },
   "landingHero": {
     "reserveButton": "Reservar turno",
@@ -718,8 +720,8 @@
     "toastStaffEmailRequired": "El email del profesional es requerido",
     "toastStaffPhotoUploadError": "Error al subir foto del profesional",
     "toastStaffPhotoUploadSuccess": "Foto subida correctamente",
-    "toastServiceImageUploadError": "Error al subir imagen del servicio",
-    "toastServiceImageUploadSuccess": "Imagen del servicio subida correctamente",
+    "toastServiceImageUploadError": "Error al subir imagen",
+    "toastServiceImageUploadSuccess": "Imagen subida correctamente",
     "toastServiceUpdated": "Servicio actualizado",
     "toastServiceCreated": "Servicio creado",
     "toastServiceDeleted": "Servicio eliminado",
@@ -730,8 +732,6 @@
     "toastServiceSaveError": "Error al guardar servicio",
     "toastServiceDeleteError": "Error al eliminar servicio",
     "toastServiceToggleError": "Error al cambiar estado",
-    "toastServiceImageUploadSuccess": "Imagen subida correctamente",
-    "toastServiceImageUploadError": "Error al subir imagen",
     "toastCreateAppointmentError": "Error al crear turno",
     "toastUpdateError": "Error al actualizar",
     "toastSaveError": "Error al guardar",
@@ -856,7 +856,30 @@
     "calendarSyncSyncError": "Error al sincronizar",
     "calendarSyncConnectHint": "Conectá tu Google Calendar para sincronizar los turnos automáticamente.",
     "calendarSyncConnectError": "Error al conectar con Google Calendar",
-    "calendarSyncDisconnected": "Google Calendar desconectado"
+    "calendarSyncDisconnected": "Google Calendar desconectado",
+    "blockedDatesDateHeader": "Fecha",
+    "blockedDatesReasonHeader": "Motivo",
+    "actionComplete": "completar",
+    "actionCancel": "cancelar",
+    "actionConfirm": "confirmar",
+    "actionNoShow": "marcar como no-show",
+    "calendarDisconnectConfirm": "¿Desconectar Google Calendar?",
+    "notAvailable": "No disponible",
+    "posUnitPrice": "${{price}} c/u",
+    "blockedDatesTitle": "Fechas Bloqueadas",
+    "blockedDatesHint": "En estas fechas no se generarán reservas.",
+    "blockedDatesAddLabel": "Agregar fecha",
+    "blockedDatesReasonPlaceholder": "Motivo (opcional)",
+    "blockedDatesEmpty": "Sin fechas bloqueadas",
+    "blockedDatesDelete": "Eliminar",
+    "tabCategories": "Categorías",
+    "categoriesTitle": "Categorías",
+    "categoriesNewButton": "+ Nueva Categoría",
+    "categoriesEmptyTitle": "Sin categorías todavía",
+    "categoriesEmptyMessage": "Agregá tu primera categoría para organizar tus servicios.",
+    "clientsHistoryTotal": "Historial total:",
+    "toastError": "Ocurrió un error",
+    "toastLoadWaitlistError": "Error al cargar la lista de espera"
   },
   "staffLandingEditor": {
     "headerTitle": "Editor de Landing",
@@ -908,12 +931,6 @@
     "serviceImagePlaceholder": "URL Imagen",
     "serviceNewButton": "+ Nuevo Servicio",
     "hoursHint": "Seleccioná los días que abrís y el rango horario.",
-    "blockedDatesTitle": "Fechas Bloqueadas",
-    "blockedDatesHint": "En estas fechas no se generarán reservas.",
-    "blockedDatesAddLabel": "Agregar fecha",
-    "blockedDatesReasonPlaceholder": "Motivo (opcional)",
-    "blockedDatesEmpty": "Sin fechas bloqueadas",
-    "blockedDatesDelete": "Eliminar",
     "galleryTitle": "Galería de Imágenes",
     "galleryUrlPlaceholder": "Pegar URL de imagen...",
     "galleryAddUrlButton": "Agregar URL",
@@ -987,15 +1004,6 @@
     "trialExpired": "Prueba Expirada",
     "staffCreatedAlert": "Profesional creado exitosamente. Clave temporal: {{password}}\nPor favor dale esta clave al profesional.",
     "customBlockValidationAlert": "Poné al menos un nombre o el código HTML.",
-    "actionComplete": "completar",
-    "actionCancel": "cancelar",
-    "actionConfirm": "confirmar",
-    "actionNoShow": "marcar como no-show",
-    "blockedDatesDateHeader": "Fecha",
-    "blockedDatesReasonHeader": "Motivo",
-    "calendarDisconnectConfirm": "¿Desconectar Google Calendar?",
-    "notAvailable": "No disponible",
-    "posUnitPrice": "${{price}} c/u",
     "latitudeLabel": "Latitud",
     "longitudeLabel": "Longitud",
     "typographyTitle": "Tipografía",
@@ -1150,7 +1158,8 @@
     "toastTwilioError": "Error al guardar Twilio",
     "toastTrialSet": "Cuenta puesta en trial correctamente",
     "toastTrialError": "Error al poner en trial",
-    "toastLoadError": "Error al cargar detalles"
+    "toastLoadError": "Error al cargar detalles",
+    "error": "Error"
   },
   "clientLogin": {
     "title": "¡Bienvenido de nuevo!",
@@ -1165,7 +1174,8 @@
     "submitButton": "Ingresar a mi cuenta",
     "noAccount": "¿Todavía no tenés cuenta?",
     "registerLink": "Crear una cuenta",
-    "backHome": "← Volver al inicio"
+    "backHome": "← Volver al inicio",
+    "forgotPassword": "¿Olvidaste tu contraseña?"
   },
   "clientRegister": {
     "title": "Crear tu cuenta",
@@ -1313,4 +1323,3 @@
     "altGallery": "Galería"
   }
 }
-
