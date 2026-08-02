@@ -230,6 +230,16 @@
     "title": "Agende seu horário",
     "subtitle": "Complete as etapas para agendar",
     "stepPeluquero": "Profissional",
+    "staffLabel": {
+      "peluqueria": "Cabeleireir@",
+      "cejas": "Especialista em sobrancelhas",
+      "nails": "Manicure",
+      "makeup": "Maquiadora",
+      "facial": "Esteticista",
+      "depilation": "Depiladora",
+      "massages": "Massagista",
+      "default": "Profissional"
+    },
     "stepServicio": "Serviço",
     "stepFecha": "Data",
     "stepHorario": "Horário",

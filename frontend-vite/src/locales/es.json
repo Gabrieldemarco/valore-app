@@ -230,6 +230,16 @@
     "title": "Reservá tu turno",
     "subtitle": "Completá los pasos para agendar",
     "stepPeluquero": "Peluquero",
+    "staffLabel": {
+      "peluqueria": "Peluquer@",
+      "cejas": "Especialista en cejas",
+      "nails": "Manicurista",
+      "makeup": "Maquillador@",
+      "facial": "Esteticista",
+      "depilation": "Depilador@",
+      "massages": "Masajista",
+      "default": "Profesional"
+    },
     "stepServicio": "Servicio",
     "stepFecha": "Fecha",
     "stepHorario": "Horario",

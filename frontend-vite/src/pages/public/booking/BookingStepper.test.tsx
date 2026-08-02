@@ -34,6 +34,12 @@ describe('BookingStepper', () => {
     expect(screen.getByText('Tus Datos')).toBeInTheDocument();
   });
 
+  it('uses staffLabel for the first step when provided', () => {
+    render(<BookingStepper step={1} isQuickBook={false} onSetStep={vi.fn()} staffLabel="Manicurista" />);
+    expect(screen.getByText('Manicurista')).toBeInTheDocument();
+    expect(screen.queryByText('Peluquero')).not.toBeInTheDocument();
+  });
+
   it('highlights current step', () => {
     const { container } = render(<BookingStepper step={3} isQuickBook={false} onSetStep={vi.fn()} />);
     const activeSteps = container.querySelectorAll('.step.active');

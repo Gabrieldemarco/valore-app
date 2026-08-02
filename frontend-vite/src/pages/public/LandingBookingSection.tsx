@@ -30,6 +30,7 @@ interface LandingBookingSectionProps {
   isQuickBook: boolean;
   quickBookError: boolean;
   tenantSlug: string;
+  category?: string;
   calMonth: number;
   calYear: number;
   today: string;
@@ -75,7 +76,7 @@ export default function LandingBookingSection({
   step, selectedStaff, selectedService, selectedDate, selectedTime,
   clientName, clientPhone, clientEmail, clientNotes,
   couponCode, couponDiscount,
-  msg, errMsg, isQuickBook, quickBookError, tenantSlug,
+  msg, errMsg, isQuickBook, quickBookError, tenantSlug, category,
   calMonth, calYear, today, monthNames, dayNames, daysInMonth, firstDayOfMonth,
   fixImageUrl,
   onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
@@ -90,6 +91,17 @@ export default function LandingBookingSection({
   const { t } = useTranslation();
   const selStaff = selectedStaff ? staff.find(s => s.id === selectedStaff) ?? null : null;
   const turnstileRef = useRef<HTMLDivElement>(null);
+
+  const staffLabels: Record<string, string> = {
+    peluqueria: t('booking.staffLabel.peluqueria'),
+    cejas: t('booking.staffLabel.cejas'),
+    'uñas': t('booking.staffLabel.nails'),
+    maquillaje: t('booking.staffLabel.makeup'),
+    facial: t('booking.staffLabel.facial'),
+    depilacion: t('booking.staffLabel.depilation'),
+    masajes: t('booking.staffLabel.massages'),
+  };
+  const staffLabel = (category && staffLabels[category]) || t('booking.staffLabel.default');
 
   useEffect(() => {
     if (!captchaEnabled || !captchaSiteKey || step !== 5 || !turnstileRef.current) return;
@@ -129,7 +141,7 @@ export default function LandingBookingSection({
       <p className="section-subtitle">{t('booking.subtitle')}</p>
 
       <div className="booking-container">
-        <BookingStepper step={step} isQuickBook={isQuickBook} onSetStep={onSetStep} />
+        <BookingStepper step={step} isQuickBook={isQuickBook} onSetStep={onSetStep} staffLabel={staffLabel} />
 
         {/* Step 1: Staff */}
         {step === 1 && !isQuickBook && (

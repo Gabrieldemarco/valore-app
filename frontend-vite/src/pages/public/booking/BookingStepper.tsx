@@ -6,12 +6,14 @@ interface BookingStepperProps {
   step: number;
   isQuickBook: boolean;
   onSetStep: (step: number) => void;
+  staffLabel?: string;
 }
 
 const BookingStepper: React.FC<BookingStepperProps> = ({
   step,
   isQuickBook,
   onSetStep,
+  staffLabel,
 }) => {
   const { t } = useTranslation();
 
@@ -23,7 +25,7 @@ const BookingStepper: React.FC<BookingStepperProps> = ({
         { label: t('booking.stepTusDatos'), number: 5 },
       ]
     : [
-        { label: t('booking.stepPeluquero'), number: 1 },
+        { label: staffLabel || t('booking.stepPeluquero'), number: 1 },
         { label: t('booking.stepServicio'), number: 2 },
         { label: t('booking.stepFecha'), number: 3 },
         { label: t('booking.stepHorario'), number: 4 },

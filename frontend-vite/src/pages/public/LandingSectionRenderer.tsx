@@ -188,6 +188,7 @@ export default function LandingSectionRenderer({
                 isQuickBook={isQuickBook}
                 quickBookError={quickBookError}
                 tenantSlug={tenantSlug}
+                category={tenant.category}
                 calMonth={calMonth}
                 calYear={calYear}
                 today={today}
