@@ -1406,19 +1406,15 @@
 }
 
 [data-theme="light"] .dash-status-confirmed,
-[data-theme="light"] .dash-status-noshow,
-[data-theme="light"] .dash-btn-noshow {
+[data-theme="light"] .dash-status-noshow {
   color: var(--info);
 }
 
-[data-theme="light"] .dash-status-completed,
-[data-theme="light"] .dash-btn-complete {
+[data-theme="light"] .dash-status-completed {
   color: var(--success);
 }
 
-[data-theme="light"] .dash-status-cancelled,
-[data-theme="light"] .dash-btn-cancel,
-[data-theme="light"] .dash-btn-danger {
+[data-theme="light"] .dash-status-cancelled {
   color: var(--danger);
 }
 
@@ -1440,4 +1436,68 @@
 
 [data-theme="light"] .fc .fc-list-event:hover td {
   background-color: rgba(200, 130, 125, 0.05) !important;
+}
+
+/* ===== Dashboard buttons harmonized with the global design system ===== */
+.dash-btn,
+.dash-btn-success,
+.dash-btn-complete,
+.dash-btn-whatsapp,
+.dash-btn-danger,
+.dash-btn-cancel,
+.dash-btn-noshow {
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  transition: all var(--transition-fast);
+}
+
+.dash-btn-success,
+.dash-btn-complete,
+.dash-btn-whatsapp {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: var(--text-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dash-btn-success:hover,
+.dash-btn-complete:hover,
+.dash-btn-whatsapp:hover {
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  color: var(--text-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dash-btn-danger,
+.dash-btn-cancel,
+.dash-btn-noshow {
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+}
+
+.dash-btn-danger:hover,
+.dash-btn-cancel:hover,
+.dash-btn-noshow:hover {
+  background: var(--glass-bg-hover);
+  color: var(--text-main);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .dash-btn,
+  .dash-btn-success,
+  .dash-btn-complete,
+  .dash-btn-whatsapp,
+  .dash-btn-danger,
+  .dash-btn-cancel,
+  .dash-btn-noshow {
+    padding: 7px 14px;
+    font-size: 14px;
+  }
 }
