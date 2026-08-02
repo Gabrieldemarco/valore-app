@@ -4,6 +4,7 @@ import { useDashboard } from '../dashboardContext';
 import { getStatusBadge } from '../utils';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import { api } from '../../../../api/client';
+import { buildWhatsAppUrl } from '../../../../utils/whatsapp';
 import type { Appointment } from '../dashboardContext';
 
 export default function AppointmentDetailModal() {
@@ -96,7 +97,7 @@ export default function AppointmentDetailModal() {
                 </span>
               </div>
               <div className="mt-8">
-                <a href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)', padding: '8px 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>{t('staffDashboard.apptDetailWhatsApp')}</a>
+                <a href={buildWhatsAppUrl(phone, t('staffDashboard.apptDetailWhatsAppMessage', { clientName: selectedAppointment.client_name, date: selectedAppointment.date, time: selectedAppointment.time }))} target="_blank" rel="noopener noreferrer" className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)', padding: '8px 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>{t('staffDashboard.apptDetailWhatsApp')}</a>
               </div>
             </div>
           )}

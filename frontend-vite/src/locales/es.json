@@ -691,6 +691,7 @@
     "apptDetailPhone": "Teléfono",
     "apptDetailEmail": "Email",
     "apptDetailWhatsApp": "💬 WhatsApp",
+    "apptDetailWhatsAppMessage": "Hola {{clientName}}, te escribo por tu turno del {{date}} a las {{time}}.",
     "apptDetailInternalNotes": "Notas internas",
     "apptDetailInternalNotesPlaceholder": "Notas internas (solo visible para el staff)...",
     "apptDetailClientHistory": "📋 Historial del cliente",
