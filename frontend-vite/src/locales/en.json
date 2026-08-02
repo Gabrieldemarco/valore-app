@@ -231,13 +231,6 @@
     "subtitle": "Complete the steps to schedule",
     "stepPeluquero": "Stylist",
     "staffLabel": {
-      "peluqueria": "Stylist",
-      "cejas": "Brow specialist",
-      "nails": "Nail technician",
-      "makeup": "Makeup artist",
-      "facial": "Facialist",
-      "depilation": "Waxing specialist",
-      "massages": "Massage therapist",
       "default": "Professional"
     },
     "stepServicio": "Service",
