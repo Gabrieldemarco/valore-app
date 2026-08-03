@@ -92,6 +92,8 @@ export interface TenantSettings {
   opening_hours?: { startHour: number; endHour: number; workDays: number[] };
   reminder_hours?: number;
   captcha_enabled?: boolean;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface ClientSummary {

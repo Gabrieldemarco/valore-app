@@ -5,6 +5,7 @@ import { useDashboard } from './dashboardContext';
 import { useDashboardCRUD } from './useDashboardCRUD';
 import { api } from '../../../api/client';
 import PhoneInput from '../../../components/PhoneInput';
+import LocationPickerModal from './modals/LocationPickerModal';
 
 export default function SettingsPanel() {
   const { t, i18n } = useTranslation();
@@ -19,6 +20,8 @@ export default function SettingsPanel() {
   const [newBlockedDate, setNewBlockedDate] = useState({ date: '', reason: '' });
   const [calendarSyncing, setCalendarSyncing] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerInitial, setPickerInitial] = useState<{ lat: number; lng: number } | null>(null);
 
   const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
     try {
@@ -32,9 +35,9 @@ export default function SettingsPanel() {
       const city = a.city || a.town || a.village || a.municipality || a.county || '';
       const country = a.country || '';
       const full = [street, area, city, country].filter(Boolean).join(', ');
-      setSettings(p => ({ ...p, business_address: full || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+      setSettings(p => ({ ...p, lat: latitude, lng: longitude, business_address: full || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
     } catch {
-      setSettings(p => ({ ...p, business_address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+      setSettings(p => ({ ...p, lat: latitude, lng: longitude, business_address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
     }
     setLocating(false);
   }, [i18n.language, setSettings]);
@@ -46,39 +49,54 @@ export default function SettingsPanel() {
     }
     setLocating(true);
     let watchId: number | null = null;
-    let best: { latitude: number; longitude: number; accuracy: number } | null = null;
+    let best: { lat: number; lng: number; accuracy: number } | null = null;
     let done = false;
-    const settle = (latitude: number, longitude: number) => {
+    const settle = (lat: number, lng: number) => {
       if (done) return;
       done = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      reverseGeocode(latitude, longitude);
+      setLocating(false);
+      setPickerInitial({ lat, lng });
+      setPickerOpen(true);
     };
     watchId = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
-        if (!best || accuracy < best.accuracy) best = { latitude, longitude, accuracy };
+        if (!best || accuracy < best.accuracy) best = { lat: latitude, lng: longitude, accuracy };
         if (accuracy <= 25) settle(latitude, longitude);
       },
       () => {
         if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-        if (best) reverseGeocode(best.latitude, best.longitude);
-        else {
+        setLocating(false);
+        if (best) {
+          setPickerInitial(best);
+          setPickerOpen(true);
+        } else {
           alert(t('publicIndex.locationError'));
-          setLocating(false);
         }
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
     window.setTimeout(() => {
-      if (best) settle(best.latitude, best.longitude);
-      else {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-        alert(t('publicIndex.locationError'));
+      if (best) settle(best.lat, best.lng);
+      else if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
         setLocating(false);
+        alert(t('publicIndex.locationError'));
       }
     }, 12000);
-  }, [t, reverseGeocode]);
+  }, [t]);
+
+  const openMap = useCallback(() => {
+    const has = typeof settings.lat === 'number' && typeof settings.lng === 'number';
+    setPickerInitial(has ? { lat: settings.lat as number, lng: settings.lng as number } : null);
+    setPickerOpen(true);
+  }, [settings.lat, settings.lng]);
+
+  const handleConfirmLocation = useCallback((lat: number, lng: number) => {
+    setPickerOpen(false);
+    reverseGeocode(lat, lng);
+  }, [reverseGeocode]);
 
   const handleSave = async () => {
     await saveSettings(settings as unknown as Record<string, unknown>, openingHours as unknown as Record<string, unknown>);
@@ -116,6 +134,9 @@ export default function SettingsPanel() {
               <input type="text" className="glass-input flex-1" value={settings.business_address} onChange={e => setSettings(p => ({ ...p, business_address: e.target.value }))} placeholder={t('staffDashboard.addressPlaceholder')} />
               <button type="button" className="dash-btn btn btn-secondary fs-13 nowrap" onClick={useMyLocation} disabled={locating}>
                 <MapPin size={14} className="mr-8 vertical-align-middle" />{locating ? t('staffDashboard.locationLoading') : t('publicIndex.useMyLocation')}
+              </button>
+              <button type="button" className="dash-btn btn btn-secondary fs-13 nowrap" onClick={openMap}>
+                {t('staffDashboard.openMapLabel')}
               </button>
             </div>
           </div>
@@ -314,6 +335,14 @@ export default function SettingsPanel() {
           </div>
         </form>
       </div>
+
+      {pickerOpen && (
+        <LocationPickerModal
+          initial={pickerInitial}
+          onConfirm={handleConfirmLocation}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

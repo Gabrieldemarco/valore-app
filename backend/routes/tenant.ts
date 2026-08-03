@@ -261,6 +261,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
                 landing_description, landing_enabled, landing_hero_image,
                 landing_gallery, landing_team, landing_services_info,
                 landing_social_links, landing_custom_css, landing_layout, opening_hours, reminder_hours, updated_at, plan, trial_end_date,
+                lat, lng,
                 landing_background_color, landing_hero_height, landing_hero_width,
                 landing_primary_text_color, landing_secondary_text_color,
                 landing_primary_font, landing_secondary_font,

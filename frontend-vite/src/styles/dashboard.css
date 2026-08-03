@@ -1501,3 +1501,50 @@
     font-size: 14px;
   }
 }
+
+/* ====== Location Picker Modal ====== */
+.location-picker-modal {
+  max-width: 640px;
+}
+
+.location-picker-map {
+  height: 380px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  background: #e8e0da;
+}
+
+.location-picker-map .leaflet-container {
+  background: #e8e0da;
+  font-family: inherit;
+}
+
+.location-picker-pin {
+  background: transparent;
+  border: none;
+}
+
+.location-picker-pin .location-picker-pin-head {
+  width: 34px;
+  height: 34px;
+  background: var(--primary, #c8827d);
+  border: 3px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.location-picker-pin .location-picker-pin-head::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid var(--primary, #c8827d);
+}
