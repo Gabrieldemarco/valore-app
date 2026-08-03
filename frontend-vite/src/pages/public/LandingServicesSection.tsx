@@ -59,6 +59,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
 
   const catMap = new Map<number, CatNode>();
   const legacyCats: Record<string, ServiceItem[]> = {};
+  const uncategorized: ServiceItem[] = [];
 
   for (const s of services) {
     if (s.category_id) {
@@ -82,9 +83,13 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
         node.services.push(s);
       }
     } else {
-      const cat = s.category?.trim() || t('landingServices.otherCategory');
-      if (!legacyCats[cat]) legacyCats[cat] = [];
-      legacyCats[cat].push(s);
+      const cat = s.category?.trim();
+      if (cat) {
+        if (!legacyCats[cat]) legacyCats[cat] = [];
+        legacyCats[cat].push(s);
+      } else {
+        uncategorized.push(s);
+      }
     }
   }
 
@@ -101,6 +106,49 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
   }
 
   allGroups.sort((a, b) => a.label.localeCompare(b.label));
+
+  const renderServiceCard = (s: ServiceItem) => (
+    <div key={s.id} className="service-card"
+      onClick={() => onSelectService?.(s.id)}
+      style={{ cursor: onSelectService ? 'pointer' : 'default' }}>
+      {s.image && (
+        <div className="service-image"
+          style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />
+      )}
+      {s.images && s.images.length > 0 && (
+        <div className="service-thumbnails">
+          {s.images.slice(0, 3).map((img, i) => (
+            <div key={img.id} className="service-thumb"
+              onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
+              <img src={fixImageUrl(img.url)} alt="" />
+            </div>
+          ))}
+          {s.images.length > 3 && (
+            <div className="service-thumb more"
+              onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
+              <span>+{s.images.length - 3}</span>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="service-content">
+        <h3 className="service-name">{s.name}</h3>
+        <div className="service-meta">
+          <span className="service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
+          <span className="service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+        </div>
+        {s.description && (
+          <p className="service-description">{s.description}</p>
+        )}
+        {onSelectService && (
+          <button className="service-book-btn"
+            onClick={e => { e.stopPropagation(); onSelectService(s.id); }}>
+            {t('landingServices.bookButton')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -128,48 +176,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
                         <div key={`sub-${sub.id}`} className="subcategory-group">
                           <h4 className="subcategory-title">{sub.name}</h4>
                           <div className="services-grid">
-                            {sub.services.map(s => (
-                              <div key={s.id} className="service-card"
-                                onClick={() => onSelectService?.(s.id)}
-                                style={{ cursor: onSelectService ? 'pointer' : 'default' }}>
-                                {s.image && (
-                                  <div className="service-image"
-                                    style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />
-                                )}
-                                {s.images && s.images.length > 0 && (
-                                  <div className="service-thumbnails">
-                                    {s.images.slice(0, 3).map((img, i) => (
-                                      <div key={img.id} className="service-thumb"
-                                        onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
-                                        <img src={fixImageUrl(img.url)} alt="" />
-                                      </div>
-                                    ))}
-                                    {s.images.length > 3 && (
-                                      <div className="service-thumb more"
-                                        onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
-                                        <span>+{s.images.length - 3}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                <div className="service-content">
-                                  <h3 className="service-name">{s.name}</h3>
-                                  <div className="service-meta">
-                                    <span className="service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
-                                    <span className="service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
-                                  </div>
-                                  {s.description && (
-                                    <p className="service-description">{s.description}</p>
-                                  )}
-                                  {onSelectService && (
-                                    <button className="service-book-btn"
-                                      onClick={e => { e.stopPropagation(); onSelectService(s.id); }}>
-                                      {t('landingServices.bookButton')}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                            {sub.services.map(renderServiceCard)}
                           </div>
                         </div>
                       ))}
@@ -177,48 +184,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
                   )}
                   {hasDirectServices && (
                     <div className="services-grid">
-                      {node.services.map(s => (
-                        <div key={s.id} className="service-card"
-                          onClick={() => onSelectService?.(s.id)}
-                          style={{ cursor: onSelectService ? 'pointer' : 'default' }}>
-                          {s.image && (
-                            <div className="service-image"
-                              style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />
-                          )}
-                          {s.images && s.images.length > 0 && (
-                            <div className="service-thumbnails">
-                              {s.images.slice(0, 3).map((img, i) => (
-                                <div key={img.id} className="service-thumb"
-                                  onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
-                                  <img src={fixImageUrl(img.url)} alt="" />
-                                </div>
-                              ))}
-                              {s.images.length > 3 && (
-                                <div className="service-thumb more"
-                                  onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
-                                  <span>+{s.images.length - 3}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <div className="service-content">
-                            <h3 className="service-name">{s.name}</h3>
-                            <div className="service-meta">
-                              <span className="service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
-                              <span className="service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
-                            </div>
-                            {s.description && (
-                              <p className="service-description">{s.description}</p>
-                            )}
-                            {onSelectService && (
-                              <button className="service-book-btn"
-                                onClick={e => { e.stopPropagation(); onSelectService(s.id); }}>
-                                {t('landingServices.bookButton')}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                      {node.services.map(renderServiceCard)}
                     </div>
                   )}
                 </div>
@@ -227,6 +193,11 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
           );
         })}
       </div>
+      {uncategorized.length > 0 && (
+        <div className="services-grid" style={{ marginTop: 16 }}>
+          {uncategorized.map(renderServiceCard)}
+        </div>
+      )}
     </>
   );
 }

@@ -45,6 +45,7 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
 
   const catMap = new Map<number, CatNode>();
   const legacyCats: Record<string, ServiceItem[]> = {};
+  const uncategorized: ServiceItem[] = [];
 
   for (const s of services) {
     if (s.category_id) {
@@ -68,9 +69,13 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
         node.services.push(s);
       }
     } else {
-      const cat = s.category?.trim() || t('landingServices.otherCategory');
-      if (!legacyCats[cat]) legacyCats[cat] = [];
-      legacyCats[cat].push(s);
+      const cat = s.category?.trim();
+      if (cat) {
+        if (!legacyCats[cat]) legacyCats[cat] = [];
+        legacyCats[cat].push(s);
+      } else {
+        uncategorized.push(s);
+      }
     }
   }
 
@@ -146,6 +151,11 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
           </div>
         );
       })}
+      {uncategorized.length > 0 && (
+        <div className="booking-services" style={{ marginTop: 16 }}>
+          {uncategorized.map(renderCard)}
+        </div>
+      )}
     </div>
   );
 };
