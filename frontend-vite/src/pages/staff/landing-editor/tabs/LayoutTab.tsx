@@ -1,5 +1,5 @@
 import { useLandingEditor } from '../landingEditorContext';
-import { SECTION_LABELS } from '../landingEditorUtils';
+import { SECTION_LABELS, extractEmbedSrc, isValidEmbedUrl } from '../landingEditorUtils';
 import { GripVertical, X, Home, Sparkles, Image, Users, Calendar, Clock } from 'lucide-react';
 
 function sectionIcon(id: string) {
@@ -15,7 +15,12 @@ function sectionIcon(id: string) {
 }
 
 export default function LayoutTab() {
-  const { t, layout, toggleLayoutSection, removeCustomBlock, addCustomBlock, dragIndexRef, handleDragStart, handleDragOver, handleDragLeave, handleDrop, modalOpen, setModalOpen, modalLabel, setModalLabel, modalTitle, setModalTitle, modalContent, setModalContent, saveCustomBlockModal } = useLandingEditor();
+  const { t, layout, toggleLayoutSection, removeCustomBlock, addCustomBlock, dragIndexRef, handleDragStart, handleDragOver, handleDragLeave, handleDrop, modalOpen, setModalOpen, modalLabel, setModalLabel, modalTitle, setModalTitle, modalContent, setModalContent, modalEmbedSrc, handleEmbedSrcChange, saveCustomBlockModal } = useLandingEditor();
+
+  const embedPreviewSrc = (() => {
+    const src = extractEmbedSrc(modalEmbedSrc);
+    return isValidEmbedUrl(src) ? src : '';
+  })();
 
   return (
     <>
@@ -71,6 +76,20 @@ export default function LayoutTab() {
             <input type="text" className="glass-input" placeholder={t('staffLandingEditor.customBlockTitlePlaceholder')} value={modalTitle}
               onChange={e => setModalTitle(e.target.value)} />
           </div>
+          <div className="form-group">
+            <label>{t('staffLandingEditor.customBlockEmbedLabel')}</label>
+            <input type="url" className="glass-input" placeholder={t('staffLandingEditor.customBlockEmbedPlaceholder')} value={modalEmbedSrc}
+              onChange={e => handleEmbedSrcChange(e.target.value)} />
+            <small className="text-muted">{t('staffLandingEditor.customBlockEmbedHint')}</small>
+          </div>
+          {embedPreviewSrc && (
+            <div className="form-group">
+              <label>{t('staffLandingEditor.customBlockEmbedPreview')}</label>
+              <div className="embed-preview-wrapper">
+                <iframe src={embedPreviewSrc} title={t('staffLandingEditor.customBlockEmbedPreview')} className="embed-preview-frame" loading="lazy" />
+              </div>
+            </div>
+          )}
           <div className="form-group">
             <label>{t('staffLandingEditor.customBlockContentLabel')}</label>
             <textarea className="glass-input" rows={6} placeholder={t('staffLandingEditor.customBlockContentPlaceholder')} value={modalContent}

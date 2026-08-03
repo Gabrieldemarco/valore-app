@@ -66,6 +66,9 @@ export interface LandingEditorContextValue {
   setModalTitle: (v: string) => void;
   modalContent: string;
   setModalContent: (v: string) => void;
+  modalEmbedSrc: string;
+  setModalEmbedSrc: (v: string) => void;
+  handleEmbedSrcChange: (v: string) => void;
   saveCustomBlockModal: () => void;
 
   cropFile: File | null;

@@ -9,6 +9,7 @@ import { useLandingDataLoader } from './hooks/useLandingDataLoader';
 import { useLandingAutoSave } from './hooks/useLandingAutoSave';
 import { useLandingImageUpload } from './hooks/useLandingImageUpload';
 import { useLandingTheme } from './hooks/useLandingTheme';
+import { buildIframeHtml, extractEmbedSrc, isValidEmbedUrl } from './landingEditorUtils';
 
 interface LandingEditorProviderProps {
   children: (props: { activeTab: EditorTab; setActiveTab: (tab: EditorTab) => void }) => React.ReactNode;
@@ -33,6 +34,7 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
   const [modalLabel, setModalLabel] = useState('');
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState('');
+  const [modalEmbedSrc, setModalEmbedSrc] = useState('');
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -196,7 +198,21 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
     setModalLabel('');
     setModalTitle('');
     setModalContent('');
+    setModalEmbedSrc('');
     setModalOpen(true);
+  }, []);
+
+  const handleEmbedSrcChange = useCallback((value: string) => {
+    setModalEmbedSrc(value);
+    const src = extractEmbedSrc(value);
+    if (!isValidEmbedUrl(src)) return;
+    const iframeHtml = buildIframeHtml(src);
+    setModalContent(prev => {
+      if (prev.includes('<iframe')) {
+        return prev.replace(/<iframe[\s\S]*?<\/iframe>/g, iframeHtml);
+      }
+      return prev ? `${prev}\n${iframeHtml}` : iframeHtml;
+    });
   }, []);
 
   const saveCustomBlockModal = useCallback(() => {
@@ -258,6 +274,7 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
       updateCustomBackgroundAndHero, applyPresetTheme,
       showStatus, updatePreview,
       modalOpen, setModalOpen, modalLabel, setModalLabel, modalTitle, setModalTitle, modalContent, setModalContent, saveCustomBlockModal,
+      modalEmbedSrc, setModalEmbedSrc, handleEmbedSrcChange,
       cropFile, cropAspect, cropTarget,
       dragIndexRef,
       handleDragStart, handleDragOver, handleDragLeave, handleDrop,

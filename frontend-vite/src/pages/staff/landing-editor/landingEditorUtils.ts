@@ -42,3 +42,18 @@ export const SECTION_LABELS: Record<string, string> = {
   reservar: 'Reserva de Turnos',
   hours: 'Horarios de Atención',
 };
+
+export function extractEmbedSrc(value: string): string {
+  const trimmed = value.trim();
+  const srcMatch = trimmed.match(/src=["']([^"']+)["']/);
+  return srcMatch ? srcMatch[1] : trimmed;
+}
+
+export function buildIframeHtml(src: string): string {
+  const clean = src.replace(/"/g, '&quot;');
+  return `<iframe src="${clean}" width="100%" height="400" style="border:0" frameborder="0" allowfullscreen loading="lazy"></iframe>`;
+}
+
+export function isValidEmbedUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
