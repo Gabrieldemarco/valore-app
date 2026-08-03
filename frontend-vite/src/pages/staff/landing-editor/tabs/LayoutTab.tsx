@@ -1,5 +1,5 @@
 import { useLandingEditor } from '../landingEditorContext';
-import { SECTION_LABELS, extractEmbedSrc, isValidEmbedUrl } from '../landingEditorUtils';
+import { SECTION_LABELS, normalizeEmbedUrl, isValidEmbedUrl } from '../landingEditorUtils';
 import { GripVertical, X, Home, Sparkles, Image, Users, Calendar, Clock } from 'lucide-react';
 
 function sectionIcon(id: string) {
@@ -18,7 +18,7 @@ export default function LayoutTab() {
   const { t, layout, toggleLayoutSection, removeCustomBlock, addCustomBlock, dragIndexRef, handleDragStart, handleDragOver, handleDragLeave, handleDrop, modalOpen, setModalOpen, modalLabel, setModalLabel, modalTitle, setModalTitle, modalContent, setModalContent, modalEmbedSrc, handleEmbedSrcChange, saveCustomBlockModal } = useLandingEditor();
 
   const embedPreviewSrc = (() => {
-    const src = extractEmbedSrc(modalEmbedSrc);
+    const src = normalizeEmbedUrl(modalEmbedSrc);
     return isValidEmbedUrl(src) ? src : '';
   })();
 

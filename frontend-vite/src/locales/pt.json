@@ -991,7 +991,7 @@
     "customBlockContentHint": "Cole o iframe do Google Maps, Instagram, YouTube, etc.",
     "customBlockEmbedLabel": "URL do embed (iframe)",
     "customBlockEmbedPlaceholder": "Ex: https://www.google.com/maps?q=...&output=embed",
-    "customBlockEmbedHint": "Cole apenas o link e o código do iframe é gerado automaticamente.",
+    "customBlockEmbedHint": "Cole apenas o link e o código do iframe é gerado automaticamente. Links do Google Maps, YouTube, Instagram, Facebook e TikTok são convertidos para o formato de embed.",
     "customBlockEmbedPreview": "Pré-visualização",
     "customBlockCancel": "Cancelar",
     "customBlockAdd": "Adicionar bloco",

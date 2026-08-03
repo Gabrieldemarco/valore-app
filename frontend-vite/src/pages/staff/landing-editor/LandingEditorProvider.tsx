@@ -9,7 +9,7 @@ import { useLandingDataLoader } from './hooks/useLandingDataLoader';
 import { useLandingAutoSave } from './hooks/useLandingAutoSave';
 import { useLandingImageUpload } from './hooks/useLandingImageUpload';
 import { useLandingTheme } from './hooks/useLandingTheme';
-import { buildIframeHtml, extractEmbedSrc, isValidEmbedUrl } from './landingEditorUtils';
+import { buildIframeHtml, isValidEmbedUrl, normalizeEmbedUrl } from './landingEditorUtils';
 
 interface LandingEditorProviderProps {
   children: (props: { activeTab: EditorTab; setActiveTab: (tab: EditorTab) => void }) => React.ReactNode;
@@ -204,7 +204,7 @@ export default function LandingEditorProvider({ children }: LandingEditorProvide
 
   const handleEmbedSrcChange = useCallback((value: string) => {
     setModalEmbedSrc(value);
-    const src = extractEmbedSrc(value);
+    const src = normalizeEmbedUrl(value);
     if (!isValidEmbedUrl(src)) return;
     const iframeHtml = buildIframeHtml(src);
     setModalContent(prev => {

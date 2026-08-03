@@ -57,3 +57,55 @@ export function buildIframeHtml(src: string): string {
 export function isValidEmbedUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
 }
+
+export function normalizeEmbedUrl(input: string): string {
+  const src = extractEmbedSrc(input);
+  if (!src) return '';
+  let url: URL;
+  try { url = new URL(src); } catch { return src; }
+  const host = url.hostname.toLowerCase();
+
+  if (host === 'youtu.be') {
+    const id = url.pathname.split('/')[1];
+    return id ? `https://www.youtube.com/embed/${id}` : src;
+  }
+  if (host.includes('youtube.com')) {
+    if (url.pathname === '/watch') {
+      const v = url.searchParams.get('v');
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (url.pathname.startsWith('/shorts/')) {
+      const id = url.pathname.split('/')[2];
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    if (url.pathname.startsWith('/embed/')) return src;
+  }
+
+  if (host.includes('google.') && (url.pathname.startsWith('/maps') || host === 'maps.google.com')) {
+    if (url.pathname.includes('/embed') || url.searchParams.get('output') === 'embed') return src;
+    const at = src.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (at) return `https://www.google.com/maps?q=${at[1]},${at[2]}&output=embed`;
+    if (url.searchParams.get('q')) {
+      url.searchParams.set('output', 'embed');
+      return url.toString();
+    }
+  }
+
+  if (host === 'instagram.com' || host === 'www.instagram.com') {
+    const m = url.pathname.match(/^\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+    if (m) return `https://www.instagram.com/${m[1]}/${m[2]}/embed/`;
+  }
+
+  if (host.includes('facebook.com')) {
+    if (url.pathname.includes('/posts/') || url.pathname.includes('/videos/') || url.pathname.includes('/photos/')) {
+      return `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(src)}`;
+    }
+  }
+
+  if (host.includes('tiktok.com')) {
+    const m = url.pathname.match(/^\/@[\w.-]+\/video\/(\d+)/);
+    if (m) return `https://www.tiktok.com/embed/v2/${m[1]}`;
+  }
+
+  return src;
+}
