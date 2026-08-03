@@ -20,36 +20,65 @@ export default function SettingsPanel() {
   const [calendarSyncing, setCalendarSyncing] = useState(false);
   const [locating, setLocating] = useState(false);
 
+  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=${i18n.language}`
+      );
+      const data = await res.json();
+      const a = data.address || {};
+      const street = [a.road, a.house_number].filter(Boolean).join(' ');
+      const area = a.suburb || a.neighbourhood || a.borough || '';
+      const city = a.city || a.town || a.village || a.municipality || a.county || '';
+      const country = a.country || '';
+      const full = [street, area, city, country].filter(Boolean).join(', ');
+      setSettings(p => ({ ...p, business_address: full || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+    } catch {
+      setSettings(p => ({ ...p, business_address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+    }
+    setLocating(false);
+  }, [i18n.language, setSettings]);
+
   const useMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert(t('publicIndex.locationNotSupported'));
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`);
-          const data = await res.json();
-          const a = data.address || {};
-          const street = [a.road, a.house_number].filter(Boolean).join(' ');
-          const area = a.suburb || a.neighbourhood || '';
-          const city = a.city || a.town || a.village || a.county || '';
-          const country = a.country || '';
-          const full = [street, area, city, country].filter(Boolean).join(', ');
-          setSettings(p => ({ ...p, business_address: full || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
-        } catch {
-          setSettings(p => ({ ...p, business_address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
-        }
-        setLocating(false);
+    let watchId: number | null = null;
+    let best: { latitude: number; longitude: number; accuracy: number } | null = null;
+    let done = false;
+    const settle = (latitude: number, longitude: number) => {
+      if (done) return;
+      done = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      reverseGeocode(latitude, longitude);
+    };
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        if (!best || accuracy < best.accuracy) best = { latitude, longitude, accuracy };
+        if (accuracy <= 25) settle(latitude, longitude);
       },
       () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        if (best) reverseGeocode(best.latitude, best.longitude);
+        else {
+          alert(t('publicIndex.locationError'));
+          setLocating(false);
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    );
+    window.setTimeout(() => {
+      if (best) settle(best.latitude, best.longitude);
+      else {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
         alert(t('publicIndex.locationError'));
         setLocating(false);
       }
-    );
-  }, [t, i18n, setSettings]);
+    }, 12000);
+  }, [t, reverseGeocode]);
 
   const handleSave = async () => {
     await saveSettings(settings as unknown as Record<string, unknown>, openingHours as unknown as Record<string, unknown>);
