@@ -13,5 +13,6 @@ export function getDefaultLayout(): LayoutBlock[] {
     { id: 'equipo', type: 'team', enabled: true },
     { id: 'reservar', type: 'booking', enabled: true },
     { id: 'hours', type: 'hours', enabled: true },
+    { id: 'ubicacion', type: 'location', enabled: false },
   ];
 }

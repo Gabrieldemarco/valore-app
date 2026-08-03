@@ -1,6 +1,6 @@
 import { useLandingEditor } from '../landingEditorContext';
 import { SECTION_LABELS, normalizeEmbedUrl, isValidEmbedUrl } from '../landingEditorUtils';
-import { GripVertical, X, Home, Sparkles, Image, Users, Calendar, Clock } from 'lucide-react';
+import { GripVertical, X, Home, Sparkles, Image, Users, Calendar, Clock, MapPin } from 'lucide-react';
 
 function sectionIcon(id: string) {
   switch (id) {
@@ -10,6 +10,7 @@ function sectionIcon(id: string) {
     case 'equipo': return <Users size={16} className="mr-6 vertical-align-middle" />;
     case 'reservar': return <Calendar size={16} className="mr-6 vertical-align-middle" />;
     case 'hours': return <Clock size={16} className="mr-6 vertical-align-middle" />;
+    case 'ubicacion': return <MapPin size={16} className="mr-6 vertical-align-middle" />;
     default: return null;
   }
 }

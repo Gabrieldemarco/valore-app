@@ -238,6 +238,29 @@ export default function LandingSectionRenderer({
           </section>
         );
 
+      case 'location': {
+        let mapSrc = '';
+        if (typeof tenant.lat === 'number' && typeof tenant.lng === 'number') {
+          mapSrc = `https://www.google.com/maps?q=${tenant.lat},${tenant.lng}&z=16&output=embed`;
+        } else if (tenant.business_address) {
+          mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(tenant.business_address)}&output=embed`;
+        }
+        if (!mapSrc) return null;
+        return (
+          <section key={block.id} id="ubicacion">
+            <ScrollReveal>
+              <div className="section-divider wide" />
+            </ScrollReveal>
+            <ScrollReveal delay={1}>
+              <h2 className="section-title">{block.title || 'Ubicación'}</h2>
+              <div className="custom-block-content">
+                <iframe src={mapSrc} title="Ubicación" width="100%" height="400" style={{ border: 0 }} allowFullScreen loading="lazy" />
+              </div>
+            </ScrollReveal>
+          </section>
+        );
+      }
+
       case 'custom':
         return (
           <section key={block.id} id={block.id}>

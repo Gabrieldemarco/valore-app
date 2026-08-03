@@ -41,7 +41,18 @@ export const SECTION_LABELS: Record<string, string> = {
   equipo: 'Equipo',
   reservar: 'Reserva de Turnos',
   hours: 'Horarios de Atención',
+  ubicacion: 'Mapa (Ubicación)',
 };
+
+export function buildLocationEmbedUrl(lat?: number | null, lng?: number | null, address?: string): string {
+  if (typeof lat === 'number' && typeof lng === 'number') {
+    return `https://www.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+  }
+  if (address) {
+    return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+  }
+  return '';
+}
 
 export function extractEmbedSrc(value: string): string {
   const trimmed = value.trim();

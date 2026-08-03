@@ -14,6 +14,8 @@ export interface TenantData {
   brand_logo_url: string | null;
   business_phone: string | null;
   business_address: string | null;
+  lat?: number | null;
+  lng?: number | null;
   opening_hours: Record<string, unknown> | null;
   landing_background_color: string | null;
   landing_hero_height: number | null;
