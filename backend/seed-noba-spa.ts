@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 import logger from './services/logger';
 
@@ -26,16 +25,6 @@ interface ServiceDef {
   category: string;
   description: string;
 }
-
-const CATEGORIES = [
-  'Cejas',
-  'Depilación Facial',
-  'Labios',
-  'Manos',
-  'Otros',
-  'Pestañas',
-  'Pies',
-];
 
 const SERVICES: ServiceDef[] = [
   // Cejas

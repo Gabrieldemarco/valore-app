@@ -225,7 +225,7 @@ export default function(apiLimiter) {
     body('filename').notEmpty().withMessage('Nombre de archivo requerido'),
   ], validate, async (req, res) => {
     try {
-      const { image, filename } = req.body;
+      const { image } = req.body;
 
       const allowedTypes: Record<string, string> = {
         jpeg: 'jpg',

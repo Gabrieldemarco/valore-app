@@ -88,6 +88,7 @@ describe('Landing Page (público)', () => {
           { id: 2, name: 'Lavado', duration: 20, price: 300, image: null }
         ]
       });
+      query.mockResolvedValueOnce({ rows: [] });
       const res = await request(app).get('/p/test-pelu/services');
       expect(res.status).toBe(200);
       expect(res.body.services.length).toBe(2);
@@ -100,6 +101,8 @@ describe('Landing Page (público)', () => {
       query.mockResolvedValueOnce({
         rows: [{ id: 1, name: 'Corte', duration: 30, price: 500, image: null }]
       });
+      query.mockResolvedValueOnce({ rows: [] });
+      query.mockResolvedValueOnce({ rows: [] });
 
       const res = await request(app).get('/p/test-pelu/landing');
       expect(res.status).toBe(200);
@@ -110,11 +113,13 @@ describe('Landing Page (público)', () => {
 
     it('activa landing si está deshabilitada', async () => {
       mockIdentifyTenant({ landing_enabled: false });
-      // activate (UPDATE) + services query
+      // activate (UPDATE) + services + images + reviews queries
       query.mockResolvedValueOnce({ rows: [] });
       query.mockResolvedValueOnce({
         rows: [{ id: 1, name: 'Corte', duration: 30, price: 500, image: null }]
       });
+      query.mockResolvedValueOnce({ rows: [] });
+      query.mockResolvedValueOnce({ rows: [] });
 
       const res = await request(app).get('/p/test-pelu/landing');
       expect(res.status).toBe(200);

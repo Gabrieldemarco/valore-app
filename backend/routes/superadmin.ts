@@ -11,11 +11,11 @@ import { activateTenantFromPaidInvoice } from '../services/billing';
 
 /**
  * @param {import('express').RequestHandler} loginLimiter
- * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} createMercadoPagoPreference
- * @param {string} MP_CURRENCY
+ * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} _createMercadoPagoPreference
+ * @param {string} _MP_CURRENCY
  * @returns {import('express').Router}
  */
-export default function(loginLimiter, createMercadoPagoPreference, MP_CURRENCY) {
+export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY) {
   const router = Router();
 
   const superAdminLoginValidation = [

@@ -124,7 +124,7 @@ async function checkTrialExpiration(req, res, next) {
  * @param {string} resource
  * @returns {Promise<boolean>}
  */
-async function checkPlanLimits(tenantId, resource) {
+async function checkPlanLimits(tenantId, _resource) {
   try {
     const tenant = await queryOne('SELECT plan FROM tenants WHERE id = $1', [tenantId]);
     if (!tenant) return false;

@@ -97,7 +97,7 @@ function appointmentToEvent(appt: any): any {
   };
 }
 
-function eventToAppointment(event: any, tenantId: number): any {
+function eventToAppointment(event: any, _tenantId: number): any {
   const start = event.start?.dateTime || event.start?.date;
   const end = event.end?.dateTime || event.end?.date;
   const duration = start && end ? Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000) : 30;

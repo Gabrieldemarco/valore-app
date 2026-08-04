@@ -4,10 +4,9 @@ import { query, queryOne } from '../database';
 import config from '../config';
 import logger from '../services/logger';
 import { authenticateStaff } from '../middleware';
-import { buildAuthUrl, exchangeCodeForTokens, syncStaffCalendar, getCalendarStatus, pullEvents } from '../services/google-calendar';
+import { buildAuthUrl, exchangeCodeForTokens, syncStaffCalendar, getCalendarStatus } from '../services/google-calendar';
 
 const FRONTEND_URL = config.FRONTEND_URL;
-const GOOGLE_CALENDAR_CALLBACK_URL = config.GOOGLE_CALENDAR_CALLBACK_URL;
 
 export default function calendarRoutes() {
   const router = Router();

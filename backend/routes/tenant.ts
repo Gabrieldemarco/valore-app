@@ -132,7 +132,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
   ], validate, async (req, res) => {
     try {
-      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, status } = req.body;
+      const { serviceId, staffId, appointmentDate } = req.body;
       if (new Date(appointmentDate) <= new Date()) {
         return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
       }
@@ -971,7 +971,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.put('/tenant/reviews/:id', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
-      const { approved, reply } = req.body;
+      const { approved } = req.body;
       const result = await query(
         `UPDATE reviews SET approved = COALESCE($1, approved) WHERE id = $2 AND tenant_id = $3 RETURNING id, client_name, rating, comment, approved, created_at`,
         [approved !== undefined ? approved : null, req.params.id, req.user.tenant_id]

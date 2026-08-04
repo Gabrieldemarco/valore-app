@@ -1,5 +1,5 @@
 import NodeCache from 'memory-cache';
-import { cacheGet, cacheSet, cacheDel, isRedisEnabled } from './redis';
+import { cacheSet, cacheDel, isRedisEnabled } from './redis';
 
 const TTL_DEFAULT = 60; // 60 segundos
 

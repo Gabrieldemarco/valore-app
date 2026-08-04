@@ -6,6 +6,7 @@ jest.mock('../database', () => ({
   initDB: jest.fn().mockResolvedValue(),
   query: jest.fn(),
   queryOne: jest.fn(),
+  getClient: jest.fn(),
   pool: { end: jest.fn().mockResolvedValue() }
 }));
 jest.mock('../cron-billing', () => ({
@@ -26,6 +27,12 @@ process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
 
 const app = require('../server');
 const { query, queryOne } = require('../database');
+
+function futureDate(daysFromNow = 7) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString();
+}
 
 const staffToken = jwt.sign(
   { id: 1, name: 'Staff', email: 'staff@test.com', role: 'staff', tenant_id: 1 },
@@ -65,6 +72,19 @@ describe('Appointments', () => {
     const notif = require('../services/notifications');
     notif.sendClientConfirmation.mockResolvedValue({ success: true });
     notif.notifyStaff.mockResolvedValue({ success: true });
+
+    // Transaction client: BEGIN, lock, INSERT, staff lookup, COMMIT
+    const db = require('../database');
+    const clientMock = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 1, client_name: 'Juan Pérez', client_phone: '099123456', service: 'Corte', status: 'confirmed', appointment_date: futureDate(), service_duration: 30, service_price: 500, staff_id: 1, client_token: 'mock-uuid-1234' }] })
+        .mockResolvedValueOnce({ rows: [{ name: 'Ana', email: 'ana@test.com' }] })
+        .mockResolvedValueOnce({ rows: [] }),
+      release: jest.fn().mockResolvedValue()
+    };
+    db.getClient.mockResolvedValue(clientMock);
   });
 
   describe('POST /p/:slug/appointments (público)', () => {
@@ -79,7 +99,7 @@ describe('Appointments', () => {
           clientName: 'Juan Pérez',
           clientPhone: '099123456',
           serviceId: 1,
-          appointmentDate: '2026-06-15T14:00:00.000Z'
+          appointmentDate: futureDate()
         });
       expect(res.status).toBe(201);
       expect(res.body.appointment).toBeDefined();
@@ -89,7 +109,7 @@ describe('Appointments', () => {
       mockIdentifyTenant();
       const res = await request(app)
         .post('/p/test/appointments')
-        .send({ clientName: 'J', clientPhone: '099123456', serviceId: 1, appointmentDate: '2026-06-01T14:00:00.000Z' });
+        .send({ clientName: 'J', clientPhone: '099123456', serviceId: 1, appointmentDate: futureDate() });
       expect(res.status).toBe(400);
     });
 
@@ -97,7 +117,7 @@ describe('Appointments', () => {
       queryOne.mockResolvedValueOnce(null);
       const res = await request(app)
         .post('/p/no-existe/appointments')
-        .send({ clientName: 'Juan', clientPhone: '099123456', serviceId: 1, appointmentDate: '2026-06-01T14:00:00.000Z' });
+        .send({ clientName: 'Juan', clientPhone: '099123456', serviceId: 1, appointmentDate: futureDate() });
       expect(res.status).toBe(404);
     });
 
@@ -105,7 +125,7 @@ describe('Appointments', () => {
       queryOne.mockResolvedValueOnce({ id: 1, slug: 'test', status: 'suspended', plan: 'free' });
       const res = await request(app)
         .post('/p/test/appointments')
-        .send({ clientName: 'Juan', clientPhone: '099123456', serviceId: 1, appointmentDate: '2026-06-01T14:00:00.000Z' });
+        .send({ clientName: 'Juan', clientPhone: '099123456', serviceId: 1, appointmentDate: futureDate() });
       expect(res.status).toBe(403);
     });
   });

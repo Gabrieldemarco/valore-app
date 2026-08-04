@@ -55,7 +55,6 @@ import logger, { stream as loggerStream } from './services/logger';
 import morgan from 'morgan';
 import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
 import { generateAvailableSlots } from './services/slots';
-import { authenticateSuperAdmin } from './middleware';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './services/swagger';
 import { metricsMiddleware, createMetricsHandler, refreshDbPoolMetrics } from './services/metrics';
