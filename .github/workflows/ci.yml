@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 env:
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agenda_test
