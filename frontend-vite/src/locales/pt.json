@@ -48,7 +48,8 @@
     "termsAndConditions": "Termos e Condições",
     "privacyPolicy": "Política de Privacidade",
     "cancellationPolicy": "Política de Cancelamento",
-    "loadingImage": "Carregando imagem...",
+"loadingImage": "Carregando imagem...",
+    "imageLoadError": "Não foi possível carregar a imagem. Tente outro arquivo.",
     "rotate": "Rotacionar",
     "flipHorizontal": "Inverter horizontal",
     "flipVertical": "Inverter vertical"

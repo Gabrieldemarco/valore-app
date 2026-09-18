@@ -16,6 +16,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
   const imgRef = useRef<HTMLImageElement>(null);
   const [objectUrl, setObjectUrl] = useState('');
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const [natural, setNatural] = useState({ w: 1, h: 1 });
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
@@ -41,6 +42,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
     setFlipV(false);
     setImgLoaded(false);
     setNatural({ w: 1, h: 1 });
+    setImgError(false);
     return () => { URL.revokeObjectURL(url); };
   }, [open, file]);
 
@@ -206,6 +208,7 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
               src={objectUrl}
               alt=""
               onLoad={handleImgLoad}
+              onError={() => { setImgLoaded(false); setImgError(true); }}
               style={{
                 position: 'absolute', left: imgX, top: imgY,
                 width: cssW, height: cssH,
@@ -220,8 +223,8 @@ export default function ImageCropModal({ open, file, aspectRatio, onApply, onCan
           {!imgLoaded && (
             <div style={{
               position: 'absolute', inset: 0, display: 'flex',
-              alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 15,
-            }}>{t('common.loadingImage')}</div>
+              alignItems: 'center', justifyContent: 'center', color: imgError ? 'var(--danger, #ef4444)' : 'var(--text-secondary)', fontSize: 14, padding: 16, textAlign: 'center',
+            }}>{imgError ? t('common.imageLoadError') : t('common.loadingImage')}</div>
           )}
           <div style={{
             position: 'absolute', left: cropX, top: cropY,
