@@ -15,9 +15,9 @@ export function generateBrandingCSS(data: {
   const secondaryFont = data.fonts?.secondary || 'system';
   const heroHeight = data.heroHeight || 70;
   const heroWidth = data.heroWidth || 100;
-  const primaryTextColor = data.primaryTextColor || 'var(--text-dark)';
-  const secondaryTextColor = data.secondaryTextColor || 'var(--text-muted)';
-  const bgColor = data.bgColor || 'var(--bg-gradient-end)';
+  const primaryTextColor = data.primaryTextColor || '#1a1a1a';
+  const secondaryTextColor = data.secondaryTextColor || '#666666';
+  const bgColor = data.bgColor || '#0f0808';
 
   const fontImport = primaryFont !== 'system'
     ? `@import url('https://fonts.googleapis.com/css2?family=${primaryFont.replace(/ /g, '+')}:wght@300;400;500;600;700;800&display=swap');\n`

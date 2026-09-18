@@ -40,11 +40,11 @@ export default function BrandingTab() {
         <div className="grid-2">
           <div className="form-group m-0">
             <label className="flex-center text-sm gap-6">
-              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_background_color as string) || 'var(--bg-gradient-end)', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_background_color as string) || '#0f0808', border: '2px solid rgba(255,255,255,0.2)' }}></span>
               {t('staffLandingEditor.backgroundColorLabel')}
             </label>
             <input type="color" className="glass-input cursor-pointer h-44" style={{ padding: 2 }}
-              value={(tenant.landing_background_color as string) || 'var(--bg-gradient-end)'}
+              value={(tenant.landing_background_color as string) || '#0f0808'}
               onChange={e => updateCustomBackgroundAndHero({ landing_background_color: e.target.value })} />
           </div>
           <div className="form-group m-0">
@@ -76,20 +76,20 @@ export default function BrandingTab() {
         <div className="grid-2">
           <div className="form-group m-0">
             <label className="flex-center text-sm gap-6">
-              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_primary_text_color as string) || 'var(--text-dark)', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_primary_text_color as string) || '#1a1a1a', border: '2px solid rgba(255,255,255,0.2)' }}></span>
               {t('staffLandingEditor.primaryTextColorLabel')}
             </label>
             <input type="color" className="glass-input cursor-pointer h-44" style={{ padding: 2 }}
-              value={(tenant.landing_primary_text_color as string) || 'var(--text-dark)'}
+              value={(tenant.landing_primary_text_color as string) || '#1a1a1a'}
               onChange={e => updateCustomBackgroundAndHero({ landing_primary_text_color: e.target.value })} />
           </div>
           <div className="form-group m-0">
             <label className="flex-center text-sm gap-6">
-              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_secondary_text_color as string) || 'var(--text-muted)', border: '2px solid rgba(255,255,255,0.2)' }}></span>
+              <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: (tenant.landing_secondary_text_color as string) || '#666666', border: '2px solid rgba(255,255,255,0.2)' }}></span>
               {t('staffLandingEditor.secondaryTextColorLabel')}
             </label>
             <input type="color" className="glass-input cursor-pointer h-44" style={{ padding: 2 }}
-              value={(tenant.landing_secondary_text_color as string) || 'var(--text-muted)'}
+              value={(tenant.landing_secondary_text_color as string) || '#666666'}
               onChange={e => updateCustomBackgroundAndHero({ landing_secondary_text_color: e.target.value })} />
           </div>
         </div>

@@ -2,7 +2,7 @@ import type { LayoutBlock } from './types';
 
 export const DEFAULT_HOURS = { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] };
 export const DEBOUNCE_MS = 500;
-export const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+export const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 export const CSS_FORBIDDEN_PATTERNS = ['javascript:', 'behavior:', 'expression('];
 
 export function getDefaultLayout(): LayoutBlock[] {

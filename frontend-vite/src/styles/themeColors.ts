@@ -8,14 +8,14 @@ export const CHART_COLORS = {
 };
 
 export const THEME_PRESETS = {
-  default: { primary: 'var(--theme-default-primary)', secondary: 'var(--theme-default-secondary)', name: 'default' },
-  velvet: { primary: 'var(--theme-velvet-primary)', secondary: 'var(--theme-velvet-secondary)', name: 'velvet' },
-  barber: { primary: 'var(--theme-barber-primary)', secondary: 'var(--theme-barber-secondary)', name: 'barber' },
-  zen: { primary: 'var(--theme-zen-primary)', secondary: 'var(--theme-zen-secondary)', name: 'zen' },
-  light: { primary: 'var(--theme-light-primary)', secondary: 'var(--theme-light-secondary)', name: 'light' },
+  default: { primary: '#c8827d', secondary: '#d69c98', name: 'default' },
+  velvet: { primary: '#7C3AED', secondary: '#A78BFA', name: 'velvet' },
+  barber: { primary: '#B45309', secondary: '#D97706', name: 'barber' },
+  zen: { primary: '#059669', secondary: '#10B981', name: 'zen' },
+  light: { primary: '#3B82F6', secondary: '#60A5FA', name: 'light' },
 };
 
 export const BRAND_DEFAULTS = {
-  primary: 'var(--brand-primary)',
-  secondary: 'var(--brand-secondary)',
+  primary: '#c8827d',
+  secondary: '#d69c98',
 };
