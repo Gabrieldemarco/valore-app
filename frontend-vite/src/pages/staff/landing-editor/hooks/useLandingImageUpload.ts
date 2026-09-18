@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { api } from '../../../../api/client';
+import { logger } from '../../../../services/logger';
 import { MAX_IMAGE_SIZE } from '../constants';
 import type { Service, StaffMember, TenantData } from '../types';
 
@@ -57,7 +58,11 @@ export function useLandingImageUpload({
       }
       debounceSave();
       showStatus(t('staffLandingEditor.statusImageUploaded'), false);
-    } catch { showStatus(t('staffLandingEditor.statusImageUploadError'), false); }
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      showStatus(`${t('staffLandingEditor.statusImageUploadError')}${errMsg ? ` — ${errMsg}` : ''}`, false);
+      logger.error('Upload image error:', e);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cropTarget, showStatus, t, debounceSave]);
 
