@@ -81,16 +81,17 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter
     );
 
     if (paymentData.status === 'approved' && invoice.status !== 'paid') {
+      const fullInvoice = await queryOne('SELECT * FROM invoices WHERE id = $1', [invoiceId]);
+      let upgraded = false;
+      if (fullInvoice) {
+        upgraded = await activateTenantFromPaidInvoice(query, fullInvoice);
+      }
       await query(
         `UPDATE invoices SET status = 'paid', paid_date = NOW(), payment_method = 'mercadopago' WHERE id = $1`,
         [invoiceId]
       );
-      const fullInvoice = await queryOne('SELECT * FROM invoices WHERE id = $1', [invoiceId]);
-      if (fullInvoice) {
-        const upgraded = await activateTenantFromPaidInvoice(query, fullInvoice);
-        if (upgraded) {
-          logger.info('Plan activado tras pago MercadoPago', { tenantId: fullInvoice.tenant_id, invoiceId });
-        }
+      if (upgraded && fullInvoice) {
+        logger.info('Plan activado tras pago MercadoPago', { tenantId: fullInvoice.tenant_id, invoiceId });
       }
     }
   }
