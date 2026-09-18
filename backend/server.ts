@@ -34,6 +34,8 @@ import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 import createEmailTransporter from './services/email';
 import { isConfigured as isMercadoPagoConfigured, createPreference as mpCreatePreference } from './services/mercadopago-client';
+import { isConfigured as isStripeConfigured, createCheckoutSession as stripeCreateCheckoutSession } from './services/stripe-client';
+import { handleStripeWebhook } from './routes/stripe';
 import helmet from 'helmet';
 import compression from 'compression';
 import { initDB, query, queryOne, pool } from './database';
@@ -143,12 +145,20 @@ if (config.FORCE_HTTPS) {
     return res.redirect(301, `https://${req.get('host')}${req.originalUrl}`);
   });
 }
+// Stripe webhook: debe parsearse como RAW (el JSON parser global rompería la firma)
+app.post('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ========== CONFIGURACIÓN DE MERCADOPAGO ==========
 if (!isMercadoPagoConfigured()) {
   logger.warn('MercadoPago sin MP_ACCESS_TOKEN configurado. No se podrá procesar pagos.');
+}
+
+// ========== CONFIGURACIÓN DE STRIPE ==========
+if (!isStripeConfigured()) {
+  logger.warn('Stripe sin STRIPE_SECRET_KEY configurado. No se podrá procesar pagos internacionales.');
 }
 
 /**
@@ -187,6 +197,47 @@ async function createMercadoPagoPreference(invoice, tenant, req, returnPath = '/
     auto_return: 'approved'
   };
   return mpCreatePreference(preference);
+}
+
+/**
+ * Crea un Checkout Session de Stripe para una factura (pago único, USD).
+ * @param {{ invoice_number: string, amount: number|string, id: number, description?: string }} invoice
+ * @param {Tenant} tenant
+ * @param {import('express').Request} req
+ * @param {{ returnPath?: string, plan?: string }} [opts]
+ * @returns {Promise<any>}
+ */
+async function createStripeCheckout(invoice, tenant, req, opts: { returnPath?: string; plan?: string } = {}) {
+  const origin = getBaseUrl(req);
+  const returnPath = opts.returnPath || '/staff/dashboard';
+  const returnUrl = `${origin}${returnPath}`;
+  const stripeCurrency = process.env.STRIPE_CURRENCY || 'usd';
+
+  // Para suscripción usamos el precio USD del plan; para facturas varias el amount de la factura
+  const plan = opts.plan || (invoice.description && invoice.description.startsWith('subscription:')
+    ? invoice.description.split(':')[1]?.trim()
+    : null);
+  const unitAmount = plan && PLANS[plan]?.price_usd
+    ? PLANS[plan].price_usd
+    : parseFloat(invoice.amount);
+
+  const session = await stripeCreateCheckoutSession({
+    mode: 'payment',
+    payment_method_types: ['card'],
+    line_items: [{
+      price_data: {
+        currency: stripeCurrency,
+        product_data: { name: `Factura ${invoice.invoice_number}` },
+        unit_amount: Math.round(unitAmount * 100),
+      },
+      quantity: 1,
+    }],
+    metadata: { invoice_id: String(invoice.id), type: plan ? 'subscription' : 'invoice' },
+    success_url: `${returnUrl}?payment=success`,
+    cancel_url: `${returnUrl}?payment=failure`,
+    client_reference_id: String(invoice.id),
+  });
+  return session;
 }
 
 // Rate limiting
@@ -250,6 +301,7 @@ app.use('/p', require('./routes/public').default(generateAvailableSlots, appoint
 app.use('/api', apiLimiter);
 app.use('/api', require('./routes/auth').default(loginLimiter, passwordResetLimiter));
 app.use('/api', require('./routes/mercadopago').default(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter));
+app.use('/api', require('./routes/stripe').default(createStripeCheckout, PLANS));
 app.use('/api', require('./routes/tenant').default(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS));
 app.use('/api', require('./routes/superadmin').default(loginLimiter, createMercadoPagoPreference, MP_CURRENCY));
 app.use('/api', require('./routes/misc').default(apiLimiter));

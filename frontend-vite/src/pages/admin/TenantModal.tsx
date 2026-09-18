@@ -90,6 +90,15 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
     }
   };
 
+  const handlePayInvoiceStripe = async (invoiceId: number) => {
+    try {
+      const res = await api.post<{ checkout_url: string }>('/api/payments/stripe/create', { invoiceId });
+      if (res.checkout_url) window.location.href = res.checkout_url;
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
   const handlePayInvoiceManual = async (invoiceId: number) => {
     try {
       const res = await api.put<{ message: string }>(`/api/super-admin/invoices/${invoiceId}/pay`, { payment_method: 'manual' });
@@ -231,6 +240,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
                       {inv.status !== 'paid' && (
                         <>
                           <button className="admin-btn admin-btn-success admin-btn-sm" onClick={() => handlePayInvoiceMP(inv.id)}>{t('adminDashboard.invoicePayMP')}</button>
+                          <button className="admin-btn admin-btn-sm" onClick={() => handlePayInvoiceStripe(inv.id)}>Stripe</button>
                           <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => handlePayInvoiceManual(inv.id)}>{t('adminDashboard.invoicePayManual')}</button>
                         </>
                       )}

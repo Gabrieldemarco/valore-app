@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
@@ -5,11 +6,26 @@ import { exportInvoicePdf } from '../../../../utils/invoicePdf';
 
 export default function BillingTab() {
   const { t } = useTranslation();
+  const [provider, setProvider] = useState<'mercadopago' | 'stripe'>('mercadopago');
   const { plan, invoices, settings, loadInvoices } = useDashboard();
   const { subscribeToPlan, handlePayInvoice } = useDashboardCRUD();
 
   return (
     <div className="glass-panel mt-24 p-24">
+      <div className="flex-between gap-16 mb-18">
+        <div>
+          <h3 className="text-gradient m-0">{t('staffDashboard.billingTitle')}</h3>
+          <p className="text-muted m-0 mt-6">{t('staffDashboard.billingDescription')}</p>
+        </div>
+        <button className="dash-btn dash-btn-success" onClick={() => loadInvoices()}>{t('staffDashboard.billingRefresh')}</button>
+      </div>
+      <div className="flex align-items-center gap-16 mb-18">
+        <span className="text-muted">{t('staffDashboard.billingPaymentMethod')}</span>
+        <select className="dash-input" style={{ maxWidth: 220 }} value={provider} onChange={e => setProvider(e.target.value as 'mercadopago' | 'stripe')}>
+          <option value="mercadopago">Mercado Pago (UYU)</option>
+          <option value="stripe">Stripe (USD)</option>
+        </select>
+      </div>
       {plan ? (
         <div className="glass-panel mb-20 p-20" style={{ border: '1px solid rgba(197,168,128,0.35)' }}>
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
@@ -18,8 +34,8 @@ export default function BillingTab() {
           </p>
           {plan.status !== 'active' && (
             <div className="flex flex-wrap gap-16 mt-16">
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro')}>{t('staffDashboard.billingPlanPro')}</button>
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise')}>{t('staffDashboard.billingPlanEnterprise')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
             </div>
           )}
         </div>
@@ -28,8 +44,8 @@ export default function BillingTab() {
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
           <p className="text-muted m-0 mb-14">{t('staffDashboard.notAvailable')}</p>
           <div className="flex flex-wrap gap-16 mt-16">
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro')}>{t('staffDashboard.billingPlanPro')}</button>
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise')}>{t('staffDashboard.billingPlanEnterprise')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
           </div>
         </div>
       )}
@@ -66,7 +82,7 @@ export default function BillingTab() {
                   <td className="table-cell-pad"><span className={`dash-appointment-status dash-status-${inv.status}`}>{inv.status}</span></td>
                   <td className="table-cell-pad-center">
                     {inv.status === 'pending' && (
-                      <button className="dash-btn dash-btn-success" onClick={() => handlePayInvoice(inv.id)}>{t('staffDashboard.invoicePayButton')}</button>
+                      <button className="dash-btn dash-btn-success" onClick={() => handlePayInvoice(inv.id, provider)}>{t('staffDashboard.invoicePayButton')}</button>
                     )}
                     <button className="dash-btn" onClick={() => exportInvoicePdf(inv, settings)}>{t('staffDashboard.invoiceDownloadPdf')}</button>
                   </td>

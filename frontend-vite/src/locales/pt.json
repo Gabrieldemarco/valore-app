@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "loading": "Carregando...",
     "errorBoundary": {
@@ -580,8 +580,9 @@
     "billingPlanPro": "Plano Profissional",
     "billingPlanEnterprise": "Plano Empresarial",
     "billingTitle": "Faturamento",
-    "billingDescription": "Teste 15 dias grátis. Depois, pague aqui com Mercado Pago e seu plano é ativado na hora.",
+    "billingDescription": "Teste 15 dias grátis. Depois, pague aqui com Mercado Pago ou Stripe e seu plano é ativado na hora.",
     "billingRefresh": "Atualizar faturas",
+    "billingPaymentMethod": "Metodo de pagamento",
     "billingEmptyTitle": "Nenhuma fatura",
     "billingEmptyMessage": "Nenhuma fatura encontrada para seu salão.",
     "invoiceTableNumber": "Fatura",

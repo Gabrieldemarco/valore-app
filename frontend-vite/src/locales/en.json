@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "name": "Velsoie",
     "loading": "Loading...",
@@ -580,8 +580,9 @@
     "billingPlanPro": "Professional Plan",
     "billingPlanEnterprise": "Enterprise Plan",
     "billingTitle": "Billing",
-    "billingDescription": "15-day free trial. Afterwards, pay here with Mercado Pago and your plan activates instantly.",
+    "billingDescription": "15-day free trial. Afterwards, pay here with Mercado Pago or Stripe and your plan activates instantly.",
     "billingRefresh": "Refresh invoices",
+    "billingPaymentMethod": "Payment method",
     "billingEmptyTitle": "No invoices",
     "billingEmptyMessage": "No invoices found for your salon.",
     "invoiceTableNumber": "Invoice",

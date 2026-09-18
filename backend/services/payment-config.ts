@@ -7,43 +7,58 @@ const MP_CURRENCY = /** @type {string} */(process.env.MP_CURRENCY || 'UYU').toUp
 const MP_LOCALE = /** @type {string} */(process.env.MP_LOCALE || 'es-UY');
 const MP_COUNTRY = /** @type {string} */(process.env.MP_COUNTRY || 'UY').toUpperCase();
 
-/** @type {{ [key: string]: { price: number, name: string, currency: string } }} */
+// Stripe (internacional) se factura en USD
+const STRIPE_CURRENCY = /** @type {string} */(process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+
+/** @type {{ [key: string]: { price: number, price_usd: number, name: string, currency: string, currency_usd: string } }} */
 const PLANS = {
-  free: { price: 0, name: 'Gratuito', currency: MP_CURRENCY },
+  free: { price: 0, price_usd: 0, name: 'Gratuito', currency: MP_CURRENCY, currency_usd: STRIPE_CURRENCY },
   pro: {
     price: parseFloat(process.env.PLAN_PRO_PRICE || '990'),
+    price_usd: parseFloat(process.env.PLAN_PRO_PRICE_USD || '9.90'),
     name: 'Profesional',
     currency: MP_CURRENCY,
+    currency_usd: STRIPE_CURRENCY,
   },
   enterprise: {
     price: parseFloat(process.env.PLAN_ENTERPRISE_PRICE || '2490'),
+    price_usd: parseFloat(process.env.PLAN_ENTERPRISE_PRICE_USD || '24.90'),
     name: 'Empresarial',
     currency: MP_CURRENCY,
+    currency_usd: STRIPE_CURRENCY,
   },
 };
 
 /**
  * Carga precios de planes desde la base de datos.
- * @param {(text: string, params?: any[]) => Promise<{rows: Array<{plan_name: string, price: string, currency: string}>}>} query
+ * @param {(text: string, params?: any[]) => Promise<{rows: Array<{plan_name: string, price: string, price_usd: string, currency: string}>}>} query
  */
 async function loadPlanPricesFromDB(query) {
   try {
-    const result = await query('SELECT plan_name, price, currency FROM plan_prices ORDER BY plan_name');
+    const result = await query('SELECT plan_name, price, price_usd, currency FROM plan_prices ORDER BY plan_name');
     const prices = result.rows;
 
     for (const price of prices) {
       if (price.plan_name === 'pro') {
         PLANS.pro.price = parseFloat(price.price);
         PLANS.pro.currency = price.currency;
+        if (price.price_usd !== null && price.price_usd !== undefined) {
+          PLANS.pro.price_usd = parseFloat(price.price_usd);
+        }
       } else if (price.plan_name === 'enterprise') {
         PLANS.enterprise.price = parseFloat(price.price);
         PLANS.enterprise.currency = price.currency;
+        if (price.price_usd !== null && price.price_usd !== undefined) {
+          PLANS.enterprise.price_usd = parseFloat(price.price_usd);
+        }
       }
     }
 
     logger.info('✅ Precios de planes cargados desde DB:', {
       pro: PLANS.pro.price,
-      enterprise: PLANS.enterprise.price
+      pro_usd: PLANS.pro.price_usd,
+      enterprise: PLANS.enterprise.price,
+      enterprise_usd: PLANS.enterprise.price_usd
     });
   } catch (err: any) {
     logger.error('❌ Error cargando precios desde DB, usando valores por defecto:', err.message);

@@ -1,4 +1,4 @@
-{
+﻿{
   "app": {
     "name": "Velsoie",
     "loading": "Cargando...",
@@ -574,8 +574,9 @@
     "billingPlanPro": "Plan Profesional",
     "billingPlanEnterprise": "Plan Empresarial",
     "billingTitle": "Facturación",
-    "billingDescription": "Prueba 15 días gratis. Después, pagá acá con Mercado Pago y tu plan se activa al instante.",
+    "billingDescription": "Prueba 15 días gratis. Después, pagá acá con Mercado Pago o Stripe y tu plan se activa al instante.",
     "billingRefresh": "Actualizar facturas",
+    "billingPaymentMethod": "Metodo de pago",
     "billingEmptyTitle": "No hay facturas",
     "billingEmptyMessage": "No se encontraron facturas para tu peluquería.",
     "invoiceTableNumber": "Factura",
