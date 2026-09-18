@@ -24,6 +24,7 @@ export interface PlanInfo {
   status: string;
   trial_end_date?: string;
   trialDaysLeft?: number | null;
+  last_payment_date?: string | null;
   price?: number;
 }
 

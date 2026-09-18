@@ -29,9 +29,16 @@ export default function BillingTab() {
       {plan ? (
         <div className="glass-panel mb-20 p-20" style={{ border: '1px solid rgba(197,168,128,0.35)' }}>
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
-          <p className="text-muted m-0 mb-14">
-            {plan.plan && plan.status ? t('staffDashboard.billingPlanInfo', { plan: plan.plan, status: plan.status }) : t('staffDashboard.notAvailable')}
-          </p>
+          <div className="dash-plan-badges">
+            <span className={`dash-plan-badge dash-plan-${plan.plan}`}>{plan.plan.toUpperCase()}</span>
+            <span className={`dash-plan-badge dash-plan-status-${plan.status}`}>{t(`staffDashboard.billingStatus_${plan.status}`, plan.status)}</span>
+          </div>
+          {plan.last_payment_date && (
+            <p className="text-muted m-0 mt-8">{t('staffDashboard.billingLastPayment', { date: new Date(plan.last_payment_date).toLocaleDateString() })}</p>
+          )}
+          {plan.plan === 'free' && plan.trialDaysLeft != null && (
+            <p className="text-muted m-0 mt-8">{t('staffDashboard.billingTrialDays', { days: plan.trialDaysLeft })}</p>
+          )}
           {plan.status !== 'active' && (
             <div className="flex flex-wrap gap-16 mt-16">
               <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>

@@ -282,7 +282,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.get('/tenant/plan', authenticateStaff, async (req, res) => {
     try {
       const tenant = await queryOne(
-        `SELECT plan, status, trial_end_date, trial_start_date FROM tenants WHERE id = $1`,
+        `SELECT plan, status, trial_end_date, trial_start_date, last_payment_date FROM tenants WHERE id = $1`,
         [req.user.tenant_id]
       );
       if (!tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
@@ -298,6 +298,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
           status: tenant.status,
           trial_end_date: tenant.trial_end_date,
           trialDaysLeft,
+          last_payment_date: tenant.last_payment_date,
         },
         currency: MP_CURRENCY,
         locale: MP_LOCALE,

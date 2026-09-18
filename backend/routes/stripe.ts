@@ -22,6 +22,13 @@ async function handleCheckoutCompleted(session: any) {
   if (invoice.status === 'paid') return;
 
   const sessionId = session.id || '';
+  const fullInvoice = await queryOne('SELECT * FROM invoices WHERE id = $1', [invoiceId]);
+
+  let upgraded = false;
+  if (fullInvoice) {
+    upgraded = await activateTenantFromPaidInvoice(query, fullInvoice);
+  }
+
   await query(
     `UPDATE payments SET status = 'paid', mp_payment_id = $1, raw_payload = COALESCE(raw_payload::jsonb, '{}'::jsonb) || $2::jsonb WHERE invoice_id = $3 AND method = 'stripe'`,
     [sessionId, JSON.stringify(session), invoiceId]
@@ -30,12 +37,9 @@ async function handleCheckoutCompleted(session: any) {
     `UPDATE invoices SET status = 'paid', paid_date = NOW(), payment_method = 'stripe' WHERE id = $1`,
     [invoiceId]
   );
-  const fullInvoice = await queryOne('SELECT * FROM invoices WHERE id = $1', [invoiceId]);
-  if (fullInvoice) {
-    const upgraded = await activateTenantFromPaidInvoice(query, fullInvoice);
-    if (upgraded) {
-      logger.info('Plan activado tras pago Stripe', { tenantId: fullInvoice.tenant_id, invoiceId, sessionId });
-    }
+
+  if (upgraded && fullInvoice) {
+    logger.info('Plan activado tras pago Stripe', { tenantId: fullInvoice.tenant_id, invoiceId, sessionId });
   }
 }
 
