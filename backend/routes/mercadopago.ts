@@ -119,7 +119,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter
         [invoice.id, invoice.tenant_id, invoice.amount, MP_CURRENCY, 'mercadopago', 'pending', JSON.stringify(preference)]
       );
 
-      const checkoutUrl = preference.init_point || preference.sandbox_init_point;
+      const checkoutUrl = preference.sandbox_init_point || preference.init_point;
       res.json({ init_point: checkoutUrl, preferenceId: preference.id });
     } catch (err: any) {
       logger.error('Error creando preferencia MercadoPago', { error: err.message });

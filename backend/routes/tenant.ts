@@ -350,7 +350,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       );
 
       res.json({
-        init_point: preference.init_point || preference.sandbox_init_point,
+        init_point: preference.sandbox_init_point || preference.init_point,
         preferenceId: preference.id,
         invoiceId: invoice.id,
         plan,
@@ -400,7 +400,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       );
 
       res.json({
-        init_point: preference.init_point || preference.sandbox_init_point,
+        init_point: preference.sandbox_init_point || preference.init_point,
         preferenceId: preference.id,
       });
     } catch (err: any) {
