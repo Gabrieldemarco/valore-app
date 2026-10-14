@@ -1,4 +1,4 @@
-﻿{
+{
   "app": {
     "loading": "Carregando...",
     "errorBoundary": {
@@ -48,7 +48,7 @@
     "termsAndConditions": "Termos e Condições",
     "privacyPolicy": "Política de Privacidade",
     "cancellationPolicy": "Política de Cancelamento",
-"loadingImage": "Carregando imagem...",
+    "loadingImage": "Carregando imagem...",
     "imageLoadError": "Não foi possível carregar a imagem. Tente outro arquivo.",
     "rotate": "Rotacionar",
     "flipHorizontal": "Inverter horizontal",
@@ -282,7 +282,12 @@
     "priceOnRequest": "Preço a consultar",
     "recurringCountLabel": "Repetições",
     "recurringFrequencyLabel": "Frequência",
-    "skipStaffHint": "Você pode escolher um profissional ou continuar para atribuição automática"
+     "skipStaffHint": "Você pode escolher um profissional ou continuar para atribuição automática",
+    "selectedServices": "{{count}} serviço(s) selecionado(s)",
+    "totalDuration": "Duração total",
+    "totalPrice": "Preço total",
+    "multipleServicesTitle": "Serviços selecionados ({{count}})",
+    "continueButton": "Continuar"
   },
   "appointmentManage": {
     "notFound": "Agendamento não encontrado",
@@ -457,11 +462,8 @@
     "dayVie": "Sex",
     "daySab": "Sáb",
     "dayDom": "Dom",
-    "smtpTitle": "Configuração SMTP (email transacional)",
-    "smtpHint": "Use Gmail com App Password. A senha não é exibida por segurança.",
-    "smtpEmailLabel": "Email SMTP",
-    "smtpPasswordLabel": "Senha (App Password)",
-    "smtpPasswordHint": "Não é exibida ao carregar (salva de forma segura)",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
     "captchaTitle": "Captcha",
     "captchaEnabledLabel": "Ativar captcha em reservas públicas",
     "captchaHint": "Protege o formulário de reservas contra bots usando Cloudflare Turnstile.",
@@ -687,8 +689,11 @@
     "newApptPhonePlaceholder": "099 123 456",
     "newApptEmailLabel": "Email",
     "newApptEmailPlaceholder": "cliente@email.com",
-    "newApptServiceLabel": "Serviço *",
-    "newApptServicePlaceholder": "Selecionar...",
+     "newApptServiceLabel": "Serviço *",
+     "newApptServicePlaceholder": "Selecionar...",
+     "servicesSelected": "{{count}} serviço(s)",
+     "totalDuration": "Duração total",
+     "doneButton": "Pronto",
     "newApptStaffLabel": "Profissional",
     "newApptStaffAny": "Qualquer profissional",
     "newApptDateLabel": "Data *",
@@ -900,7 +905,9 @@
     "categoriesEmptyMessage": "Adicione sua primeira categoria para organizar os serviços.",
     "clientsHistoryTotal": "Histórico total:",
     "toastError": "Ocorreu um erro",
-    "toastLoadWaitlistError": "Erro ao carregar a lista de espera"
+    "toastLoadWaitlistError": "Erro ao carregar a lista de espera",
+    "smtpGoogleConnectSuccess": "Google conectado com sucesso",
+    "smtpGoogleConnectError": "Erro ao conectar ao Google"
   },
   "staffLandingEditor": {
     "headerTitle": "Editor de Landing",
@@ -1185,6 +1192,22 @@
     "toastTrialSet": "Conta colocada em teste corretamente",
     "toastTrialError": "Erro ao colocar em teste",
     "toastLoadError": "Erro ao carregar detalhes",
+    "pricingTitle": "Preços dos Planos",
+    "planPricesTitle": "Gestão de Preços",
+    "planName": "Plano",
+    "priceLocal": "Preço Local",
+    "priceUSD": "Preço USD",
+    "currency": "Moeda",
+    "promoPrice": "Preço Promo",
+    "promoPriceUSD": "Preço Promo USD",
+    "promoMonths": "Meses de Promo",
+    "updatedAt": "Última Atualização",
+    "noPlanPrices": "Nenhum preço configurado",
+    "toastPriceSaved": "Preço atualizado com sucesso",
+    "planFree": "Grátis",
+    "planBasico": "Básico",
+    "planEstandar": "Padrão",
+    "planPremium": "Premium",
     "error": "Erro"
   },
   "clientLogin": {

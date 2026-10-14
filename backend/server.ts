@@ -32,7 +32,7 @@ import os from 'os';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
-import createEmailTransporter from './services/email';
+import { enqueueNotification } from './services/notificationQueue';
 import { isConfigured as isMercadoPagoConfigured, createPreference as mpCreatePreference } from './services/mercadopago-client';
 import { isConfigured as isStripeConfigured, createCheckoutSession as stripeCreateCheckoutSession } from './services/stripe-client';
 import { handleStripeWebhook } from './routes/stripe';
@@ -53,6 +53,7 @@ if (process.env.SENTRY_DSN) {
   });
 }
 import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase, sendAppointmentReminders } from './cron-billing';
+import notificationWorker from './workers/notificationWorker';
 import logger, { stream as loggerStream } from './services/logger';
 import morgan from 'morgan';
 import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
@@ -105,19 +106,26 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       connectSrc: ["'self'", "https://oauth2.googleapis.com", "https://www.googleapis.com", "https://accounts.google.com"],
-      frameSrc: ["'self'", "https:", "http:", "https://challenges.cloudflare.com"],
+      // accounts.google.com necesita poder abrir iframes para el flujo OAuth (postMessage)
+      frameSrc: ["'self'", "https://accounts.google.com", "https://challenges.cloudflare.com"],
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"]
     }
-  }
+  },
+  // No usar frameguard DENY: bloquea el iframe de Google OAuth (postMessage null)
+  frameguard: false,
+  // same-origin-allow-popups: permite que el popup de Google OAuth acceda a window.opener
+  // Si fuera 'same-origin' (default), window.opener es null y postMessage falla
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 }));
+
 app.use(helmet.noSniff());
-app.use(helmet.frameguard({ action: 'deny' }));
-app.use(helmet.crossOriginResourcePolicy({ policy: 'same-origin' }));
+// CORP cross-origin para que Google pueda cargar sus recursos (GSI, fonts, etc.)
+app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 app.use(helmet.dnsPrefetchControl());
-app.use(helmet.referrerPolicy({ policy: 'no-referrer' }));
+app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
 app.use(helmet.permittedCrossDomainPolicies());
 const hpp = require('hpp');
 app.use(hpp());
@@ -147,6 +155,7 @@ if (config.FORCE_HTTPS) {
 }
 // Stripe webhook: debe parsearse como RAW (el JSON parser global rompería la firma)
 app.post('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -543,17 +552,17 @@ cron.schedule('0 9 * * *', async () => {
     const tenants = result.rows || [];
     if (tenants.length === 0) return;
 
-    const transporter = createEmailTransporter();
-
     for (const tenant of tenants) {
       const daysLeft = Math.ceil((new Date(tenant.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      await transporter.sendMail({
-        from: `"Velsoie" <${process.env.SMTP_USER}>`,
+      await enqueueNotification({
+        type: 'email',
         to: tenant.notification_email,
         subject: 'Tu prueba gratuita está por terminar',
         html: `<p>Hola ${tenant.business_name},</p><p>Tu período de prueba de 15 días finaliza en ${daysLeft} días. Para continuar usando todos los beneficios, contrata un plan.</p><p>Saludos,<br>Equipo Velsoie</p>`,
+        priority: 'normal',
+        data: { business_name: 'Velsoie' },
       });
-      logger.info(`📧 Recordatorio enviado a ${tenant.notification_email} (${daysLeft} días restantes)`);
+      logger.info(`🔔 Notificación de trial encolada para ${tenant.notification_email} (${daysLeft} días restantes)`);
     }
   } catch (err: any) {
     logger.error('Error en recordatorio de trial:', err);
@@ -647,6 +656,9 @@ function gracefulShutdown(signal) {
     pool.end().then(async () => {
       logger.info('✅ Pool de DB cerrado');
       await closeRedis();
+      try {
+        await notificationWorker.close();
+      } catch {}
       process.exit(0);
     }).catch(err => {
       logger.error('❌ Error cerrando pool:', err.message);

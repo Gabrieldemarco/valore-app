@@ -18,7 +18,7 @@ export default function AppointmentManage() {
   const [rescheduling, setRescheduling] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
-  const [availableSlots, setAvailableSlots] = useState<{ time: string; available: boolean }[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<{ time: string; datetime: string; available: boolean }[]>([]);
   const [services, setServices] = useState<{ id: number; name: string }[]>([]);
   const [recurringAppointments, setRecurringAppointments] = useState<RecurringAppointment[]>([]);
 
@@ -70,17 +70,16 @@ export default function AppointmentManage() {
       const endpoint = appointment.staff_id
         ? `/p/${slug}/staff/${appointment.staff_id}/availability?date=${date}&serviceId=${service.id}`
         : `/p/${slug}/availability?date=${date}&serviceId=${service.id}`;
-      const data = await api.get<{ slots: { time: string; available: boolean }[] }>(endpoint);
+      const data = await api.get<{ slots: { time: string; datetime: string; available: boolean }[] }>(endpoint);
       setAvailableSlots(data.slots || []);
     } catch { /* silent */ }
   }
 
   async function handleReschedule() {
-    if (!newDate || !newTime) return;
+    if (!newTime) return;
     setActionLoading(true);
     try {
-      const appointmentDate = `${newDate}T${newTime}:00`;
-      const body: { appointmentDate: string; staffId?: number } = { appointmentDate };
+      const body: { appointmentDate: string; staffId?: number } = { appointmentDate: newTime };
       if (appointment?.staff_id) body.staffId = appointment.staff_id;
       const data = await api.put<{ appointment: Appointment }>(`/p/${slug}/appointments/manage/${token}/reschedule`, body);
       setMessage(t('appointmentManage.rescheduleSuccess'));

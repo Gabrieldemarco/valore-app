@@ -95,7 +95,7 @@ export default function ResetPassword() {
       return;
     }
     try {
-      await api.post('/api/staff/reset-password', { token, password });
+      await api.post('/api/staff/reset-password', { token, newPassword: password });
       setSuccess(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('staffResetPassword.error'));

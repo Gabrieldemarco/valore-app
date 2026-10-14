@@ -8,12 +8,14 @@ const config = require('../config');
 import { query, queryOne, pool, getClient } from '../database';
 import logger from '../services/logger';
 import { AppError } from '../services/errors';
-import { getOrCreateSubscriptionInvoice } from '../services/billing';
+import { getOrCreateSubscriptionInvoice, getPaidInvoiceCount, getEffectivePlanPrice } from '../services/billing';
+import { normalizePlan } from '../services/payment-config';
 import { sendClientConfirmation, notifyStaff, sendStaffCredentials } from '../services/notifications';
 import { validate,
   authenticateStaff,
   checkTenantActive,
-  checkTrialExpiration, } from '../middleware';
+  checkTrialExpiration,
+  checkPlanLimits, } from '../middleware';
 
 /**
  * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} createMercadoPagoPreference
@@ -128,17 +130,41 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('clientName').trim().isLength({ min: 1, max: 100 }).withMessage('Nombre requerido').escape(),
     body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
     body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
-    body('serviceId').isInt({ min: 1 }).withMessage('Servicio inválido'),
+    body('serviceId').optional({ values: 'null', nullable: true }).isInt({ min: 1 }).withMessage('Servicio inválido'),
+    body('serviceIds').optional({ values: 'null', nullable: true }).isArray().withMessage('serviceIds debe ser un array'),
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
   ], validate, async (req, res) => {
     try {
-      const { serviceId, staffId, appointmentDate } = req.body;
+      const { serviceId, serviceIds, staffId, appointmentDate, clientName, clientPhone, clientEmail } = req.body;
       if (new Date(appointmentDate) <= new Date()) {
         return res.status(400).json({ error: 'La fecha del turno debe ser futura' });
       }
+      if (!serviceId && !serviceIds) {
+        return res.status(400).json({ error: 'Datos obligatorios faltantes' });
+      }
 
-      const resolved = await resolveServiceAndStaffForStaffAppointment(serviceId, staffId, req.user.tenant_id, res);
-      if (!resolved) return;
+      let resolved;
+      if (serviceIds) {
+        const ids = serviceIds;
+        const servicesResult = await query('SELECT * FROM services WHERE id = ANY($1) AND tenant_id = $2 AND active = true', [ids, req.user.tenant_id]);
+        if (servicesResult.rows.length === 0) return res.status(404).json({ error: 'Servicio no disponible' });
+        const combinedService = {
+          id: servicesResult.rows[0].id,
+          name: servicesResult.rows.map(s => s.name).join(' + '),
+          duration: servicesResult.rows.reduce((sum, s) => sum + s.duration, 0),
+          price: servicesResult.rows.reduce((sum, s) => sum + parseFloat(s.price || 0), 0),
+          deposit_amount: servicesResult.rows.reduce((sum, s) => sum + parseFloat(s.deposit_amount || 0), 0),
+        };
+        resolved = { service: combinedService, validStaffId: staffId || null };
+        if (staffId) {
+          const staffMember = await queryOne('SELECT id FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true', [staffId, req.user.tenant_id]);
+          if (!staffMember) return res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
+          resolved.validStaffId = staffMember.id;
+        }
+      } else {
+        resolved = await resolveServiceAndStaffForStaffAppointment(serviceId, staffId, req.user.tenant_id, res);
+        if (!resolved) return;
+      }
 
       const newAppointment = await insertStaffAppointment(req.user.tenant_id, req.body, resolved.service, resolved.validStaffId);
       if (!newAppointment) {
@@ -299,13 +325,19 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
           trial_end_date: tenant.trial_end_date,
           trialDaysLeft,
           last_payment_date: tenant.last_payment_date,
+          plans: {
+            basico: { ...PLANS.basico, id: 'basico' },
+            estandar: { ...PLANS.estandar, id: 'estandar' },
+            premium: { ...PLANS.premium, id: 'premium' },
+          },
         },
         currency: MP_CURRENCY,
         locale: MP_LOCALE,
         country: MP_COUNTRY,
         plans: {
-          pro: { ...PLANS.pro, id: 'pro' },
-          enterprise: { ...PLANS.enterprise, id: 'enterprise' },
+          basico: { ...PLANS.basico, id: 'basico' },
+          estandar: { ...PLANS.estandar, id: 'estandar' },
+          premium: { ...PLANS.premium, id: 'premium' },
         },
       });
     } catch (err: any) {
@@ -315,14 +347,14 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   });
 
   router.post('/tenant/subscribe', authenticateStaff, [
-    body('plan').optional().isIn(['pro', 'enterprise']).withMessage('Plan no válido'),
+    body('plan').isIn(['basico', 'estandar', 'premium', 'pro', 'enterprise']).withMessage('Plan no válido'),
   ], validate, async (req, res) => {
     try {
       if (!process.env.MP_ACCESS_TOKEN) {
         return res.status(503).json({ error: 'Mercado Pago no está configurado. Contactá al administrador.' });
       }
 
-      const plan = (req.body.plan || 'pro').toLowerCase();
+      const plan = normalizePlan(req.body.plan);
       if (!PLANS[plan] || plan === 'free') {
         return res.status(400).json({ error: 'Plan no válido' });
       }
@@ -337,8 +369,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         return res.status(400).json({ error: 'Ya tenés este plan activo' });
       }
 
+      const paidCycles = await getPaidInvoiceCount(query, req.user.tenant_id);
+      const effective = getEffectivePlanPrice(PLANS[plan], paidCycles);
+
       const invoice = await getOrCreateSubscriptionInvoice(
-        query, queryOne, req.user.tenant_id, plan, PLANS[plan].price
+        query, queryOne, req.user.tenant_id, plan, effective.price
       );
 
       const preference = await createMercadoPagoPreference(invoice, tenant, req, '/staff/dashboard');
@@ -630,6 +665,10 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     try {
       const { name, email, role = 'staff', specialties = [], photo_url, bio, commission_type, commission_value } = req.body;
 
+      if (!(await checkPlanLimits(req.user.tenant_id, 'staff'))) {
+        return res.status(403).json({ error: 'Tu plan no permite crear más profesionales' });
+      }
+
       const exists = await queryOne(
         'SELECT id FROM staff WHERE email = $1 AND tenant_id = $2',
         [email, req.user.tenant_id]
@@ -830,6 +869,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.post('/tenant/services', authenticateStaff, checkTenantActive, createServiceValidation, validate, async (req, res) => {
     try {
       const { name, duration, price, category, category_id, description, image } = req.body;
+
+      if (!(await checkPlanLimits(req.user.tenant_id, 'services'))) {
+        return res.status(403).json({ error: 'Tu plan no permite crear más servicios' });
+      }
+
       const existing = await queryOne(
         'SELECT id FROM services WHERE LOWER(name) = LOWER($1) AND tenant_id = $2',
         [name, req.user.tenant_id]
@@ -1345,6 +1389,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.post('/tenant/products', authenticateStaff, checkTenantActive, productValidation, validate, async (req, res) => {
     try {
       const { name, description, price, cost, stock, min_stock, category, sku, image_url } = req.body;
+
+      if (!(await checkPlanLimits(req.user.tenant_id, 'products'))) {
+        return res.status(403).json({ error: 'Tu plan no permite crear más productos' });
+      }
+
       const result = await query(
         `INSERT INTO products (tenant_id, name, description, price, cost, stock, min_stock, category, sku, image_url)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,

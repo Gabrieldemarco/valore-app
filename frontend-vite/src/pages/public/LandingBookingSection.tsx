@@ -7,7 +7,6 @@ import BookingDatePicker from './booking/BookingDatePicker';
 import BookingTimeSlots from './booking/BookingTimeSlots';
 import BookingClientForm from './booking/BookingClientForm';
 import type { ServiceImage, ServiceItem, StaffMember, SlotItem } from './booking/types';
-
 interface LandingBookingSectionProps {
   staff: StaffMember[];
   services: ServiceItem[];
@@ -17,8 +16,9 @@ interface LandingBookingSectionProps {
   step: number;
   selectedStaff: number | null;
   selectedService: number | null;
+  selectedServices: number[];
   selectedDate: string;
-  selectedTime: string;
+  selectedSlot: SlotItem | null;
   clientName: string;
   clientPhone: string;
   clientEmail: string;
@@ -41,8 +41,9 @@ interface LandingBookingSectionProps {
   onSetStep: (step: number) => void;
   onSetSelectedStaff: (id: number | null) => void;
   onSetSelectedService: (id: number | null) => void;
+  onSetSelectedServices: (ids: number[]) => void;
   onSetSelectedDate: (date: string) => void;
-  onSetSelectedTime: (time: string) => void;
+  onSetSelectedSlot: (slot: SlotItem | null) => void;
   onSetClientName: (v: string) => void;
   onSetClientPhone: (v: string) => void;
   onSetClientEmail: (v: string) => void;
@@ -72,13 +73,13 @@ interface LandingBookingSectionProps {
 
 export default function LandingBookingSection({
   staff, services, slots, slotsTimeout, onOpenServiceLightbox,
-  step, selectedStaff, selectedService, selectedDate, selectedTime,
+  step, selectedStaff, selectedServices, selectedDate, selectedSlot,
   clientName, clientPhone, clientEmail, clientNotes,
   couponCode, couponDiscount,
   msg, errMsg, isQuickBook, quickBookError, tenantSlug,
   calMonth, calYear, today, monthNames, dayNames, daysInMonth, firstDayOfMonth,
   fixImageUrl,
-  onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
+  onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedServices, onSetSelectedDate, onSetSelectedSlot,
   onSetClientName, onSetClientPhone, onSetClientEmail, onSetClientNotes,
   onSetCouponCode, onSetCouponDiscount,
   onSetCalMonth, onSetCalYear, onSubmit,
@@ -115,14 +116,14 @@ export default function LandingBookingSection({
     return () => { const s = document.getElementById(id); if (s) s.remove(); };
   }, [captchaEnabled, captchaSiteKey, step, captchaToken, onSetCaptchaToken]);
 
-  const resetBooking = () => {
-    if (isQuickBook) {
-      onSetStep(3); onSetSelectedDate(''); onSetSelectedTime('');
-    } else {
-      onSetStep(1); onSetSelectedStaff(null); onSetSelectedService(null);
-      onSetSelectedDate(''); onSetSelectedTime('');
-    }
-  };
+   const resetBooking = () => {
+     if (isQuickBook) {
+       onSetStep(3); onSetSelectedDate(''); onSetSelectedSlot(null);
+     } else {
+       onSetStep(1); onSetSelectedStaff(null); onSetSelectedService(null); onSetSelectedServices([]);
+       onSetSelectedDate(''); onSetSelectedSlot(null);
+     }
+   };
 
   return (
     <>
@@ -171,10 +172,21 @@ export default function LandingBookingSection({
             </label>
             <BookingServiceAccordion
               services={services}
-              selectedService={selectedService}
+              selectedServices={selectedServices}
               fixImageUrl={fixImageUrl}
               onOpenServiceLightbox={onOpenServiceLightbox}
-              onSelect={(id) => { onSetSelectedService(id); onSetStep(3); }}
+              onToggle={(id) => {
+                const updated = selectedServices.includes(id)
+                  ? selectedServices.filter(s => s !== id)
+                  : [...selectedServices, id];
+                onSetSelectedServices(updated);
+              }}
+              onContinue={() => {
+                if (selectedServices.length > 0) {
+                  onSetSelectedService(selectedServices[0]);
+                  onSetStep(3);
+                }
+              }}
             />
           </div>
         )}
@@ -206,8 +218,8 @@ export default function LandingBookingSection({
             <BookingTimeSlots
               slots={slots}
               slotsTimeout={slotsTimeout}
-              selectedTime={selectedTime}
-              onSetSelectedTime={onSetSelectedTime}
+              selectedSlot={selectedSlot}
+              onSetSelectedSlot={onSetSelectedSlot}
               onSetStep={onSetStep}
               showWaitlistForm={showWaitlistForm}
               waitlistMsg={waitlistMsg}
@@ -234,8 +246,9 @@ export default function LandingBookingSection({
               recurringFrequency={recurringFrequency} onSetRecurringFrequency={onSetRecurringFrequency}
               recurringCount={recurringCount} onSetRecurringCount={onSetRecurringCount}
               onSetStep={onSetStep} onSubmit={onSubmit}
-              services={services} selectedService={selectedService}
-              selectedDate={selectedDate} selectedTime={selectedTime}
+              services={services}
+              selectedServices={selectedServices}
+              selectedDate={selectedDate} selectedSlot={selectedSlot}
               selStaff={selStaff} fixImageUrl={fixImageUrl}
             />
             {captchaEnabled && captchaSiteKey && (

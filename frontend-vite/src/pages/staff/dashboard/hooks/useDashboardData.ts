@@ -3,7 +3,7 @@ import { api, clearApiCache } from '../../../../api/client';
 import type {
   Appointment, PlanInfo, Invoice, StaffMember, ServiceItem,
   CategoryItem, TenantSettings, ClientSummary, ProductItem,
-  CalendarStatus, AnalyticsSummary, Tab,
+   CalendarStatus, AnalyticsSummary, Tab,
 } from '../dashboardContext';
 
 export interface DashboardDataParams {
@@ -185,8 +185,8 @@ export function useDashboardData(params: DashboardDataParams) {
     loadClients();
     loadCoupons();
     loadProducts();
-    loadCalendarStatus();
-    api.get<{ blockedDates: { id: number; date: string; reason: string }[] }>('/api/tenant/blocked-dates')
+     loadCalendarStatus();
+     api.get<{ blockedDates: { id: number; date: string; reason: string }[] }>('/api/tenant/blocked-dates')
       .then(d => setBlockedDates(d.blockedDates)).catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
@@ -208,8 +208,8 @@ export function useDashboardData(params: DashboardDataParams) {
     loadCategories,
     loadClients,
     loadProducts,
-    loadCalendarStatus,
-    loadInvoices,
+     loadCalendarStatus,
+     loadInvoices,
     loadAnalytics,
     loadCoupons,
   };

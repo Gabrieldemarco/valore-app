@@ -4,7 +4,7 @@ import BookingFormHeader from "./components/BookingFormHeader";
 import BookingFormFields from "./components/BookingFormFields";
 import BookingCaptcha from "./components/BookingCaptcha";
 
-import type { ServiceItem, StaffMember } from "./types";
+import type { ServiceItem, StaffMember, SlotItem } from "./types";
 import "./booking.css";
 
 interface CouponDiscount {
@@ -39,9 +39,9 @@ interface BookingClientFormProps {
   onSetStep: (step: number) => void;
   onSubmit: () => void;
   services: ServiceItem[];
-  selectedService: number | null;
+  selectedServices: number[];
   selectedDate: string;
-  selectedTime: string;
+  selectedSlot: SlotItem | null;
   selStaff: StaffMember | null;
   fixImageUrl: (url: string | null) => string;
 }
@@ -68,20 +68,20 @@ const BookingClientForm: React.FC<BookingClientFormProps> = ({
   onSetRecurringFrequency,
   recurringCount,
   onSetRecurringCount,
-  onSetStep,
-  onSubmit,
-  services,
-  selectedService,
-  selectedDate,
-  selectedTime,
-  selStaff,
-  fixImageUrl,
+   onSetStep,
+   onSubmit,
+    services,
+    selectedServices,
+    selectedDate,
+    selectedSlot,
+   selStaff,
+   fixImageUrl,
 }) => {
   const { t } = useTranslation();
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
 
-  const selectedServiceObj = services.find((s) => s.id === selectedService);
+  const selectedServiceObjs = services.filter(s => selectedServices.includes(s.id));
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -110,9 +110,9 @@ const BookingClientForm: React.FC<BookingClientFormProps> = ({
     <div className="booking-client-form">
       <BookingFormHeader
         selStaff={selStaff}
-        selectedServiceObj={selectedServiceObj}
+        selectedServices={selectedServiceObjs}
         selectedDate={selectedDate}
-        selectedTime={selectedTime}
+        selectedSlot={selectedSlot}
         fixImageUrl={fixImageUrl}
       />
 

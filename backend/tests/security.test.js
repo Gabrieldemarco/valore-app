@@ -31,9 +31,16 @@ describe('Seguridad - Headers', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
-  test('X-Frame-Options: DENY', async () => {
+  test('X-Frame-Options: DISABLED para OAuth (frameguard: false)', async () => {
     const res = await request(app).get('/');
-    expect(res.headers['x-frame-options']).toBe('DENY');
+    expect(res.headers['x-frame-options']).toBeUndefined();
+  });
+
+  test('CSP incluye accounts.google.com en frame-src para OAuth', async () => {
+    const res = await request(app).get('/');
+    const csp = res.headers['content-security-policy'];
+    expect(csp).toBeDefined();
+    expect(csp).toContain('accounts.google.com');
   });
 
   test('Content-Security-Policy presente', async () => {

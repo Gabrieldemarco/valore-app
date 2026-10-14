@@ -16,6 +16,7 @@ export interface Salon {
   lng?: number;
   distance?: number;
   category?: string;
+  min_price?: number | string;
 }
 
 function getInitials(name: string): string {
@@ -79,6 +80,11 @@ export default function SalonCard({ salon, defaultServices }: SalonCardProps) {
               <span key={i} className="service-tag">{typeof s === 'object' ? (s as { name?: string }).name : s}</span>
             ))}
           </div>
+          {salon.min_price != null && Number(salon.min_price) > 0 && (
+            <div className="salon-price">
+              {t('landingServices.pricePrefix')}{Number(salon.min_price) % 1 === 0 ? Number(salon.min_price).toString() : Number(salon.min_price).toFixed(2)}
+            </div>
+          )}
           <div className="salon-footer">
             <div className="salon-rating">
               <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 13, height: 13, fill: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5 }}>

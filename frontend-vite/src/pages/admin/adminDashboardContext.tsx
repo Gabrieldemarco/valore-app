@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Tenant, Stats, TwilioConfig } from './types';
+import type { Tenant, Stats, TwilioConfig, PlanPrice } from './types';
 
 interface AdminDashboardContextValue {
   stats: Stats | null;
@@ -12,6 +12,8 @@ interface AdminDashboardContextValue {
   setSearch: (v: string) => void;
   twilioConfig: TwilioConfig;
   setTwilioConfig: React.Dispatch<React.SetStateAction<TwilioConfig>>;
+  planPrices: PlanPrice[];
+  setPlanPrices: React.Dispatch<React.SetStateAction<PlanPrice[]>>;
   loadData: () => void;
   toastMsg: string;
   toastType: 'success' | 'error';
@@ -36,6 +38,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const [toastMsg, setToastMsg] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [twilioConfig, setTwilioConfig] = useState<TwilioConfig>({ account_sid: '', auth_token: '', from: '' });
+  const [planPrices, setPlanPrices] = useState<PlanPrice[]>([]);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToastMsg(msg);
@@ -50,9 +53,10 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const loadData = useCallback(() => {
     api.get<Stats>('/api/super-admin/stats/billing').then(setStats).catch(() => {});
     api.get<{ tenants: Tenant[] }>('/api/super-admin/tenants').then(r => setTenants(r.tenants)).catch(() => {});
-    api.get<{ config: Record<string, unknown> }>('/api/super-admin/config').then(r => {
+     api.get<{ config: Record<string, unknown> }>('/api/super-admin/config').then(r => {
       if (r.config?.twilio) setTwilioConfig(r.config.twilio as TwilioConfig);
     }).catch(() => {});
+    api.get<{ prices: PlanPrice[] }>('/api/super-admin/plan-prices').then(r => setPlanPrices(r.prices || [])).catch(() => {});
   }, []);
 
   useEffect(loadData, [loadData]);
@@ -68,8 +72,10 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     filtered,
     search,
     setSearch,
-    twilioConfig,
+     twilioConfig,
     setTwilioConfig,
+    planPrices,
+    setPlanPrices,
     loadData,
     toastMsg,
     toastType,

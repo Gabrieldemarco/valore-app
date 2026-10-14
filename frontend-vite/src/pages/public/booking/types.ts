@@ -28,5 +28,6 @@ export interface StaffMember {
 
 export interface SlotItem {
   time: string;
+  datetime: string;
   available: boolean;
 }

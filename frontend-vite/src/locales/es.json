@@ -1,4 +1,4 @@
-﻿{
+{
   "app": {
     "name": "Velsoie",
     "loading": "Cargando...",
@@ -48,7 +48,7 @@
     "termsAndConditions": "Términos y Condiciones",
     "privacyPolicy": "Política de Privacidad",
     "cancellationPolicy": "Política de Cancelaciones",
-"loadingImage": "Cargando imagen...",
+    "loadingImage": "Cargando imagen...",
     "imageLoadError": "No se pudo cargar la imagen. Probá con otro archivo.",
     "rotate": "Rotar",
     "flipHorizontal": "Voltear horizontal",
@@ -282,7 +282,12 @@
     "joinWaitlist": "Unirme a lista de espera",
     "waitlistFormTitle": "Lista de Espera",
     "waitlistFormHint": "Te avisaremos cuando haya un turno disponible.",
-    "waitlistConfirm": "Sí, avisarme"
+    "waitlistConfirm": "Sí, avisarme",
+    "selectedServices": "{{count}} servicio(s) seleccionado(s)",
+    "totalDuration": "Duración total",
+    "totalPrice": "Precio total",
+    "multipleServicesTitle": "Servicios seleccionados ({{count}})",
+    "continueButton": "Continuar"
   },
   "appointmentManage": {
     "notFound": "Turno no encontrado",
@@ -451,11 +456,8 @@
     "dayVie": "Vie",
     "daySab": "Sáb",
     "dayDom": "Dom",
-    "smtpTitle": "Configuración SMTP (correo transaccional)",
-    "smtpHint": "Usá Gmail con App Password. La contraseña no se muestra por seguridad.",
-    "smtpEmailLabel": "Email SMTP",
-    "smtpPasswordLabel": "Contraseña (App Password)",
-    "smtpPasswordHint": "No se muestra al cargar (guardada de forma segura)",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "captchaTitle": "Captcha",
     "captchaEnabledLabel": "Activar captcha en reservas públicas",
     "captchaHint": "Protege el formulario de reservas contra bots usando Cloudflare Turnstile.",
@@ -681,8 +683,11 @@
     "newApptPhonePlaceholder": "099 123 456",
     "newApptEmailLabel": "Email",
     "newApptEmailPlaceholder": "cliente@email.com",
-    "newApptServiceLabel": "Servicio *",
-    "newApptServicePlaceholder": "Seleccionar...",
+     "newApptServiceLabel": "Servicio *",
+     "newApptServicePlaceholder": "Seleccionar...",
+     "servicesSelected": "{{count}} servicio(s)",
+     "totalDuration": "Duración total",
+     "doneButton": "Listo",
     "newApptStaffLabel": "Peluquero",
     "newApptStaffAny": "Cualquier profesional",
     "newApptDateLabel": "Fecha *",
@@ -900,7 +905,9 @@
     "categoriesEmptyMessage": "Agregá tu primera categoría para organizar tus servicios.",
     "clientsHistoryTotal": "Historial total:",
     "toastError": "Ocurrió un error",
-    "toastLoadWaitlistError": "Error al cargar la lista de espera"
+    "toastLoadWaitlistError": "Error al cargar la lista de espera",
+    "smtpGoogleConnectSuccess": "Google conectado correctamente",
+    "smtpGoogleConnectError": "Error al conectar con Google"
   },
   "staffLandingEditor": {
     "headerTitle": "Editor de Landing",
@@ -1185,6 +1192,22 @@
     "toastTrialSet": "Cuenta puesta en trial correctamente",
     "toastTrialError": "Error al poner en trial",
     "toastLoadError": "Error al cargar detalles",
+    "pricingTitle": "Precios de Planes",
+    "planPricesTitle": "Gestión de Precios",
+    "planName": "Plan",
+    "priceLocal": "Precio Local",
+    "priceUSD": "Precio USD",
+    "currency": "Moneda",
+    "promoPrice": "Precio Promo",
+    "promoPriceUSD": "Precio Promo USD",
+    "promoMonths": "Meses de Promo",
+    "updatedAt": "Última Actualización",
+    "noPlanPrices": "No hay precios configurados",
+    "toastPriceSaved": "Precio actualizado correctamente",
+    "planFree": "Gratis",
+    "planBasico": "Básico",
+    "planEstandar": "Estándar",
+    "planPremium": "Premium",
     "error": "Error"
   },
   "clientLogin": {

@@ -6,7 +6,7 @@ interface AppointmentActionsProps {
   rescheduling: boolean;
   newDate: string;
   newTime: string;
-  availableSlots: { time: string; available: boolean }[];
+  availableSlots: { time: string; datetime: string; available: boolean }[];
   onCancel: () => void;
   onStartReschedule: () => void;
   onCancelReschedule: () => void;
@@ -55,9 +55,9 @@ export default function AppointmentActions({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                   {availableSlots.map(slot => (
                     <button key={slot.time}
-                      onClick={() => onTimeSelect(slot.time)}
-                      style={{
-                        ...slotStyle(slot.time === newTime),
+              onClick={() => onTimeSelect(slot.datetime)}
+                       style={{
+                         ...slotStyle(slot.datetime === newTime),
                         opacity: slot.available ? 1 : 0.4,
                         cursor: slot.available ? 'pointer' : 'not-allowed',
                       }}>

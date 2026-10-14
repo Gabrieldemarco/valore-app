@@ -40,10 +40,9 @@ const staffToken = jwt.sign(
   { expiresIn: '1h' }
 );
 
-/** Mock identifyTenant: queryOne(tenant) + query(set_config) */
 function mockIdentifyTenant() {
   queryOne.mockResolvedValueOnce({
-    id: 1, slug: 'test', status: 'active', plan: 'pro',
+    id: 1, slug: 'test', status: 'active', plan: 'estandar',
     business_name: 'Test Pelu',
     brand_primary_color: '#2563eb', brand_secondary_color: '#7c3aed',
     opening_hours: { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] },
@@ -55,13 +54,13 @@ function mockIdentifyTenant() {
 /** Mock full public booking route: identifyTenant + checkPlanLimits */
 function mockPublicBooking() {
   mockIdentifyTenant();
-  queryOne.mockResolvedValueOnce({ plan: 'pro' });
+  queryOne.mockResolvedValueOnce({ plan: 'estandar' });
 }
 
 /** Mock checkTenantActive + checkTrialExpiration (used in staff routes) */
 function mockActiveTenant() {
-  queryOne.mockResolvedValueOnce({ status: 'active', plan: 'pro' });
-  queryOne.mockResolvedValueOnce({ status: 'active', plan: 'pro' });
+  queryOne.mockResolvedValueOnce({ status: 'active', plan: 'estandar' });
+  queryOne.mockResolvedValueOnce({ status: 'active', plan: 'estandar' });
 }
 
 describe('Appointments', () => {

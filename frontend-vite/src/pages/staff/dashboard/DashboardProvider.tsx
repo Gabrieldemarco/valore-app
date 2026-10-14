@@ -7,7 +7,7 @@ import DashboardContext from './dashboardContext';
 import type {
   Appointment, PlanInfo, Invoice, StaffMember, ServiceItem,
   CategoryItem, TenantSettings, ClientSummary, ProductItem,
-  CalendarStatus, AnalyticsSummary, Tab, Toast, DashboardContextType,
+   CalendarStatus, AnalyticsSummary, Tab, Toast, DashboardContextType,
 } from './dashboardContext';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useDashboardSync } from './hooks/useDashboardSync';
@@ -75,14 +75,14 @@ export default function DashboardProvider({ children }: { children: ReactNode })
 
   const {
     loadAppointments, loadServices, loadCategories, loadClients, loadProducts,
-    loadCalendarStatus, loadInvoices, loadAnalytics,
+     loadCalendarStatus, loadInvoices, loadAnalytics,
   } = useDashboardData({
     filterStatus, filterDate, filterMode, selectedStaff, page,
     analyticsDateRange, activeTab, addToast, t,
     setSettings, setOpeningHours, setPlan,
     setAppointments, setInvoices, setStaffList,
     setServicesList, setCategories, setClientsList,
-    setProductsList, setCalendarStatus, setCouponsList,
+    setProductsList,     setCalendarStatus, setCouponsList,
     setBlockedDates, setTotalPages, setTotalAppointments,
     setLoading, setAnalyticsSummary, setRevenueByMonth,
     setTopServices, setRevenueByStaff, setAnalyticsLoading,
@@ -130,6 +130,23 @@ export default function DashboardProvider({ children }: { children: ReactNode })
       addToast(t('staffDashboard.calendarSyncConnectError'), 'error');
       const url = new URL(window.location.href);
       url.searchParams.delete('calendar');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [addToast, t]);
+
+  // SMTP Google Auth result
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const smtpResult = params.get('smtp');
+    if (smtpResult === 'connected') {
+      addToast(t('staffDashboard.smtpGoogleConnectSuccess'), 'success'); // eslint-disable-line react-hooks/set-state-in-effect
+      const url = new URL(window.location.href);
+      url.searchParams.delete('smtp');
+      window.history.replaceState({}, '', url.toString());
+    } else if (smtpResult === 'error') {
+      addToast(t('staffDashboard.smtpGoogleConnectError'), 'error');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('smtp');
       window.history.replaceState({}, '', url.toString());
     }
   }, [addToast, t]);
@@ -186,15 +203,15 @@ export default function DashboardProvider({ children }: { children: ReactNode })
     clientHistory, clientHistoryLoading,
     openClientHistory,
     loadAppointments, loadServices, loadCategories, loadClients, loadProducts,
-    loadAnalytics, loadCalendarStatus, loadInvoices,
+    loadCalendarStatus, loadInvoices, loadAnalytics,
     flatCats,
     couponsList, setCouponsList,
     blockedDates, setBlockedDates,
     staffName,
   }), [
     activeTab, showSettings, settings, openingHours, plan, appointments, invoices,
-    staffList, servicesList, categories, clientsList, productsList, calendarStatus,
-    couponsList, blockedDates,
+     staffList, servicesList, categories, clientsList, productsList, calendarStatus,
+     couponsList, blockedDates,
     analyticsSummary, revenueByMonth, topServices, revenueByStaff,
     analyticsLoading, analyticsError, analyticsDateRange,
     loading, page, totalPages, totalAppointments,
@@ -203,7 +220,7 @@ export default function DashboardProvider({ children }: { children: ReactNode })
     flatCats, staffName,
     addToast, openClientHistory,
     loadAppointments, loadServices, loadCategories, loadClients, loadProducts,
-    loadAnalytics, loadCalendarStatus, loadInvoices,
+     loadAnalytics, loadCalendarStatus, loadInvoices,
   ]);
 
   return (

@@ -368,10 +368,10 @@
 }
 
 .landing-view .service-price {
-  font-weight: 700;
-  color: var(--primary);
-  font-size: 1.25rem;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
 }
 
 .landing-view .gallery-grid {
@@ -934,9 +934,9 @@
 }
 
 .landing-view .booking-service-price {
-  font-weight: 800;
-  color: var(--accent);
-  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
 /* ========== STEP CONFIRMATION SUMMARY ========== */

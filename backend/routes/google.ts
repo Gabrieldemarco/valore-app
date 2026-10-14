@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { query, queryOne } from '../database';
 import config from '../config';
 import logger from '../services/logger';
+import { exchangeCodeForSmtpTokens, storeSmtpTokens } from '../services/google-smtp';
 
 const GOOGLE_CLIENT_ID = config.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = config.GOOGLE_CLIENT_SECRET;
@@ -68,7 +69,43 @@ export default function googleAuth() {
 
   router.get('/auth/google/callback', async (req, res) => {
     try {
-      const { code } = req.query;
+      const { code, state } = req.query;
+
+      if (state) {
+        try {
+          const stateData = JSON.parse(Buffer.from((state as string) || '{}', 'base64').toString('utf-8'));
+          if (stateData.staff_id) {
+            if (!code) {
+              return res.redirect(`${FRONTEND_URL}/staff/dashboard?smtp=error&reason=no_code`);
+            }
+
+            const tokenData = await exchangeCodeForSmtpTokens(code as string);
+            if (!tokenData.access_token) {
+              logger.error('SMTP token exchange error:', tokenData);
+              return res.redirect(`${FRONTEND_URL}/staff/dashboard?smtp=error&reason=token_exchange`);
+            }
+
+            const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+              headers: { Authorization: `Bearer ${tokenData.access_token}` },
+            });
+            const userInfo: any = await userInfoResp.json();
+            if (!userInfo.email) {
+              return res.redirect(`${FRONTEND_URL}/staff/dashboard?smtp=error&reason=email_required`);
+            }
+
+            const tenantId = stateData.tenant_id;
+            if (!tenantId) {
+              return res.redirect(`${FRONTEND_URL}/staff/dashboard?smtp=error&reason=tenant_required`);
+            }
+
+            await storeSmtpTokens(tenantId, tokenData, userInfo.email);
+            await query('UPDATE tenants SET smtp_email = $1 WHERE id = $2', [userInfo.email, tenantId]);
+
+            return res.redirect(`${FRONTEND_URL}/staff/dashboard?smtp=connected`);
+          }
+        } catch { /* not SMTP state, fall through to client login */ }
+      }
+
       if (!code) {
         return res.redirect(`${FRONTEND_URL}/client/login?error=google_auth_failed`);
       }

@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 require('dotenv').config();
 const config = require('./config');
+const { applyMigrations } = require('./migrations/run-migrations');
 import logger from './services/logger';
 
 const isLocal = (process.env.DATABASE_URL || '').includes('localhost') || (process.env.DATABASE_URL || '').includes('127.0.0.1');
@@ -76,313 +77,10 @@ async function initDB() {
   try {
     logger.info('🔌 Conectando a DB...');
 
-    await client.query('SELECT 1'); // test conexión
+    await client.query('SELECT 1');
 
-    await client.query(`
-      -- (tu SQL intacto)
-      CREATE TABLE IF NOT EXISTS tenants (
-        id SERIAL PRIMARY KEY,
-        slug TEXT UNIQUE NOT NULL,
-        business_name TEXT NOT NULL,
-        business_address TEXT,
-        business_phone TEXT,
-        notification_email TEXT,
-        notification_whatsapp TEXT,
-        smtp_email TEXT,
-        smtp_password TEXT,
-        brand_primary_color TEXT DEFAULT '#2563eb',
-        brand_secondary_color TEXT DEFAULT '#7c3aed',
-        brand_logo_url TEXT,
-        landing_enabled BOOLEAN DEFAULT true,
-        landing_description TEXT,
-        landing_hero_image TEXT,
-        landing_gallery JSONB DEFAULT '[]',
-        landing_team JSONB DEFAULT '[]',
-        landing_services_info JSONB DEFAULT '[]',
-        landing_social_links JSONB DEFAULT '{}',
-        landing_custom_css TEXT,
-        opening_hours JSONB DEFAULT '{"startHour":9,"endHour":19,"workDays":[1,2,3,4,5]}',
-        status TEXT DEFAULT 'active',
-        plan TEXT DEFAULT 'free',
-        subscription_status TEXT,
-        trial_start_date TIMESTAMP,
-        trial_end_date TIMESTAMP,
-        lat DOUBLE PRECISION,
-        lng DOUBLE PRECISION,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- migración: agregar lat/lng si no existen
-      BEGIN;
-        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
-        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
-        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'peluqueria';
-      COMMIT;
-
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'client',
-        phone TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS staff (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'staff',
-        working_hours_start TIME DEFAULT '09:00',
-        working_hours_end TIME DEFAULT '19:00',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS services (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        duration INTEGER NOT NULL,
-        price DECIMAL(10,2) NOT NULL DEFAULT 0,
-        category TEXT DEFAULT '',
-        image TEXT,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS appointments (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        client_name TEXT NOT NULL,
-        client_phone TEXT NOT NULL,
-        client_email TEXT,
-        service TEXT NOT NULL,
-        service_duration INTEGER NOT NULL,
-        service_price DECIMAL(10,2),
-        appointment_date TIMESTAMP NOT NULL,
-        status TEXT DEFAULT 'confirmed',
-        notes TEXT,
-          internal_notes TEXT,
-          coupon_code TEXT,
-          discount_amount DECIMAL(10,2) DEFAULT 0,
-          reminder_sent BOOLEAN DEFAULT false,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-      CREATE TABLE IF NOT EXISTS personal_agenda (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        titulo TEXT NOT NULL,
-        fecha TIMESTAMP NOT NULL,
-        descripcion TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS invoices (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        invoice_number TEXT NOT NULL,
-        amount NUMERIC(12,2) NOT NULL,
-        description TEXT,
-        status TEXT DEFAULT 'pending',
-        due_date TIMESTAMP,
-        issue_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        paid_date TIMESTAMP,
-        payment_method TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS super_admins (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'super_admin',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS payments (
-        id SERIAL PRIMARY KEY,
-        invoice_id INTEGER REFERENCES invoices(id) ON DELETE SET NULL,
-        tenant_id INTEGER,
-        amount NUMERIC(12,2),
-        currency TEXT DEFAULT 'UYU',
-        method TEXT,
-        mp_payment_id TEXT,
-        status TEXT DEFAULT 'pending',
-        raw_payload JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS plan_prices (
-        id SERIAL PRIMARY KEY,
-        plan_name TEXT UNIQUE NOT NULL,
-        price NUMERIC(12,2) NOT NULL,
-        currency TEXT DEFAULT 'UYU',
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS app_config (
-        key TEXT PRIMARY KEY,
-        value JSONB NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        endpoint TEXT NOT NULL UNIQUE,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        user_agent TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS coupons (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        code TEXT NOT NULL,
-        discount_type TEXT NOT NULL DEFAULT 'percentage',
-        discount_value DECIMAL(10,2) NOT NULL DEFAULT 0,
-        min_appointment_amount DECIMAL(10,2) DEFAULT 0,
-        max_uses INTEGER,
-        current_uses INTEGER DEFAULT 0,
-        expires_at TIMESTAMP,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(tenant_id, code)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date
-      ON appointments(tenant_id, appointment_date);
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_status 
-      ON appointments(tenant_id, status);
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_staff_date 
-      ON appointments(tenant_id, staff_id, appointment_date);
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_client_phone 
-      ON appointments(tenant_id, client_phone);
-      CREATE INDEX IF NOT EXISTS idx_services_tenant_active 
-      ON services(tenant_id, active, name);
-      CREATE INDEX IF NOT EXISTS idx_personal_agenda_user_date 
-      ON personal_agenda(user_id, fecha);
-      CREATE INDEX IF NOT EXISTS idx_invoices_tenant_issue_date 
-      ON invoices(tenant_id, issue_date DESC);
-      CREATE INDEX IF NOT EXISTS idx_invoices_status 
-      ON invoices(status);
-      CREATE INDEX IF NOT EXISTS idx_payments_tenant_created_at 
-      ON payments(tenant_id, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_payments_invoice 
-      ON payments(invoice_id);
-      CREATE INDEX IF NOT EXISTS idx_tenants_status_landing_created_at 
-      ON tenants(status, landing_enabled, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_staff_tenant_active_role_name 
-      ON staff(tenant_id, active, role, name);
-      -- Migration 023: Prevent double-booking and client password reset
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_appointments_unique_active
-      ON appointments(tenant_id, staff_id, appointment_date)
-      WHERE status NOT IN ('cancelled', 'no-show');
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
-
-      -- Migration 024: Reviews & Service Images
-      CREATE TABLE IF NOT EXISTS reviews (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        client_name TEXT,
-        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-        comment TEXT,
-        approved BOOLEAN DEFAULT false,
-        reply TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS service_images (
-        id SERIAL PRIMARY KEY,
-        service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
-        url TEXT NOT NULL,
-        sort_order INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS captcha_enabled BOOLEAN DEFAULT false;
-
-      -- Migration 022: Google Calendar Sync
-      CREATE TABLE IF NOT EXISTS google_calendar_tokens (
-        id SERIAL PRIMARY KEY,
-        staff_id INTEGER REFERENCES staff(id) ON DELETE CASCADE,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        access_token TEXT,
-        refresh_token TEXT,
-        token_expiry TIMESTAMP,
-        calendar_id TEXT DEFAULT 'primary',
-        google_email TEXT,
-        sync_enabled BOOLEAN DEFAULT false,
-        last_sync TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(staff_id)
-      );
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS google_event_id TEXT;
-
-      -- Migraciones para Multi-Peluqueros
-      ALTER TABLE staff ADD COLUMN IF NOT EXISTS photo_url TEXT;
-      ALTER TABLE staff ADD COLUMN IF NOT EXISTS bio TEXT;
-      ALTER TABLE staff ADD COLUMN IF NOT EXISTS specialties TEXT[];
-      ALTER TABLE staff ADD COLUMN IF NOT EXISTS individual_hours JSONB;
-      ALTER TABLE staff ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
-
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL;
-
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_token TEXT UNIQUE;
-
-      CREATE INDEX IF NOT EXISTS idx_appointments_client_token ON appointments(client_token);
-
-      ALTER TABLE services ADD COLUMN IF NOT EXISTS deposit_amount DECIMAL(10,2) DEFAULT NULL;
-
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_amount DECIMAL(10,2) DEFAULT NULL;
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_paid BOOLEAN DEFAULT false;
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_payment_id TEXT;
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deposit_preference_id TEXT;
-
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS recurring_group TEXT;
-      ALTER TABLE appointments ADD COLUMN IF NOT EXISTS recurring_rule JSONB;
-
-      CREATE INDEX IF NOT EXISTS idx_appointments_recurring_group ON appointments(recurring_group);
-      CREATE INDEX IF NOT EXISTS idx_appointments_google_event_id ON appointments(google_event_id);
-
-      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS landing_layout JSONB DEFAULT NULL;
-      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_status TEXT;
-      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMP;
-      ALTER TABLE tenants ADD COLUMN IF NOT EXISTS trial_end_date TIMESTAMP;
-
-      CREATE TABLE IF NOT EXISTS blocked_dates (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        date DATE NOT NULL,
-        reason TEXT DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(tenant_id, date)
-      );
-
-      -- Migration 027: Service Categories (parent/child)
-      CREATE TABLE IF NOT EXISTS service_categories (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        parent_id INTEGER REFERENCES service_categories(id) ON DELETE CASCADE,
-        sort_order INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE INDEX IF NOT EXISTS idx_service_categories_tenant ON service_categories(tenant_id);
-      CREATE INDEX IF NOT EXISTS idx_service_categories_parent ON service_categories(parent_id);
-      ALTER TABLE services ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL;
-      CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
-    `);
+    const clientQuery = (text, params) => client.query({ text, values: params });
+    await applyMigrations(clientQuery);
 
     if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true') {
       await seedDefaults(client);
@@ -425,15 +123,22 @@ async function seedDefaults(client) {
 
     // Seed precios de planes por defecto
     const planPrices = await client.query('SELECT plan_name FROM plan_prices');
-    if (planPrices.rows.length === 0) {
+    const existingPlans = new Set(planPrices.rows.map(r => r.plan_name));
+    const planDefaults = [
+      ['free', 0, 0, 'UYU', 0, 0, 0],
+      ['basico', 400, 10, 'UYU', 280, 7, 3],
+      ['estandar', 760, 19, 'UYU', 560, 14, 3],
+      ['premium', 1160, 29, 'UYU', 840, 21, 3],
+    ];
+    for (const [name, price, priceUsd, currency, promo, promoUsd, months] of planDefaults) {
+      if (existingPlans.has(name)) continue;
       await client.query(
-        `INSERT INTO plan_prices (plan_name, price, currency) VALUES 
-         ('pro', $1, 'UYU'),
-         ('enterprise', $2, 'UYU')`,
-        [process.env.PLAN_PRO_PRICE || 990, process.env.PLAN_ENTERPRISE_PRICE || 2490]
+        `INSERT INTO plan_prices (plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [name, price, priceUsd, currency, promo, promoUsd, months]
       );
-      logger.info('✅ Precios de planes creados');
     }
+    logger.info('✅ Precios de planes creados');
   } catch (e: any) {
     logger.error('Seed error:', e.message);
   }

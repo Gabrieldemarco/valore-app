@@ -2,8 +2,8 @@
 // Módulo de facturación automática mensual + gestión de trial y suspensiones
 
 import { query, queryOne } from './database';
-import createEmailTransporter from './services/email';
-import { sendWhatsApp } from './services/twilio';
+import { enqueueNotification } from './services/notificationQueue';
+import { notifyStaff } from './services/notifications';
 import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -11,6 +11,7 @@ import logger from './services/logger';
 import { getLocale } from './utils/locale';
 
 import { PLANS, MP_CURRENCY } from './services/payment-config';
+import { getPaidInvoiceCount, getEffectivePlanPrice } from './services/billing';
 
 /**
  * Suspende tenants free cuyo trial ya venció y les notifica por email.
@@ -36,7 +37,6 @@ async function suspendExpiredFreeTrials() {
 
         logger.info(`⚠️ Se suspenderán ${expiredTenants.length} tenants con trial vencido`);
         let suspendedCount = 0;
-        const transporter = createEmailTransporter();
 
         for (const tenant of expiredTenants) {
             try {
@@ -49,8 +49,8 @@ async function suspendExpiredFreeTrials() {
                 // Enviar email de notificación de suspensión
                 if (tenant.notification_email) {
                     const daysOverdue = Math.ceil((Date.now() - new Date(tenant.trial_end_date).getTime()) / (1000 * 60 * 60 * 24));
-                    await transporter.sendMail({
-                        from: `"Velsoie" <${process.env.SMTP_USER}>`,
+                    await enqueueNotification({
+                        type: 'email',
                         to: tenant.notification_email,
                         subject: '⚠️ Tu cuenta ha sido suspendida',
                         html: `
@@ -63,8 +63,10 @@ async function suspendExpiredFreeTrials() {
                                 <p>Equipo Velsoie</p>
                             </div>
                         `,
+                        priority: 'normal',
+                        data: { business_name: 'Velsoie' },
                     });
-                    logger.info(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
+                    logger.info(`🔔 Notificación de suspensión encolada para ${tenant.notification_email}`);
                 }
                 logger.info(`🔒 Tenant ${tenant.business_name} (ID: ${tenant.id}) suspendido por trial expirado`);
                 suspendedCount++;
@@ -101,7 +103,7 @@ async function generateMonthlyInvoices() {
             `SELECT id, slug, business_name, notification_email, plan, trial_end_date, billing_email
              FROM tenants 
              WHERE status = 'active' 
-               AND plan IN ('pro', 'enterprise')
+               AND plan IN ('basico', 'estandar', 'premium')
                AND (trial_end_date IS NULL OR trial_end_date < NOW())
              ORDER BY business_name`
         );
@@ -142,6 +144,10 @@ async function generateMonthlyInvoices() {
                     continue;
                 }
 
+                const paidCycles = await getPaidInvoiceCount(query, tenant.id);
+                const effective = getEffectivePlanPrice(planInfo, paidCycles);
+                const amount = effective.price;
+
                 // Generar número de factura único
                 const invoiceCount = await queryOne(
                     'SELECT COUNT(*) as total FROM invoices WHERE tenant_id = $1',
@@ -156,7 +162,7 @@ async function generateMonthlyInvoices() {
                     `INSERT INTO invoices (
                         tenant_id, invoice_number, amount, description, due_date, status, issue_date
                     ) VALUES ($1, $2, $3, $4, $5, 'pending', NOW()) RETURNING id`,
-                    [tenant.id, invoiceNumber, planInfo.price, description, dueDate]
+                    [tenant.id, invoiceNumber, amount, description, dueDate]
                 );
 
                 const invoiceId = insertResult.rows[0].id;
@@ -166,12 +172,11 @@ async function generateMonthlyInvoices() {
                 const recipient = tenant.billing_email || tenant.notification_email;
                 if (recipient) {
                     try {
-                        const transporter = createEmailTransporter();
                         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
                         const dashboardUrl = `${baseUrl}/admin/dashboard?tenant=${tenant.slug}`;
 
-                        await transporter.sendMail({
-                            from: `"Velsoie Facturación" <${process.env.SMTP_USER}>`,
+                        await enqueueNotification({
+                            type: 'email',
                             to: recipient,
                             subject: `📄 Nueva factura: ${invoiceNumber} - ${planInfo.name}`,
                             html: `
@@ -194,15 +199,17 @@ async function generateMonthlyInvoices() {
                                     <p style="font-size: 12px; color: #94a3b8;">Este es un mensaje automático generado por Velsoie.</p>
                                 </div>
                             `,
+                            priority: 'normal',
+                            data: { business_name: 'Velsoie Facturación' },
                         });
-                        logger.info(`📧 Email enviado a ${recipient}`);
+                        logger.info(`🔔 Notificación de factura encolada para ${recipient}`);
                     } catch (emailErr: any) {
-                        logger.error(`❌ Error enviando email a ${tenant.business_name}:`, emailErr.message);
+                        logger.error(`❌ Error encolando email a ${tenant.business_name}:`, emailErr.message);
                     }
                 }
 
                 invoicedCount++;
-                results.push({ tenant: tenant.business_name, status: 'success', invoiceNumber, amount: planInfo.price });
+                results.push({ tenant: tenant.business_name, status: 'success', invoiceNumber, amount, isPromo: Boolean(effective.isPromo) });
             } catch (tenantErr: any) {
                 errorCount++;
                 logger.error(`❌ Error procesando ${tenant.business_name}:`, tenantErr.message);
@@ -252,9 +259,8 @@ async function sendPaymentReminders() {
             return { success: true, reminded: 0 };
         }
 
-        logger.info(`📧 Enviando ${pendingInvoices.length} recordatorios de pago...`);
+        logger.info(`🔔 Enviando ${pendingInvoices.length} recordatorios de pago...`);
         let sentCount = 0;
-        const transporter = createEmailTransporter();
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
         for (const inv of pendingInvoices) {
@@ -264,8 +270,8 @@ async function sendPaymentReminders() {
             const daysLeft = Math.ceil((new Date(inv.due_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             const dashboardUrl = `${baseUrl}/admin/dashboard?tenant=${inv.slug}`;
 
-            await transporter.sendMail({
-                from: `"Velsoie Facturación" <${process.env.SMTP_USER}>`,
+            await enqueueNotification({
+                type: 'email',
                 to: recipient,
                 subject: `⏰ Recordatorio: Factura ${inv.invoice_number} vence en ${daysLeft} días`,
                 html: `
@@ -284,9 +290,11 @@ async function sendPaymentReminders() {
                         <p style="font-size: 12px;">Si ya realizaste el pago, ignorá este mensaje.</p>
                     </div>
                 `,
+                priority: 'high',
+                data: { business_name: 'Velsoie Facturación' },
             });
             sentCount++;
-            logger.info(`📧 Recordatorio enviado a ${recipient} (${inv.invoice_number})`);
+            logger.info(`🔔 Recordatorio encolado para ${recipient} (${inv.invoice_number})`);
         }
 
         logger.info(`✅ Recordatorios enviados: ${sentCount}/${pendingInvoices.length}`);
@@ -312,7 +320,7 @@ async function suspendOverdueTenants() {
              FROM tenants t
              JOIN invoices i ON t.id = i.tenant_id
              WHERE t.status = 'active'
-               AND t.plan IN ('pro', 'enterprise')
+               AND t.plan IN ('basico', 'estandar', 'premium')
                AND i.status = 'pending'
                AND i.due_date < NOW() - INTERVAL '${overdueDays} days'
              GROUP BY t.id, t.slug, t.business_name, t.notification_email`
@@ -326,7 +334,6 @@ async function suspendOverdueTenants() {
 
         logger.info(`⚠️ Encontrados ${overdueTenants.length} tenants con facturas vencidas`);
         let suspendedCount = 0;
-        const transporter = createEmailTransporter();
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
         for (const tenant of overdueTenants) {
@@ -336,8 +343,8 @@ async function suspendOverdueTenants() {
                 await query(`UPDATE tenants SET status = 'suspended', updated_at = NOW() WHERE id = $1`, [tenant.id]);
 
                 if (tenant.notification_email) {
-                    await transporter.sendMail({
-                        from: `"Velsoie" <${process.env.SMTP_USER}>`,
+                    await enqueueNotification({
+                        type: 'email',
                         to: tenant.notification_email,
                         subject: `⚠️ Servicio suspendido - Facturas vencidas`,
                         html: `
@@ -352,8 +359,10 @@ async function suspendOverdueTenants() {
                                 <p style="font-size: 12px;">Una vez regularizado, tu servicio se reactivará en un plazo de 24 horas.</p>
                             </div>
                         `,
+                        priority: 'normal',
+                        data: { business_name: 'Velsoie' },
                     });
-                    logger.info(`📧 Email de suspensión enviado a ${tenant.notification_email}`);
+                    logger.info(`🔔 Notificación de suspensión encolada para ${tenant.notification_email}`);
                 }
                 logger.info(`🔒 ${tenant.business_name}: Cuenta suspendida (${daysOverdue} días vencidos)`);
                 suspendedCount++;
@@ -427,7 +436,8 @@ async function sendAppointmentReminders() {
                     a.appointment_date, a.staff_id, a.tenant_id,
                     t.slug, t.business_name, t.business_address, t.business_phone,
                     t.brand_primary_color, t.notification_whatsapp, t.reminder_hours,
-                    s.name as staff_name
+                    t.notification_email, t.smtp_email, t.smtp_password,
+                    s.name as staff_name, s.email as staff_email
              FROM appointments a
              JOIN tenants t ON a.tenant_id = t.id
              LEFT JOIN staff s ON a.staff_id = s.id
@@ -443,17 +453,24 @@ async function sendAppointmentReminders() {
         }
         logger.info(`📨 Enviando ${appointments.length} recordatorios...`);
         let sentCount = 0;
-        const transporter = createEmailTransporter();
         for (const apt of appointments) {
             try {
                 const date = new Date(apt.appointment_date);
                 const timeStr = date.toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
                 const dateStr = date.toLocaleDateString(getLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 
+                const smtpUser = apt.smtp_email || process.env.SMTP_USER;
+                const smtpPass = apt.smtp_password || process.env.SMTP_PASS;
+
                 // WhatsApp
                 if (apt.client_phone) {
                     const waBody = `🔔 Recordatorio ${apt.business_name}\nHola ${apt.client_name}, te recordamos que mañana tenés turno:\n📅 ${dateStr}\n🕐 ${timeStr}\n✂️ ${apt.service}${apt.staff_name ? `\n💈 ${apt.staff_name}` : ''}\n📍 ${apt.business_address || ''}`;
-                    await sendWhatsApp(apt.client_phone, waBody);
+                    await enqueueNotification({
+                        type: 'whatsapp',
+                        to: apt.client_phone,
+                        body: waBody,
+                        priority: 'high',
+                    });
                 }
 
                 // Email
@@ -472,13 +489,34 @@ async function sendAppointmentReminders() {
                             <p>📍 ${apt.business_address || ''}<br>📞 ${apt.business_phone || ''}</p>
                             <p style="color:#6b7280;font-size:14px;margin-top:20px">💡 Llegá 5 minutos antes</p>
                         </div>`;
-                    await transporter.sendMail({
-                        from: `"${apt.business_name}" <${process.env.SMTP_USER}>`,
+                    await enqueueNotification({
+                        type: 'email',
                         to: apt.client_email,
                         subject: `🔔 Recordatorio: Turno mañana en ${apt.business_name}`,
                         html,
+                        tenantId: apt.tenant_id,
+                        smtpEmail: smtpUser,
+                        smtpPass,
+                        priority: 'normal',
+                        data: { business_name: apt.business_name },
                     });
+                    logger.info(`🔔 Recordatorio encolado para ${apt.client_email}`);
                 }
+
+                // Notificar al staff sobre el turno
+                await notifyStaff(apt, {
+                    id: apt.tenant_id,
+                    slug: apt.slug,
+                    business_name: apt.business_name,
+                    business_address: apt.business_address,
+                    business_phone: apt.business_phone,
+                    brand_primary_color: apt.brand_primary_color,
+                    notification_email: apt.notification_email,
+                    notification_whatsapp: apt.notification_whatsapp,
+                    reminder_hours: apt.reminder_hours,
+                    smtp_email: apt.smtp_email,
+                    smtp_password: apt.smtp_password,
+                }).catch(e => logger.error('Error notificación staff recordatorio', { error: e.message }));
 
                 await query('UPDATE appointments SET reminder_sent = true, updated_at = NOW() WHERE id = $1', [apt.id]);
                 sentCount++;

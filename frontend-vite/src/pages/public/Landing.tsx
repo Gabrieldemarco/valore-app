@@ -47,8 +47,9 @@ export default function Landing() {
   const [step, setStep] = useState(1);
   const [selectedStaff, setSelectedStaff] = useState<number | null>(null);
   const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
   const [slots, setSlots] = useState<SlotItem[]>([]);
   const [slotsTimeout, setSlotsTimeout] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -114,22 +115,25 @@ export default function Landing() {
 
   useLandingClientInfo(setClientName, setClientPhone, setClientEmail);
 
-  useLandingQuickBook({ isQuickBook, quickServiceId, quickStaffId, services, quickBookError, setSelectedService, setSelectedStaff, setStep, setQuickBookError });
+  useLandingQuickBook({ isQuickBook, quickServiceId, quickStaffId, services, quickBookError, setSelectedService, setSelectedServices, setSelectedStaff, setStep, setQuickBookError });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const fetchSlots = useCallback(() => {
+   const fetchSlots = useCallback(() => {
     if (!selectedDate || !selectedService) { setSlots([]); return; }
     setSlotsTimeout(false);
+    const serviceParam = selectedServices.length > 1
+      ? `serviceIds=${selectedServices.join(',')}`
+      : `serviceId=${selectedService}`;
     const url = selectedStaff
-      ? `/p/${tenantSlug}/staff/${selectedStaff}/availability?date=${selectedDate}&serviceId=${selectedService}`
-      : `/p/${tenantSlug}/availability?date=${selectedDate}&serviceId=${selectedService}`;
+      ? `/p/${tenantSlug}/staff/${selectedStaff}/availability?date=${selectedDate}&${serviceParam}`
+      : `/p/${tenantSlug}/availability?date=${selectedDate}&${serviceParam}`;
     timeoutRef.current = setTimeout(() => setSlotsTimeout(true), 8000);
     api.get<{ slots: SlotItem[] }>(url)
       .then(r => { setSlotsTimeout(false); setSlots(r.slots || []); })
       .catch(() => { setSlotsTimeout(false); setSlots([]); logger.warn('Error al cargar slots'); })
       .finally(() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); });
-  }, [selectedDate, selectedService, selectedStaff, tenantSlug]);
+  }, [selectedDate, selectedService, selectedServices, selectedStaff, tenantSlug]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -144,8 +148,8 @@ export default function Landing() {
   const { handleBook, handleJoinWaitlist } = useLandingBooking({
     clientName, setClientName, clientPhone, setClientPhone,
     clientEmail, setClientEmail, clientNotes, setClientNotes,
-    selectedService, setSelectedService, selectedStaff, setSelectedStaff,
-    selectedDate, setSelectedDate, selectedTime, setSelectedTime,
+     selectedService, setSelectedService, selectedServices, setSelectedServices, selectedStaff, setSelectedStaff,
+    selectedDate, setSelectedDate, selectedSlot, setSelectedSlot,
     tenantSlug, couponCode, captchaToken,
     recurringEnabled, setRecurringEnabled,
     recurringFrequency, setRecurringFrequency,
@@ -156,6 +160,7 @@ export default function Landing() {
 
   const handleSelectService = useCallback((serviceId: number) => {
     setSelectedService(serviceId);
+    setSelectedServices([serviceId]);
     setStep(2);
     document.getElementById('reservar')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -200,10 +205,11 @@ export default function Landing() {
         slots={slots}
         slotsTimeout={slotsTimeout}
         step={step}
-        selectedStaff={selectedStaff}
-        selectedService={selectedService}
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
+     selectedStaff={selectedStaff}
+         selectedService={selectedService}
+         selectedServices={selectedServices}
+          selectedDate={selectedDate}
+         selectedSlot={selectedSlot}
         clientName={clientName}
         clientPhone={clientPhone}
         clientEmail={clientEmail}
@@ -224,9 +230,10 @@ export default function Landing() {
         firstDayOfMonth={firstDayOfMonth}
         onSetStep={setStep}
         onSetSelectedStaff={setSelectedStaff}
-        onSetSelectedService={setSelectedService}
-        onSetSelectedDate={setSelectedDate}
-        onSetSelectedTime={setSelectedTime}
+         onSetSelectedService={setSelectedService}
+         onSetSelectedServices={setSelectedServices}
+         onSetSelectedDate={setSelectedDate}
+         onSetSelectedSlot={setSelectedSlot}
         onSetClientName={setClientName}
         onSetClientPhone={setClientPhone}
         onSetClientEmail={setClientEmail}

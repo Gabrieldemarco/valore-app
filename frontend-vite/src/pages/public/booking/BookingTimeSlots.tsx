@@ -6,8 +6,8 @@ import "./booking.css";
 interface BookingTimeSlotsProps {
   slots: SlotItem[];
   slotsTimeout: boolean;
-  selectedTime: string;
-  onSetSelectedTime: (time: string) => void;
+  selectedSlot: SlotItem | null;
+  onSetSelectedSlot: (slot: SlotItem | null) => void;
   onSetStep: (step: number) => void;
   showWaitlistForm: boolean;
   waitlistMsg: string;
@@ -19,8 +19,8 @@ interface BookingTimeSlotsProps {
 const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
   slots,
   slotsTimeout,
-  selectedTime,
-  onSetSelectedTime,
+  selectedSlot,
+  onSetSelectedSlot,
   onSetStep,
   showWaitlistForm,
   waitlistMsg,
@@ -64,10 +64,10 @@ const BookingTimeSlots: React.FC<BookingTimeSlotsProps> = ({
             <button
               key={slot.time}
               type="button"
-              className={`slot-btn ${selectedTime === slot.time ? "selected" : ""} ${!slot.available ? "unavailable" : ""}`}
+              className={`slot-btn ${selectedSlot?.time === slot.time ? "selected" : ""} ${!slot.available ? "unavailable" : ""}`}
               disabled={!slot.available}
               onClick={() => {
-                onSetSelectedTime(slot.time);
+                onSetSelectedSlot(slot);
                 onSetStep(5);
               }}
             >

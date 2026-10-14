@@ -57,10 +57,11 @@ describe('cron-billing', () => {
   describe('generateMonthlyInvoices', () => {
     it('genera facturas para tenants activos con plan pago', async () => {
       query.mockResolvedValueOnce({ rows: [
-        { id: 1, slug: 'pelu-pro', business_name: 'Pelu Pro', notification_email: 'pro@test.com', plan: 'pro', trial_end_date: null, billing_email: 'billing@test.com' }
+        { id: 1, slug: 'pelu-pro', business_name: 'Pelu Pro', notification_email: 'pro@test.com', plan: 'basico', trial_end_date: null, billing_email: 'billing@test.com' }
       ] });
       queryOne.mockResolvedValueOnce(null);
       queryOne.mockResolvedValueOnce({ total: '0' });
+      query.mockResolvedValueOnce({ rows: [{ total: '0' }] });
       query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       const result = await generateMonthlyInvoices();
       expect(result.success).toBe(true);
@@ -76,7 +77,7 @@ describe('cron-billing', () => {
 
     it('salta si ya tiene factura del mes', async () => {
       query.mockResolvedValueOnce({ rows: [
-        { id: 1, slug: 'pelu-pro', business_name: 'Pelu Pro', notification_email: 'pro@test.com', plan: 'pro', trial_end_date: null, billing_email: 'b@test.com' }
+        { id: 1, slug: 'pelu-pro', business_name: 'Pelu Pro', notification_email: 'pro@test.com', plan: 'basico', trial_end_date: null, billing_email: 'b@test.com' }
       ] });
       queryOne.mockResolvedValueOnce({ id: 50 });
       const result = await generateMonthlyInvoices();

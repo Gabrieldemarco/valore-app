@@ -46,7 +46,7 @@ export default function(loginLimiter, passwordResetLimiter) {
 
       if (email && verificationToken) {
         try {
-          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          const baseUrl = config.FRONTEND_URL;
           const verifyLink = `${baseUrl}/verify-email?token=${verificationToken}`;
           const transporter = createEmailTransporter();
           await transporter.sendMail({
@@ -226,7 +226,7 @@ export default function(loginLimiter, passwordResetLimiter) {
         [resetToken, expiresAt, staff.id]
       );
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = config.FRONTEND_URL;
       const resetLink = `${baseUrl}/staff/reset-password?token=${resetToken}`;
 
       const transporter = createEmailTransporter();
@@ -343,7 +343,7 @@ export default function(loginLimiter, passwordResetLimiter) {
         [resetToken, expiresAt, user.id]
       );
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = config.FRONTEND_URL;
       const resetLink = `${baseUrl}/client/reset-password?token=${resetToken}`;
 
       const transporter = createEmailTransporter();

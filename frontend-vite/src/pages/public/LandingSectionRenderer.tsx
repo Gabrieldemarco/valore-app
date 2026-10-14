@@ -27,8 +27,9 @@ interface Props {
   step: number;
   selectedStaff: number | null;
   selectedService: number | null;
+  selectedServices: number[];
   selectedDate: string;
-  selectedTime: string;
+  selectedSlot: SlotItem | null;
   clientName: string;
   clientPhone: string;
   clientEmail: string;
@@ -49,9 +50,10 @@ interface Props {
   firstDayOfMonth: (m: number, y: number) => number;
   onSetStep: (step: number) => void;
   onSetSelectedStaff: (id: number | null) => void;
-  onSetSelectedService: (id: number | null) => void;
+   onSetSelectedService: (id: number | null) => void;
+  onSetSelectedServices: (ids: number[]) => void;
   onSetSelectedDate: (date: string) => void;
-  onSetSelectedTime: (time: string) => void;
+  onSetSelectedSlot: (slot: SlotItem | null) => void;
   onSetClientName: (v: string) => void;
   onSetClientPhone: (v: string) => void;
   onSetClientEmail: (v: string) => void;
@@ -82,11 +84,11 @@ interface Props {
 export default function LandingSectionRenderer({
   layout, tenant, services, reviews, gallery, team, staff, fixImageUrl,
   onOpenLightbox, onSelectService, onSelectStaff, onOpenServiceLightbox,
-  slots, slotsTimeout, step, selectedStaff, selectedService, selectedDate, selectedTime,
+   slots, slotsTimeout, step, selectedStaff, selectedService, selectedServices, selectedDate, selectedSlot,
   clientName, clientPhone, clientEmail, clientNotes, couponCode, couponDiscount,
   msg, errMsg, isQuickBook, quickBookError, tenantSlug,
   calMonth, calYear, today, monthNames, dayNames, daysInMonth, firstDayOfMonth,
-  onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedDate, onSetSelectedTime,
+   onSetStep, onSetSelectedStaff, onSetSelectedService, onSetSelectedServices, onSetSelectedDate, onSetSelectedSlot,
   onSetClientName, onSetClientPhone, onSetClientEmail, onSetClientNotes,
   onSetCouponCode, onSetCouponDiscount, onSetCalMonth, onSetCalYear, onFetchSlots, onSubmit,
   recurringEnabled, recurringFrequency, recurringCount,
@@ -175,8 +177,9 @@ export default function LandingSectionRenderer({
                 step={step}
                 selectedStaff={selectedStaff}
                 selectedService={selectedService}
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
+                selectedServices={selectedServices}
+                 selectedDate={selectedDate}
+                 selectedSlot={selectedSlot}
                 clientName={clientName}
                 clientPhone={clientPhone}
                 clientEmail={clientEmail}
@@ -198,9 +201,10 @@ export default function LandingSectionRenderer({
                 fixImageUrl={fixImageUrl}
                 onSetStep={onSetStep}
                 onSetSelectedStaff={onSetSelectedStaff}
-                onSetSelectedService={onSetSelectedService}
+                 onSetSelectedService={onSetSelectedService}
+                onSetSelectedServices={onSetSelectedServices}
                 onSetSelectedDate={onSetSelectedDate}
-                onSetSelectedTime={onSetSelectedTime}
+                 onSetSelectedSlot={onSetSelectedSlot}
                 onSetClientName={onSetClientName}
                 onSetClientPhone={onSetClientPhone}
                 onSetClientEmail={onSetClientEmail}

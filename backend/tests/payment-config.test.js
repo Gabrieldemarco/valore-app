@@ -17,8 +17,8 @@ describe('PLANS', () => {
     expect(PLANS.free.price).toBe(0);
   });
 
-  it('pro y enterprise tienen price positivo', () => {
-    expect(PLANS.pro.price).toBeGreaterThan(0);
-    expect(PLANS.enterprise.price).toBeGreaterThan(0);
+  it('basico y estandar tienen price positivo', () => {
+    expect(PLANS.basico.price).toBeGreaterThan(0);
+    expect(PLANS.estandar.price).toBeGreaterThan(0);
   });
 });

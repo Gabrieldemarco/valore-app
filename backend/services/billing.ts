@@ -1,6 +1,8 @@
 
 // Suscripciones: factura subscription:{plan} → al pagar, activar tenant
 
+import { normalizePlan, isPaidPlan, getEffectivePlanPrice } from './payment-config';
+
 const SUBSCRIPTION_PREFIX = 'subscription:';
 
 /**
@@ -8,7 +10,7 @@ const SUBSCRIPTION_PREFIX = 'subscription:';
  * @returns {string}
  */
 function subscriptionDescription(plan) {
-  return `${SUBSCRIPTION_PREFIX}${plan}`;
+  return `${SUBSCRIPTION_PREFIX}${normalizePlan(plan)}`;
 }
 
 /**
@@ -17,9 +19,24 @@ function subscriptionDescription(plan) {
  */
 function parseSubscriptionPlan(description) {
   if (!description || !description.startsWith(SUBSCRIPTION_PREFIX)) return null;
-  const plan = description.slice(SUBSCRIPTION_PREFIX.length).trim().split(/[|\s]/)[0];
-  if (plan === 'pro' || plan === 'enterprise') return plan;
-  return null;
+  const plan = normalizePlan(description.slice(SUBSCRIPTION_PREFIX.length).trim().split(/[|\s]/)[0]);
+  return isPaidPlan(plan) ? plan : null;
+}
+
+/**
+ * Cuenta los ciclos de suscripción pagados del tenant (para la promoción de lanzamiento).
+ * @param {(text: string, params?: any[]) => Promise<any>} query
+ * @param {number} tenantId
+ * @returns {Promise<number>}
+ */
+async function getPaidInvoiceCount(query, tenantId) {
+  const result = await query(
+    `SELECT COUNT(*) AS total
+     FROM invoices
+     WHERE tenant_id = $1 AND status = 'paid' AND description LIKE $2`,
+    [tenantId, `${SUBSCRIPTION_PREFIX}%`]
+  );
+  return parseInt(result.rows[0].total, 10) || 0;
 }
 
 /**
@@ -97,4 +114,6 @@ export {
   parseSubscriptionPlan,
   activateTenantFromPaidInvoice,
   getOrCreateSubscriptionInvoice,
+  getPaidInvoiceCount,
+  getEffectivePlanPrice,
 };

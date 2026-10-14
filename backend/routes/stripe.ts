@@ -3,7 +3,8 @@ import { body } from 'express-validator';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { validate, authenticateStaff, authenticateSuperAdmin } from '../middleware';
-import { getOrCreateSubscriptionInvoice, activateTenantFromPaidInvoice } from '../services/billing';
+import { getOrCreateSubscriptionInvoice, activateTenantFromPaidInvoice, getPaidInvoiceCount, getEffectivePlanPrice } from '../services/billing';
+import { normalizePlan, isPaidPlan } from '../services/payment-config';
 import { constructWebhookEvent, retrieveSession } from '../services/stripe-client';
 
 const SUBSCRIPTION_PREFIX = 'subscription:';
@@ -45,9 +46,8 @@ async function handleCheckoutCompleted(session: any) {
 
 function parseSubscriptionPlan(description?: string | null) {
   if (!description || !description.startsWith(SUBSCRIPTION_PREFIX)) return null;
-  const plan = description.slice(SUBSCRIPTION_PREFIX.length).trim().split(/[|\s]/)[0];
-  if (plan === 'pro' || plan === 'enterprise') return plan;
-  return null;
+  const plan = normalizePlan(description.slice(SUBSCRIPTION_PREFIX.length).trim().split(/[|\s]/)[0]);
+  return isPaidPlan(plan) ? plan : null;
 }
 
 /**
@@ -67,13 +67,13 @@ export default function createStripeRouter(createStripeCheckout, PLANS) {
   }
 
   router.post('/payments/stripe/subscribe', authenticateStaff, [
-    body('plan').optional().isIn(['pro', 'enterprise']).withMessage('Plan no válido'),
+    body('plan').isIn(['basico', 'estandar', 'premium', 'pro', 'enterprise']).withMessage('Plan no válido'),
   ], validate, async (req, res) => {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {
         return res.status(503).json({ error: 'Stripe no está configurado. Contactá al administrador.' });
       }
-      const plan = (req.body.plan || 'pro').toLowerCase();
+      const plan = normalizePlan(req.body.plan);
       if (!PLANS[plan] || plan === 'free') return res.status(400).json({ error: 'Plan no válido' });
 
       const tenant = await queryOne('SELECT id, plan, status, business_name, slug FROM tenants WHERE id = $1', [req.user.tenant_id]);
@@ -82,7 +82,10 @@ export default function createStripeRouter(createStripeCheckout, PLANS) {
         return res.status(400).json({ error: 'Ya tenés este plan activo' });
       }
 
-      const invoice = await getOrCreateSubscriptionInvoice(query, queryOne, req.user.tenant_id, plan, PLANS[plan].price_usd);
+      const paidCycles = await getPaidInvoiceCount(query, req.user.tenant_id);
+      const effective = getEffectivePlanPrice(PLANS[plan], paidCycles);
+
+      const invoice = await getOrCreateSubscriptionInvoice(query, queryOne, req.user.tenant_id, plan, effective.price_usd);
       const session = await createStripeCheckout(invoice, tenant, req, { plan, returnPath: '/staff/dashboard' });
       await insertStripePayment(invoice, tenant);
 
@@ -92,7 +95,7 @@ export default function createStripeRouter(createStripeCheckout, PLANS) {
         invoiceId: invoice.id,
         plan,
         planName: PLANS[plan].name,
-        amount: PLANS[plan].price_usd || PLANS[plan].price,
+        amount: effective.price_usd || PLANS[plan].price,
         currency: (process.env.STRIPE_CURRENCY || 'usd').toUpperCase(),
       });
     } catch (err: any) {

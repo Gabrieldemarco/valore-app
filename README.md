@@ -62,7 +62,7 @@ agenda-app/
 │   │   └── test/            # setup, tests
 │   ├── vite.config.ts
 │   └── package.json
-├── frontend/dist/       # Build output (servido por Express)
+├── frontend-vite/dist/    # Build output (servido por Express)
 ├── Dockerfile
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
@@ -135,8 +135,19 @@ Corre en `http://localhost:5173` con hot reload y proxy a backend.
 | `TEST_DATABASE_URL` | No | URL del DB de prueba para `restore-test` |
 | `RESTORE_DATABASE_URL` | No | URL separada para restaurar backups en DB de prueba |
 | `BASE_URL` | No | URL base para enlaces en emails |
-| `PLAN_PRO_PRICE` | No | Precio plan Pro (default 990) |
-| `PLAN_ENTERPRISE_PRICE` | No | Precio plan Enterprise (default 2490) |
+| `PLAN_BASICO_PRICE` | No | Precio plan Básico (default 400) |
+| `PLAN_BASICO_PRICE_USD` | No | Precio plan Básico en USD (default 10) |
+| `PLAN_BASICO_PROMO_PRICE` | No | Precio promocional plan Básico (default 280) |
+| `PLAN_BASICO_PROMO_PRICE_USD` | No | Precio promocional plan Básico en USD (default 7) |
+| `PLAN_ESTANDAR_PRICE` | No | Precio plan Estándar (default 760) |
+| `PLAN_ESTANDAR_PRICE_USD` | No | Precio plan Estándar en USD (default 19) |
+| `PLAN_ESTANDAR_PROMO_PRICE` | No | Precio promocional plan Estándar (default 560) |
+| `PLAN_ESTANDAR_PROMO_PRICE_USD` | No | Precio promocional plan Estándar en USD (default 14) |
+| `PLAN_PREMIUM_PRICE` | No | Precio plan Premium (default 1160) |
+| `PLAN_PREMIUM_PRICE_USD` | No | Precio plan Premium en USD (default 29) |
+| `PLAN_PREMIUM_PROMO_PRICE` | No | Precio promocional plan Premium (default 840) |
+| `PLAN_PREMIUM_PROMO_PRICE_USD` | No | Precio promocional plan Premium en USD (default 21) |
+| `PLAN_PROMO_MONTHS` | No | Meses de la promoción (default 3) |
 
 ## Monitoreo y logging
 

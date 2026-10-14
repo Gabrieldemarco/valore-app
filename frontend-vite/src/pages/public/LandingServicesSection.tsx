@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Clock, DollarSign } from 'lucide-react';
+import { ChevronRight, Clock } from 'lucide-react';
 
 interface ServiceImage {
   id: number;
@@ -135,7 +135,7 @@ export default function LandingServicesSection({ services, fixImageUrl, onSelect
         <h3 className="service-name">{s.name}</h3>
         <div className="service-meta">
           <span className="service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
-          <span className="service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+          <span className="service-price">{t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
         </div>
         {s.description && (
           <p className="service-description">{s.description}</p>

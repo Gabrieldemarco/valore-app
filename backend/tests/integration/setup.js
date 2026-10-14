@@ -6,6 +6,7 @@
  */
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const { applyMigrations } = require('../../migrations/run-migrations');
 
 const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
   'postgresql://postgres:orion1@localhost:5432/agenda_app_test';
@@ -70,156 +71,19 @@ async function dropAllTables() {
 }
 
 /**
- * Crea todas las tablas (mismo schema que initDB)
+ * Crea todas las tablas aplicando migrations (schema completo y consistente)
  */
 async function createTables() {
   const pool = new Pool({ connectionString: TEST_DB_URL, max: 1 });
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS tenants (
-        id SERIAL PRIMARY KEY,
-        slug TEXT UNIQUE NOT NULL,
-        business_name TEXT NOT NULL,
-        business_address TEXT,
-        business_phone TEXT,
-        notification_email TEXT,
-        notification_whatsapp TEXT,
-        smtp_email TEXT,
-        smtp_password TEXT,
-        brand_primary_color TEXT DEFAULT '#2563eb',
-        brand_secondary_color TEXT DEFAULT '#7c3aed',
-        brand_logo_url TEXT,
-        landing_enabled BOOLEAN DEFAULT true,
-        landing_description TEXT,
-        landing_hero_image TEXT,
-        landing_gallery JSONB DEFAULT '[]',
-        landing_team JSONB DEFAULT '[]',
-        landing_services_info JSONB DEFAULT '[]',
-        landing_social_links JSONB DEFAULT '{}',
-        landing_custom_css TEXT,
-        opening_hours JSONB DEFAULT '{"startHour":9,"endHour":19,"workDays":[1,2,3,4,5]}',
-        landing_layout JSONB DEFAULT NULL,
-        status TEXT DEFAULT 'active',
-        plan TEXT DEFAULT 'free',
-        trial_start_date TIMESTAMP,
-        trial_end_date TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'client',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS staff (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'staff',
-        working_hours_start TIME DEFAULT '09:00',
-        working_hours_end TIME DEFAULT '19:00',
-        photo_url TEXT,
-        bio TEXT,
-        specialties TEXT[],
-        individual_hours JSONB,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS services (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        duration INTEGER NOT NULL,
-        price DECIMAL(10,2) NOT NULL DEFAULT 0,
-        image TEXT,
-        landing_image TEXT,
-        landing_description TEXT,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS appointments (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
-        client_name TEXT NOT NULL,
-        client_phone TEXT NOT NULL,
-        client_email TEXT,
-        service TEXT NOT NULL,
-        service_duration INTEGER NOT NULL,
-        appointment_date TIMESTAMP NOT NULL,
-        status TEXT DEFAULT 'confirmed',
-        notes TEXT,
-        internal_notes TEXT,
-        reminder_sent BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS personal_agenda (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        titulo TEXT NOT NULL,
-        fecha TIMESTAMP NOT NULL,
-        descripcion TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS invoices (
-        id SERIAL PRIMARY KEY,
-        tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
-        invoice_number TEXT NOT NULL,
-        amount NUMERIC(12,2) NOT NULL,
-        description TEXT,
-        status TEXT DEFAULT 'pending',
-        due_date TIMESTAMP,
-        issue_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        paid_date TIMESTAMP,
-        payment_method TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS super_admins (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT DEFAULT 'super_admin',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS payments (
-        id SERIAL PRIMARY KEY,
-        invoice_id INTEGER REFERENCES invoices(id) ON DELETE SET NULL,
-        tenant_id INTEGER,
-        amount NUMERIC(12,2),
-        currency TEXT DEFAULT 'UYU',
-        method TEXT,
-        mp_payment_id TEXT,
-        status TEXT DEFAULT 'pending',
-        raw_payload JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS plan_prices (
-        id SERIAL PRIMARY KEY,
-        plan_name TEXT UNIQUE NOT NULL,
-        price NUMERIC(12,2) NOT NULL,
-        currency TEXT DEFAULT 'UYU',
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_appointments_tenant_date
-      ON appointments(tenant_id, appointment_date);
-    `);
-    console.log('✅ Tablas creadas');
+    const client = await pool.connect();
+    const clientQuery = (text, params) => client.query({ text, values: params });
+    try {
+      await applyMigrations(clientQuery);
+      console.log('✅ Tablas creadas');
+    } finally {
+      client.release();
+    }
   } finally {
     await pool.end();
   }
@@ -275,9 +139,10 @@ async function seedTestData() {
 
   // Plan prices
   await query(
-    `INSERT INTO plan_prices (plan_name, price, currency) VALUES
-     ('pro', 990, 'UYU'),
-     ('enterprise', 2490, 'UYU')
+    `INSERT INTO plan_prices (plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months) VALUES
+     ('basico', 400, 10, 'UYU', 280, 7, 3),
+     ('estandar', 760, 19, 'UYU', 560, 14, 3),
+     ('premium', 1160, 29, 'UYU', 840, 21, 3)
      ON CONFLICT (plan_name) DO NOTHING`
   );
 

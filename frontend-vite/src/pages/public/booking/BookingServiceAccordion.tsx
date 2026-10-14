@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Clock, DollarSign } from 'lucide-react';
+import { ChevronRight, Clock, Check } from 'lucide-react';
 import type { ServiceImage, ServiceItem } from './types';
 
 interface CatNode {
@@ -18,18 +18,20 @@ const formatPrice = (p: number | string | null): string => {
 
 interface BookingServiceAccordionProps {
   services: ServiceItem[];
-  selectedService: number | null;
+  selectedServices: number[];
   fixImageUrl: (url: string | null | undefined) => string;
-  onSelect: (id: number) => void;
+  onToggle: (id: number) => void;
   onOpenServiceLightbox?: (images: ServiceImage[], idx: number) => void;
+  onContinue: () => void;
 }
 
 const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
   services,
-  selectedService,
+  selectedServices,
   fixImageUrl,
-  onSelect,
+  onToggle,
   onOpenServiceLightbox,
+  onContinue,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -88,38 +90,51 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
   }
   allGroups.sort((a, b) => a.label.localeCompare(b.label));
 
-  const renderCard = (s: ServiceItem) => (
-    <div key={s.id} className={`booking-service-card ${selectedService === s.id ? 'selected' : ''}`} onClick={() => onSelect(s.id)}>
-      <div className="booking-service-card-image">
-        {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
-        {s.images && s.images.length > 0 && (
-          <div className="service-thumbnails">
-            {s.images.slice(0, 3).map((img, i) => (
-              <div key={img.id} className="service-thumb" onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
-                <img src={fixImageUrl(img.url)} alt="" />
-              </div>
-            ))}
-            {s.images.length > 3 && (
-              <div className="service-thumb more" onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
-                <span>+{s.images.length - 3}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="booking-service-info">
-        <div className="booking-service-name">{s.name}</div>
-        <div className="booking-service-meta">
-          <span className="booking-service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
-          <span className="booking-service-price"><DollarSign size={14} /> {t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+  const selectedServiceObjs = services.filter(s => selectedServices.includes(s.id));
+  const totalDuration = selectedServiceObjs.reduce((sum, s) => sum + s.duration, 0);
+  const totalPrice = selectedServiceObjs.reduce((sum, s) => sum + parseFloat(String(s.price || 0)), 0);
+
+  const renderCard = (s: ServiceItem) => {
+    const isSelected = selectedServices.includes(s.id);
+    return (
+      <div
+        key={s.id}
+        className={`booking-service-card ${isSelected ? 'selected' : ''}`}
+        onClick={() => onToggle(s.id)}
+      >
+        <div className="booking-service-card-image">
+          {s.image && <div className="booking-service-image" style={{ backgroundImage: `url(${fixImageUrl(s.image)})` }} />}
+          {s.images && s.images.length > 0 && (
+            <div className="service-thumbnails">
+              {s.images.slice(0, 3).map((img, i) => (
+                <div key={img.id} className="service-thumb" onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], i); }}>
+                  <img src={fixImageUrl(img.url)} alt="" />
+                </div>
+              ))}
+              {s.images.length > 3 && (
+                <div className="service-thumb more" onClick={e => { e.stopPropagation(); onOpenServiceLightbox?.(s.images || [], 3); }}>
+                  <span>+{s.images.length - 3}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {isSelected && (
+            <div style={{ position: 'absolute', top: 8, right: 8, background: 'var(--accent)', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={14} color="white" />
+            </div>
+          )}
         </div>
-        {s.description && <p className="service-description">{s.description}</p>}
-        <button className="service-book-btn" onClick={e => { e.stopPropagation(); onSelect(s.id); }}>
-          {t('landingServices.bookButton')}
-        </button>
+        <div className="booking-service-info">
+          <div className="booking-service-name">{s.name}</div>
+          <div className="booking-service-meta">
+            <span className="booking-service-duration"><Clock size={14} /> {s.duration} {t('landingServices.minutes')}</span>
+            <span className="booking-service-price">{t('landingServices.pricePrefix')}{formatPrice(s.price)}</span>
+          </div>
+          {s.description && <p className="service-description">{s.description}</p>}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="services-accordion booking-accordion">
@@ -154,6 +169,19 @@ const BookingServiceAccordion: React.FC<BookingServiceAccordionProps> = ({
       {uncategorized.length > 0 && (
         <div className="booking-services" style={{ marginTop: 16 }}>
           {uncategorized.map(renderCard)}
+        </div>
+      )}
+      {selectedServices.length > 0 && (
+        <div className="selected-services-summary" style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(37, 99, 235, 0.1)', borderRadius: 8, border: '1px solid var(--glass-border)' }}>
+          <div className="fs-14 font-600" style={{ marginBottom: 8 }}>
+            {t('booking.selectedServices', { count: selectedServices.length })}
+          </div>
+          <div className="fs-13" style={{ marginBottom: 8 }}>
+            {t('booking.totalDuration')}: <strong>{totalDuration} {t('landingServices.minutes')}</strong> · {t('landingServices.pricePrefix')}{formatPrice(totalPrice)}
+          </div>
+          <button className="dash-btn dash-btn-success" style={{ width: '100%' }} onClick={onContinue}>
+            {t('booking.continueButton')}
+          </button>
         </div>
       )}
     </div>

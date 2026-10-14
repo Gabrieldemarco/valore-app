@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
+import { PLANS, normalizePlan } from '../services/payment-config';
 const config = require('../config');
 
 /**
@@ -121,22 +122,36 @@ async function checkTrialExpiration(req, res, next) {
 /**
  * Verifica los límites del plan del tenant.
  * @param {number} tenantId
- * @param {string} resource
+ * @param {string} resource 'appointments' | 'staff' | 'services' | 'products'
  * @returns {Promise<boolean>}
  */
-async function checkPlanLimits(tenantId, _resource) {
+const RESOURCE_TABLE = { staff: 'staff', services: 'services', products: 'products' };
+
+async function checkPlanLimits(tenantId, resource) {
   try {
     const tenant = await queryOne('SELECT plan FROM tenants WHERE id = $1', [tenantId]);
     if (!tenant) return false;
-    if (tenant.plan === 'pro' || tenant.plan === 'enterprise') return true;
-    if (tenant.plan === 'free') {
+    const planInfo = PLANS[normalizePlan(tenant.plan)];
+    if (!planInfo) return false;
+    const limits = planInfo.limits || {};
+
+    if (resource === 'appointments') {
+      const limit = limits.appointmentsPerDay;
+      if (limit == null) return true;
       const count = await query(
         'SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND appointment_date::date = CURRENT_DATE',
         [tenantId]
       );
-      return parseInt(count.rows[0].total) < 10;
+      return parseInt(count.rows[0].total, 10) < limit;
     }
-    return false;
+
+    const table = RESOURCE_TABLE[resource];
+    if (!table) return true;
+    const limit = limits[resource];
+    if (limit == null) return true;
+
+    const count = await query(`SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = $1`, [tenantId]);
+    return parseInt(count.rows[0].total, 10) < limit;
   } catch (err: any) {
     logger.error('Error en checkPlanLimits', { error: err.message });
     return false;

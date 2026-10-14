@@ -50,3 +50,15 @@ export interface TwilioConfig {
   auth_token: string;
   from: string;
 }
+
+export interface PlanPrice {
+  plan_name: string;
+  price: string;
+  price_usd: string | null;
+  currency: string;
+  promo_price: string | null;
+  promo_price_usd: string | null;
+  promo_months: number;
+  updated_at: string;
+  name?: string;
+}

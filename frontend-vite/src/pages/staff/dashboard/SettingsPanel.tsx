@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 import { useDashboard } from './dashboardContext';
 import { useDashboardCRUD } from './useDashboardCRUD';
+import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../api/client';
 import PhoneInput from '../../../components/PhoneInput';
 import LocationPickerModal from './modals/LocationPickerModal';
@@ -15,6 +16,7 @@ export default function SettingsPanel() {
     blockedDates, setBlockedDates,
     calendarStatus,
   } = useDashboard();
+  const { staffToken } = useAuth();
   const { saveSettings, addBlockedDate, deleteBlockedDate } = useDashboardCRUD();
 
   const [newBlockedDate, setNewBlockedDate] = useState({ date: '', reason: '' });
@@ -264,25 +266,6 @@ export default function SettingsPanel() {
             </details>
           </div>
 
-          {/* SMTP */}
-          <div className="section-divider">
-            <details>
-              <summary className="section-header">{t('staffDashboard.smtpTitle')}</summary>
-              <p className="text-muted mb-12">{t('staffDashboard.smtpHint')}</p>
-              <div className="grid-2">
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.smtpEmailLabel')}</label>
-                  <input type="email" className="glass-input" value={settings.smtp_email || ''} onChange={e => setSettings(p => ({ ...p, smtp_email: e.target.value }))} placeholder={t('staffDashboard.notificationEmailPlaceholder')} />
-                </div>
-                <div className="dash-form-group">
-                  <label>{t('staffDashboard.smtpPasswordLabel')}</label>
-                  <input type="password" className="glass-input" value={settings.smtp_password || ''} onChange={e => setSettings(p => ({ ...p, smtp_password: e.target.value }))} placeholder="••••••••" />
-                  <small className="text-muted">{t('staffDashboard.smtpPasswordHint')}</small>
-                </div>
-              </div>
-            </details>
-          </div>
-
           {/* Calendar Sync */}
           <div className="section-divider">
             <details>
@@ -322,7 +305,7 @@ export default function SettingsPanel() {
               ) : (
                 <div>
                   <p className="text-muted mb-8">{t('staffDashboard.calendarSyncNotConnected')}</p>
-                  <a href={`/api/auth/google/calendar?staff_token=${encodeURIComponent('')}`} className="dash-btn dash-btn-primary inline-block no-underline">
+                  <a href={`/auth/google/calendar?staff_token=${encodeURIComponent(staffToken || '')}`} className="dash-btn dash-btn-primary inline-block no-underline">
                     {t('staffDashboard.calendarSyncConnect')}
                   </a>
                 </div>

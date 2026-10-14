@@ -8,6 +8,7 @@ import { authenticateSuperAdmin, validate } from '../middleware';
 const config = require('../config');
 import { body } from 'express-validator';
 import { activateTenantFromPaidInvoice } from '../services/billing';
+import { reloadPlanPrices } from '../services/payment-config';
 
 /**
  * @param {import('express').RequestHandler} loginLimiter
@@ -241,7 +242,7 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
 
   router.get('/super-admin/plan-prices', authenticateSuperAdmin, async (req, res) => {
     try {
-      const prices = await query('SELECT plan_name, price, currency, updated_at FROM plan_prices ORDER BY plan_name');
+      const prices = await query('SELECT plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, updated_at FROM plan_prices ORDER BY plan_name');
       res.json({ prices: prices.rows });
     } catch (err: any) {
       logger.error(err);
@@ -252,26 +253,34 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
   router.put('/super-admin/plan-prices/:planName', authenticateSuperAdmin, async (req, res) => {
     try {
       const { planName } = req.params;
-      const { price, currency } = req.body;
+      const { price, price_usd, currency, promo_price, promo_price_usd, promo_months } = req.body;
 
-      if (!price || isNaN(price)) {
-        return res.status(400).json({ error: 'Precio inválido' });
-      }
-
-      const validPlans = ['pro', 'enterprise'];
+      const validPlans = ['free', 'basico', 'estandar', 'premium', 'pro'];
       if (!validPlans.includes(planName)) {
         return res.status(400).json({ error: 'Plan inválido' });
       }
 
+      if (!price && price !== 0) {
+        return res.status(400).json({ error: 'Precio es requerido' });
+      }
+
+      const numericPrice = parseFloat(price);
+      if (isNaN(numericPrice)) {
+        return res.status(400).json({ error: 'Precio inválido' });
+      }
+
       await query(
-        `INSERT INTO plan_prices (plan_name, price, currency, updated_at)
-         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        `INSERT INTO plan_prices (plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
          ON CONFLICT (plan_name)
-         DO UPDATE SET price = $2, currency = $3, updated_at = CURRENT_TIMESTAMP`,
-        [planName, price, currency || 'UYU']
+         DO UPDATE SET price = $2, price_usd = $3, currency = $4,
+           promo_price = $5, promo_price_usd = $6, promo_months = $7, updated_at = CURRENT_TIMESTAMP`,
+        [planName, numericPrice, price_usd || null, currency || 'UYU',
+         promo_price || null, promo_price_usd || null, promo_months || 0]
       );
 
-      logger.info(`Precio actualizado: ${planName} -> ${price} ${currency || 'UYU'}`);
+      logger.info(`Precio actualizado: ${planName} -> ${numericPrice} ${currency || 'UYU'}`);
+      await reloadPlanPrices(query);
       res.json({ message: 'Precio actualizado correctamente' });
     } catch (err: any) {
       logger.error(err);

@@ -1,4 +1,4 @@
-﻿{
+{
   "app": {
     "name": "Velsoie",
     "loading": "Loading...",
@@ -48,7 +48,7 @@
     "termsAndConditions": "Terms and Conditions",
     "privacyPolicy": "Privacy Policy",
     "cancellationPolicy": "Cancellation Policy",
-"loadingImage": "Loading image...",
+    "loadingImage": "Loading image...",
     "imageLoadError": "The image could not be loaded. Try another file.",
     "rotate": "Rotate",
     "flipHorizontal": "Flip horizontal",
@@ -282,7 +282,12 @@
     "joinWaitlist": "Join waitlist",
     "waitlistFormTitle": "Waitlist",
     "waitlistFormHint": "We'll let you know when a slot opens up.",
-    "waitlistConfirm": "Yes, notify me"
+    "waitlistConfirm": "Yes, notify me",
+    "selectedServices": "{{count}} service(s) selected",
+    "totalDuration": "Total duration",
+    "totalPrice": "Total price",
+    "multipleServicesTitle": "Selected services ({{count}})",
+    "continueButton": "Continue"
   },
   "appointmentManage": {
     "notFound": "Appointment not found",
@@ -457,11 +462,8 @@
     "dayVie": "Fri",
     "daySab": "Sat",
     "dayDom": "Sun",
-    "smtpTitle": "SMTP Settings (transactional email)",
-    "smtpHint": "Use Gmail with App Password. The password is not shown for security.",
-    "smtpEmailLabel": "SMTP Email",
-    "smtpPasswordLabel": "Password (App Password)",
-    "smtpPasswordHint": "Not shown when loading (stored securely)",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "captchaTitle": "Captcha",
     "captchaEnabledLabel": "Enable captcha on public booking form",
     "captchaHint": "Protects the booking form against bots using Cloudflare Turnstile.",
@@ -687,8 +689,11 @@
     "newApptPhonePlaceholder": "099 123 456",
     "newApptEmailLabel": "Email",
     "newApptEmailPlaceholder": "client@email.com",
-    "newApptServiceLabel": "Service *",
-    "newApptServicePlaceholder": "Select...",
+     "newApptServiceLabel": "Service *",
+     "newApptServicePlaceholder": "Select...",
+     "servicesSelected": "{{count}} service(s)",
+     "totalDuration": "Total duration",
+     "doneButton": "Done",
     "newApptStaffLabel": "Stylist",
     "newApptStaffAny": "Any stylist",
     "newApptDateLabel": "Date *",
@@ -900,7 +905,9 @@
     "categoriesEmptyMessage": "Add your first category to organize your services.",
     "clientsHistoryTotal": "Total history:",
     "toastError": "An error occurred",
-    "toastLoadWaitlistError": "Error loading the waitlist"
+    "toastLoadWaitlistError": "Error loading the waitlist",
+    "smtpGoogleConnectSuccess": "Google connected successfully",
+    "smtpGoogleConnectError": "Error connecting to Google"
   },
   "staffLandingEditor": {
     "headerTitle": "Landing Editor",
@@ -1185,6 +1192,22 @@
     "toastTrialSet": "Account set to trial successfully",
     "toastTrialError": "Error setting to trial",
     "toastLoadError": "Error loading details",
+    "pricingTitle": "Plan Prices",
+    "planPricesTitle": "Price Management",
+    "planName": "Plan",
+    "priceLocal": "Local Price",
+    "priceUSD": "Price USD",
+    "currency": "Currency",
+    "promoPrice": "Promo Price",
+    "promoPriceUSD": "Promo Price USD",
+    "promoMonths": "Promo Months",
+    "updatedAt": "Last Updated",
+    "noPlanPrices": "No prices configured",
+    "toastPriceSaved": "Price updated successfully",
+    "planFree": "Free",
+    "planBasico": "Basic",
+    "planEstandar": "Standard",
+    "planPremium": "Premium",
     "error": "Error"
   },
   "clientLogin": {

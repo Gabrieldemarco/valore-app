@@ -1,18 +1,7 @@
 
-// services/notifications.js
-/**
- * @typedef {Object} Tenant
- * @property {number} id
- * @property {string} slug
- * @property {string} business_name
- * @property {string} [brand_primary_color]
- * @property {string} [business_address]
- * @property {string} [business_phone]
- * @property {string} [notification_email]
- */
-
+// services/notifications.ts - Notificaciones multicanal con queue
 import createEmailTransporter from './email';
-import { sendWhatsApp } from './twilio';
+import { enqueueNotification } from './notificationQueue';
 import logger from './logger';
 import { getLocale } from '../utils/locale';
 import { getTemplate } from '../utils/templates';
@@ -49,51 +38,35 @@ async function sendClientConfirmation(appointment, tenant) {
   };
 
   const html = tmpl.emailHtml(data);
+  const smtpUser = tenant.smtp_email || process.env.SMTP_USER;
+  const smtpPass = tenant.smtp_password || process.env.SMTP_PASS;
 
-  try {
-    // ✅ CORREGIDO: Usar SMTP_USER en lugar de EMAIL_USER
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      logger.info('📧 [SIMULADO] Email a:', appointment.client_email);
-      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
-      return { success: true, simulated: true };
-    }
+  await enqueueNotification({
+    type: 'email',
+    to: appointment.client_email,
+    subject: tmpl.emailSubject(data),
+    html,
+    tenantId: tenant.id,
+    smtpEmail: smtpUser,
+    smtpPass,
+    priority: 'normal',
+    data: { business_name: tenant.business_name },
+  });
 
-    const transporter = createEmailTransporter();
-
-    const info = await transporter.sendMail({
-      from: `"${tenant.business_name}" <${process.env.SMTP_USER}>`,
-      to: appointment.client_email,
-      subject: tmpl.emailSubject(data),
-      html
-    });
-
-    logger.info('✅ Email enviado:', info.messageId);
-  } catch (error: any) {
-    logger.error('❌ Error enviando email:', error.message);
-  }
-
-  // WhatsApp al cliente
   if (appointment.client_phone) {
     const clientBody = tmpl.whatsappBody(data);
-    await sendWhatsApp(appointment.client_phone, clientBody);
+    await enqueueNotification({
+      type: 'whatsapp',
+      to: appointment.client_phone,
+      body: clientBody,
+      priority: 'high',
+    });
   }
 
-  return { success: true };
+  return { success: true, enqueued: true };
 }
 
 // ========== NOTIFICAR AL STAFF ==========
-/**
- * @param {Object} appointment
- * @param {string} appointment.client_name
- * @param {string} appointment.appointment_date
- * @param {string} appointment.service
- * @param {string} [appointment.staff_name]
- * @param {string} appointment.client_phone
- * @param {string} [appointment.client_email]
- * @param {string} [appointment.notes]
- * @param {Tenant} tenant
- * @returns {Promise<{success: boolean, messageId?: string, skipped?: string, simulated?: boolean, error?: string}>}
- */
 async function notifyStaff(appointment, tenant) {
   const recipients: string[] = [];
   if (tenant.notification_email) recipients.push(tenant.notification_email);
@@ -120,50 +93,51 @@ async function notifyStaff(appointment, tenant) {
   };
 
   const html = tmpl.emailHtml(data);
+  const subject = tmpl.emailSubject(data);
+  const smtpUser = tenant.smtp_email || process.env.SMTP_USER;
+  const smtpPass = tenant.smtp_password || process.env.SMTP_PASS;
 
-  try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      logger.info('📧 [SIMULADO] Alerta a staff:', recipients.join(', '));
-      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
-      return { success: true, simulated: true };
-    }
-
-    const transporter = createEmailTransporter();
-
-    for (const recipient of recipients) {
-      try {
-        const info = await transporter.sendMail({
-          from: `"Sistema Turnos" <${process.env.SMTP_USER}>`,
-          to: recipient,
-          subject: tmpl.emailSubject(data),
-          html
-        });
-        logger.info('✅ Alerta enviada a:', recipient, info.messageId);
-      } catch (err: any) {
-        logger.error('❌ Error alertando a', recipient, err.message);
-      }
-    }
-  } catch (error: any) {
-    logger.error('❌ Error configurando transporte:', error.message);
+  for (const recipient of recipients) {
+    await enqueueNotification({
+      type: 'email',
+      to: recipient,
+      subject,
+      html,
+      tenantId: tenant.id,
+      smtpEmail: smtpUser,
+      smtpPass,
+      priority: 'normal',
+      data: { business_name: 'Sistema Turnos' },
+    });
   }
 
-  // WhatsApp al staff (solo al número general del negocio)
   if (tenant.notification_whatsapp) {
     const staffBody = tmpl.whatsappBody(data);
-    await sendWhatsApp(tenant.notification_whatsapp, staffBody);
+    await enqueueNotification({
+      type: 'whatsapp',
+      to: tenant.notification_whatsapp,
+      body: staffBody,
+      priority: 'high',
+    });
   }
 
-  sendPushToTenant(tenant.id, {
-    title: tmpl.pushTitle(data),
-    body: tmpl.pushBody(data),
-    url: '/staff/dashboard',
+  enqueueNotification({
+    type: 'push',
+    to: '',
+    tenantId: tenant.id,
+    data: {
+      title: tmpl.pushTitle(data),
+      body: tmpl.pushBody(data),
+      url: '/staff/dashboard',
+    },
+    priority: 'low',
   });
 
-  return { success: true };
+  return { success: true, enqueued: true };
 }
 
 // ========== ENVIAR CREDENCIALES A NUEVO STAFF ==========
-async function sendStaffCredentials(staff: { name: string; email: string }, tempPassword: string, tenant: { business_name: string }) {
+async function sendStaffCredentials(staff: { name: string; email: string }, tempPassword: string, tenant: { business_name: string; smtp_email?: string; smtp_password?: string; id?: number }) {
   const loginUrl = `${process.env.BASE_URL || 'https://app.velsoie.com.uy'}/staff/login`;
   const locale = getLocale();
   const tmpl = getTemplate('staffCredentials', locale);
@@ -177,26 +151,22 @@ async function sendStaffCredentials(staff: { name: string; email: string }, temp
   };
 
   const html = tmpl.emailHtml(data);
+  const smtpUser = tenant.smtp_email || process.env.SMTP_USER;
+  const smtpPass = tenant.smtp_password || process.env.SMTP_PASS;
 
-  try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      logger.info('📧 [SIMULADO] Credenciales enviadas a:', staff.email);
-      logger.info('⚠️ Configurar SMTP_USER y SMTP_PASS en .env para enviar emails reales');
-      return { success: true, simulated: true };
-    }
-    const transporter = createEmailTransporter();
-    await transporter.sendMail({
-      from: `"${tenant.business_name}" <${process.env.SMTP_USER}>`,
-      to: staff.email,
-      subject: tmpl.emailSubject(data),
-      html
-    });
-    logger.info('✅ Credenciales enviadas a:', staff.email);
-    return { success: true };
-  } catch (error: any) {
-    logger.error('❌ Error enviando credenciales a', staff.email, error.message);
-    return { success: false, error: error.message };
-  }
+  await enqueueNotification({
+    type: 'email',
+    to: staff.email,
+    subject: tmpl.emailSubject(data),
+    html,
+    tenantId: tenant.id,
+    smtpEmail: smtpUser,
+    smtpPass,
+    priority: 'normal',
+    data: { business_name: tenant.business_name },
+  });
+
+  return { success: true, enqueued: true };
 }
 
 // ========== EXPORTAR ==========

@@ -8,6 +8,7 @@ import StatsCards from './StatsCards';
 import TenantList from './TenantList';
 import TenantModal from './TenantModal';
 import TwilioConfigPanel from './TwilioConfig';
+import PlanPricesPanel from './PlanPricesPanel';
 import '../../styles/admin.css';
 
 function DashboardInner() {
@@ -17,6 +18,7 @@ function DashboardInner() {
   const {
     stats, filtered, search, setSearch,
     twilioConfig, setTwilioConfig,
+    planPrices, setPlanPrices,
     loadData, toastMsg, toastType, showToast,
   } = useAdminDashboard();
 
@@ -76,6 +78,11 @@ function DashboardInner() {
         <TwilioConfigPanel
           config={twilioConfig}
           setConfig={setTwilioConfig}
+          showToast={showToast}
+        />
+        <PlanPricesPanel
+          planPrices={planPrices}
+          setPlanPrices={setPlanPrices}
           showToast={showToast}
         />
       </div>

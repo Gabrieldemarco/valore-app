@@ -1,0 +1,2 @@
+-- Migration 034: Legacy price correction
+-- Current plan prices are defined in 032. This file is kept for production history.

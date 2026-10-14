@@ -29,26 +29,29 @@ export function useAppointmentCRUD() {
 
   const saveNewAppointment = useCallback(async (form: {
     clientName: string; clientPhone: string; clientEmail: string;
-    serviceId: string; staffId: string; appointmentDate: string;
+    serviceId: string; selectedServices?: number[]; staffId: string; appointmentDate: string;
     appointmentTime: string; notes: string;
   }) => {
-    if (!form.clientName || !form.clientPhone || !form.serviceId || !form.appointmentDate || !form.appointmentTime) {
+    if (!form.clientName || !form.clientPhone || (!form.serviceId && (!form.selectedServices || form.selectedServices.length === 0)) || !form.appointmentDate || !form.appointmentTime) {
       addToast(t('staffDashboard.toastSaveNewApptValidation'), 'error');
       return false;
     }
-    const apptDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00`);
+    const apptDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00Z`);
     if (apptDate <= new Date()) {
       addToast(t('staffDashboard.toastSaveNewApptFuture'), 'error');
       return false;
     }
     try {
-      const appointmentDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00`).toISOString();
-      const body: Record<string, unknown> = {
-        clientName: form.clientName,
-        clientPhone: form.clientPhone,
-        serviceId: parseInt(form.serviceId, 10),
-        appointmentDate,
-      };
+      const appointmentDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00Z`).toISOString();
+       const body: Record<string, unknown> = {
+         clientName: form.clientName,
+         clientPhone: form.clientPhone,
+         serviceId: parseInt(form.serviceId, 10),
+         appointmentDate,
+       };
+      if (form.selectedServices && form.selectedServices.length > 1) {
+        body.serviceIds = form.selectedServices;
+      }
       if (form.clientEmail) body.clientEmail = form.clientEmail;
       if (form.staffId) body.staffId = parseInt(form.staffId, 10);
       if (form.notes) body.notes = form.notes;

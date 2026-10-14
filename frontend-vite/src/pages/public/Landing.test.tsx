@@ -169,6 +169,9 @@ describe('Landing', () => {
     const serviceCards = screen.getAllByText('Corte moderno');
     await user.click(serviceCards[1]);
 
+    // Click "Continuar" button to proceed after selecting services
+    await user.click(screen.getByText('Continuar'));
+
     // Step 3: select a date
     await waitFor(() => {
       expect(screen.getByText('Elegí una fecha disponible')).toBeInTheDocument();

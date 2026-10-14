@@ -39,12 +39,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       res.status(403).json({ error: 'Límite de plan alcanzado. Contactá al administrador.' });
       return null;
     }
-    const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode } = req.body;
-    if (!clientName || !clientPhone || !serviceId || !appointmentDate) {
+    const { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = req.body;
+    if (!clientName || !clientPhone || (!serviceId && !serviceIds) || !appointmentDate) {
       res.status(400).json({ error: 'Datos obligatorios faltantes' });
       return null;
     }
-    return { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode };
+    return { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode };
   }
 
   async function resolveServiceAndStaff(serviceId, staffId, tenantId, res, appointmentDate?) {
@@ -56,7 +56,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       res.status(404).json({ error: 'Servicio no disponible' });
       return null;
     }
-    let validStaffId = null;
+    const validStaffId = await resolveStaff(staffId, tenantId, res, service.duration, appointmentDate);
+    if (validStaffId === null && staffId) return null;
+    return { service, validStaffId };
+  }
+
+  async function resolveStaff(staffId, tenantId, res, duration, appointmentDate?) {
     if (staffId) {
       const staffMember = await queryOne(
         'SELECT id, name, email FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
@@ -66,10 +71,11 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         res.status(400).json({ error: 'Peluquero no válido para esta peluquería' });
         return null;
       }
-      validStaffId = staffMember.id;
-    } else if (appointmentDate) {
+      return staffMember.id;
+    }
+    if (appointmentDate) {
       const slotDate = new Date(appointmentDate);
-      const slotEnd = new Date(slotDate.getTime() + service.duration * 60000);
+      const slotEnd = new Date(slotDate.getTime() + duration * 60000);
       const autoAssign = await query(
         `SELECT s.id, COUNT(a.id) AS appointment_count
          FROM staff s
@@ -84,11 +90,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
          LIMIT 1`,
         [tenantId, slotDate.toISOString(), slotEnd.toISOString()]
       );
-      if (autoAssign.rows.length > 0) {
-        validStaffId = autoAssign.rows[0].id;
-      }
+      if (autoAssign.rows.length > 0) return autoAssign.rows[0].id;
     }
-    return { service, validStaffId };
+    return null;
   }
 
   function buildAppointmentDates(appointmentDate, recurring, service) {
@@ -226,13 +230,21 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
   router.get('/:slug/availability', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
-      const { date, serviceId } = req.query;
-      if (!date || !serviceId) return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
-      const service = await queryOne(
-        'SELECT * FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
-        [serviceId, req.tenant.id]
-      );
-      if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
+      const { date, serviceId, serviceIds } = req.query as { date?: string; serviceId?: string; serviceIds?: string };
+      if (!date) return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
+      let totalDuration = 0;
+      if (serviceIds) {
+        const ids = String(serviceIds).split(',').map(Number);
+        const servicesResult = await query('SELECT duration FROM services WHERE id = ANY($1) AND tenant_id = $2 AND active = true', [ids, req.tenant.id]);
+        if (servicesResult.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
+        totalDuration = servicesResult.rows.reduce((sum, s) => sum + s.duration, 0);
+      } else if (serviceId) {
+        const service = await queryOne('SELECT * FROM services WHERE id = $1 AND tenant_id = $2 AND active = true', [serviceId, req.tenant.id]);
+        if (!service) return res.status(404).json({ error: 'Servicio no encontrado' });
+        totalDuration = service.duration;
+      } else {
+        return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
+      }
       const existing = await query(
         `SELECT appointment_date, service_duration FROM appointments WHERE tenant_id = $1 AND appointment_date::date = $2 AND status != 'cancelled'`,
         [req.tenant.id, date]
@@ -251,12 +263,13 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
       const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
 
-      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig, blockedDates.rows);
+      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
-        const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        return { time, available: true };
+        const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        return { time, datetime: d.toISOString(), available: true };
       });
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json({ slots });
     } catch (err: any) {
       logger.error(err);
@@ -274,17 +287,35 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
     body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
     body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
-    body('serviceId').isInt({ min: 1 }).withMessage('serviceId inválido'),
+    body('serviceId').optional({ values: 'null', nullable: true }).isInt({ min: 1 }).withMessage('serviceId inválido'),
+    body('serviceIds').optional({ values: 'null', nullable: true }).isArray().withMessage('serviceIds debe ser un array'),
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
     body('captchaToken').optional().isString().withMessage('captchaToken inválido'),
   ], validate, async (req, res) => {
     try {
       const validated = await validateBookingRequest(req, res, req.tenant);
       if (!validated) return;
-      const { clientName, clientPhone, clientEmail, serviceId, staffId, appointmentDate, notes, recurring, couponCode } = validated;
+      const { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = validated;
 
-      const resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res, appointmentDate);
-      if (!resolved) return;
+      let resolved;
+      if (serviceIds) {
+        const ids = serviceIds;
+        const servicesResult = await query('SELECT * FROM services WHERE id = ANY($1) AND tenant_id = $2 AND active = true', [ids, req.tenant.id]);
+        if (servicesResult.rows.length === 0) return res.status(404).json({ error: 'Servicio no disponible' });
+        const combinedService = {
+          id: servicesResult.rows[0].id,
+          name: servicesResult.rows.map(s => s.name).join(' + '),
+          duration: servicesResult.rows.reduce((sum, s) => sum + s.duration, 0),
+          price: servicesResult.rows.reduce((sum, s) => sum + parseFloat(s.price || 0), 0),
+          deposit_amount: servicesResult.rows.reduce((sum, s) => sum + parseFloat(s.deposit_amount || 0), 0),
+        };
+        const resolvedStaffId = await resolveStaff(staffId, req.tenant.id, res, combinedService.duration, appointmentDate);
+        if (resolvedStaffId === null && staffId) return;
+        resolved = { service: combinedService, validStaffId: resolvedStaffId };
+      } else {
+        resolved = await resolveServiceAndStaff(serviceId, staffId, req.tenant.id, res, appointmentDate);
+        if (!resolved) return;
+      }
       const { service, validStaffId } = resolved;
 
       if (req.tenant.captcha_enabled) {
@@ -468,9 +499,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
   router.get('/:slug/staff/:staffId/availability', identifyTenant, requireActivePublicTenant, async (req, res) => {
     try {
       const { staffId } = req.params;
-      const { date, serviceId } = req.query;
+      const { date, serviceId, serviceIds } = req.query as { date?: string; serviceId?: string; serviceIds?: string };
 
-      if (!date || !serviceId) return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
+      if (!date) return res.status(400).json({ error: 'Fecha requerida' });
 
       const staff = await queryOne(
         'SELECT id, individual_hours FROM staff WHERE id = $1 AND tenant_id = $2 AND active = true',
@@ -478,11 +509,22 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       );
       if (!staff) return res.status(404).json({ error: 'Peluquero no encontrado' });
 
-      const service = await queryOne(
-        'SELECT duration FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
-        [serviceId, req.tenant.id]
-      );
-      if (!service) return res.status(404).json({ error: 'Servicio no disponible' });
+      let totalDuration = 0;
+      if (serviceIds) {
+        const ids = String(serviceIds).split(',').map(Number);
+        const servicesResult = await query('SELECT duration FROM services WHERE id = ANY($1) AND tenant_id = $2 AND active = true', [ids, req.tenant.id]);
+        if (servicesResult.rows.length === 0) return res.status(404).json({ error: 'Servicio no disponible' });
+        totalDuration = servicesResult.rows.reduce((sum, s) => sum + s.duration, 0);
+      } else if (serviceId) {
+        const service = await queryOne(
+          'SELECT duration FROM services WHERE id = $1 AND tenant_id = $2 AND active = true',
+          [serviceId, req.tenant.id]
+        );
+        if (!service) return res.status(404).json({ error: 'Servicio no disponible' });
+        totalDuration = service.duration;
+      } else {
+        return res.status(400).json({ error: 'serviceId o serviceIds requerido' });
+      }
 
       let hoursConfig = (staff.individual_hours && typeof staff.individual_hours === 'object' && staff.individual_hours.startHour != null)
         ? staff.individual_hours
@@ -501,12 +543,13 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
       const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
 
-      const rawSlots = generateAvailableSlots(date, service.duration, existing.rows, hoursConfig, blockedDates.rows);
+      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
-        const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        return { time, available: true };
+        const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        return { time, datetime: d.toISOString(), available: true };
       });
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json({ slots });
     } catch (err: any) {
       logger.error(err);

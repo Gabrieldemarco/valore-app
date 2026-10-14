@@ -32,9 +32,9 @@ function generateAvailableSlots(date, duration, appointments, tenantConfig, bloc
 
   for (let hour = startHour; hour < endHour; hour++) {
     for (const minute of [0, 30]) {
-      const slotStart = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`);
+      const slotStart = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00Z`);
       const slotEnd = new Date(slotStart.getTime() + duration * 60000);
-      if (slotEnd.getHours() > endHour || (slotEnd.getHours() === endHour && slotEnd.getMinutes() > 0)) continue;
+      if (slotEnd.getUTCHours() > endHour || (slotEnd.getUTCHours() === endHour && slotEnd.getUTCMinutes() > 0)) continue;
       const conflict = appointments.some(a => {
         const apptStart = new Date(a.appointment_date);
         const apptEnd = new Date(apptStart.getTime() + (a.service_duration || 30) * 60000);

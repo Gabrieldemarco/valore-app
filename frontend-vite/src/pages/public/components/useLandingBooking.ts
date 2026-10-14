@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../api/client';
+import type { SlotItem } from '../LandingTypes';
 
 interface UseLandingBookingParams {
   clientName: string; clientPhone: string; clientEmail: string; clientNotes: string;
-  selectedService: number | null; selectedStaff: number | null; selectedDate: string; selectedTime: string;
+  selectedService: number | null; selectedServices: number[]; selectedStaff: number | null; selectedDate: string; selectedSlot: SlotItem | null;
   tenantSlug: string; couponCode: string; captchaToken: string;
   recurringEnabled: boolean; recurringFrequency: string; recurringCount: number;
   setClientName: (v: string) => void; setClientPhone: (v: string) => void; setClientEmail: (v: string) => void; setClientNotes: (v: string) => void;
-  setSelectedService: (v: number | null) => void; setSelectedStaff: (v: number | null) => void; setSelectedDate: (v: string) => void; setSelectedTime: (v: string) => void;
+   setSelectedService: (v: number | null) => void; setSelectedServices: (v: number[]) => void; setSelectedStaff: (v: number | null) => void; setSelectedDate: (v: string) => void; setSelectedSlot: (v: SlotItem | null) => void;
   setMsg: (v: string) => void; setErrMsg: (v: string) => void; setStep: (v: number) => void;
   setRecurringEnabled: (v: boolean) => void; setRecurringFrequency: (v: string) => void; setRecurringCount: (v: number) => void;
   setWaitlistMsg: (v: string) => void; setWaitlistErr: (v: string) => void; setShowWaitlistForm: (v: boolean) => void;
@@ -16,10 +17,10 @@ interface UseLandingBookingParams {
 export default function useLandingBooking(params: UseLandingBookingParams) {
   const { t } = useTranslation();
   const {
-    clientName, clientPhone, clientEmail, clientNotes, selectedService, selectedStaff, selectedDate, selectedTime, tenantSlug,
+    clientName, clientPhone, clientEmail, clientNotes,   selectedService, selectedServices, selectedStaff, selectedDate, selectedSlot, tenantSlug,
     couponCode, captchaToken, recurringEnabled, recurringFrequency, recurringCount,
     setClientName, setClientPhone, setClientEmail, setClientNotes,
-    setSelectedService, setSelectedStaff, setSelectedDate, setSelectedTime,
+    setSelectedService, setSelectedServices, setSelectedStaff, setSelectedDate, setSelectedSlot,
     setMsg, setErrMsg, setStep, setRecurringEnabled, setRecurringFrequency, setRecurringCount,
     setWaitlistMsg, setWaitlistErr, setShowWaitlistForm,
   } = params;
@@ -30,15 +31,18 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
       setErrMsg('El teléfono debe tener al menos 7 dígitos');
       return;
     }
-    const apptDate = selectedTime ? new Date(`${selectedDate}T${selectedTime}:00`).toISOString() : selectedDate;
+    const apptDate = selectedSlot?.datetime || selectedDate;
     try {
-      const body: Record<string, unknown> = {
-        clientName, clientPhone,
-        clientEmail: clientEmail || undefined,
-        serviceId: selectedService,
-        appointmentDate: apptDate,
-        notes: clientNotes || undefined,
-      };
+       const body: Record<string, unknown> = {
+         clientName, clientPhone,
+         clientEmail: clientEmail || undefined,
+         serviceId: selectedService,
+         appointmentDate: apptDate,
+         notes: clientNotes || undefined,
+       };
+       if (selectedServices && selectedServices.length > 1) {
+         body.serviceIds = selectedServices;
+       }
       if (selectedStaff) body.staffId = selectedStaff;
       if (couponCode) body.couponCode = couponCode.toUpperCase();
       if (captchaToken) body.captchaToken = captchaToken;
@@ -51,7 +55,7 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
         return;
       }
       setMsg(res.recurring ? `${res.recurring_count} ${t('landing.appointmentsCreated')}` : t('landing.bookSuccess'));
-      setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedDate(''); setSelectedTime('');
+      setStep(1); setSelectedStaff(null); setSelectedService(null); setSelectedServices([]); setSelectedDate(''); setSelectedSlot(null);
       setClientName(''); setClientPhone(''); setClientEmail(''); setClientNotes('');
       setRecurringEnabled(false); setRecurringFrequency('weekly'); setRecurringCount(4);
     } catch (e: unknown) {
@@ -65,17 +69,20 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
       setWaitlistErr('El teléfono debe tener al menos 7 dígitos');
       return;
     }
-    if (!selectedService) {
-      setWaitlistErr('Seleccioná un servicio primero');
-      return;
-    }
-    try {
-      const body: Record<string, unknown> = {
-        clientName, clientPhone,
-        clientEmail: clientEmail || undefined,
-        serviceId: selectedService,
-        notes: clientNotes || undefined,
-      };
+       if (!selectedService) {
+       setWaitlistErr('Seleccioná un servicio primero');
+       return;
+     }
+     try {
+       const body: Record<string, unknown> = {
+         clientName, clientPhone,
+         clientEmail: clientEmail || undefined,
+         serviceId: selectedService,
+         notes: clientNotes || undefined,
+       };
+       if (selectedServices && selectedServices.length > 1) {
+         body.serviceIds = selectedServices;
+       }
       if (selectedStaff) body.staffId = selectedStaff;
       await api.post(`/p/${tenantSlug}/waitlist`, body);
       setWaitlistMsg(t('landing.waitlistSuccess'));

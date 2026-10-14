@@ -3,7 +3,7 @@ const { generateAvailableSlots } = require('../services/slots');
 
 /** Convierte hora local HH:MM en ISO esperado para _date_ */
 function t(date, time) {
-  return new Date(`${date}T${time}:00`).toISOString();
+  return new Date(`${date}T${time}:00Z`).toISOString();
 }
 
 describe('generateAvailableSlots', () => {
