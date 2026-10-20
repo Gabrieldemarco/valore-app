@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -58,6 +58,7 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/staff/login" element={<StaffLogin />} />
               <Route path="/staff/register" element={<StaffRegister />} />
+              <Route path="/register" element={<Navigate to="/staff/register" replace />} />
               <Route path="/staff/forgot-password" element={<ForgotPassword />} />
               <Route path="/staff/reset-password" element={<ResetPassword />} />
               <Route path="/staff/dashboard" element={<StaffDashboard />} />

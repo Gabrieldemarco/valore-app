@@ -19,11 +19,15 @@ function renderPublicIndex(salonResponse?: object) {
   if (salonResponse !== undefined) {
     spy.mockImplementation((path: string) => {
       if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
+      if (path === '/api/tenants/new-professionals') return Promise.resolve({ tenants: [] });
+      if (path === '/api/services/featured') return Promise.resolve({ services: [] });
       return Promise.resolve(salonResponse);
     });
   } else {
     spy.mockImplementation((path: string) => {
       if (path === '/api/geo') return Promise.resolve({ country: 'Uruguay', countryCode: 'UY' });
+      if (path === '/api/tenants/new-professionals') return Promise.resolve({ tenants: [] });
+      if (path === '/api/services/featured') return Promise.resolve({ services: [] });
       return new Promise(() => {}); // never resolve (loading state)
     });
   }

@@ -76,6 +76,7 @@ export function clearApiCache(): void {
 export const api = {
   get: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { role }),
   post: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'POST', body, role }),
+  postForm: <T>(path: string, body: FormData, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'POST', body, role, headers: {} }),
   put: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'PUT', body, role }),
   delete: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'DELETE', role }),
 };

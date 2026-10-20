@@ -48,13 +48,13 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
   };
 
   return (
-    <div className="admin-table-wrapper">
-      <div className="admin-table-header">
+    <div className="panel">
+      <div className="panel-header">
         <h2>{t('adminDashboard.pricingTitle')}</h2>
       </div>
 
-      <div className="admin-config-panel">
-        <h3 className="admin-section-title">{t('adminDashboard.planPricesTitle')}</h3>
+      <div className="config-panel">
+        <h3 className="section-title">{t('adminDashboard.planPricesTitle')}</h3>
 
         {planPrices.length === 0 && (
           <p className="text-muted" style={{ padding: '16px 0' }}>{t('adminDashboard.noPlanPrices')}</p>
@@ -63,20 +63,19 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
         {planPrices.map(plan => (
           <div
             key={plan.plan_name}
-            className="admin-config-grid"
+            className="config-grid"
             style={{ marginBottom: plan.plan_name === 'premium' ? 0 : '24px' }}
           >
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.planName')}</label>
               <input
                 type="text"
                 value={getLabel(plan.plan_name)}
                 readOnly
-                style={{ background: 'rgba(255,255,255,0.05)', cursor: 'default' }}
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.priceLocal')}</label>
               <input
                 type="number"
@@ -87,7 +86,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.priceUSD')}</label>
               <input
                 type="number"
@@ -98,7 +97,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.currency')}</label>
               <input
                 type="text"
@@ -107,7 +106,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.promoPrice')}</label>
               <input
                 type="number"
@@ -117,7 +116,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.promoPriceUSD')}</label>
               <input
                 type="number"
@@ -127,7 +126,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.promoMonths')}</label>
               <input
                 type="number"
@@ -137,13 +136,12 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
               />
             </div>
 
-            <div className="admin-form-group">
+            <div className="form-group">
               <label>{t('adminDashboard.updatedAt')}</label>
               <input
                 type="text"
                 value={plan.updated_at}
                 readOnly
-                style={{ background: 'rgba(255,255,255,0.05)', cursor: 'default' }}
               />
             </div>
           </div>

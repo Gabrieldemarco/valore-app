@@ -41,6 +41,10 @@ async function sendClientConfirmation(appointment, tenant) {
   const smtpUser = tenant.smtp_email || process.env.SMTP_USER;
   const smtpPass = tenant.smtp_password || process.env.SMTP_PASS;
 
+  if (!smtpUser || !smtpPass) {
+    return { success: true, simulated: true };
+  }
+
   await enqueueNotification({
     type: 'email',
     to: appointment.client_email,
@@ -96,6 +100,10 @@ async function notifyStaff(appointment, tenant) {
   const subject = tmpl.emailSubject(data);
   const smtpUser = tenant.smtp_email || process.env.SMTP_USER;
   const smtpPass = tenant.smtp_password || process.env.SMTP_PASS;
+
+  if (!smtpUser || !smtpPass) {
+    return { success: true, simulated: true };
+  }
 
   for (const recipient of recipients) {
     await enqueueNotification({

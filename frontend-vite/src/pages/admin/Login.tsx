@@ -45,7 +45,7 @@ export default function AdminLogin() {
               <label>{t('adminLogin.passwordLabel')}</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="glass-input" required placeholder={t('adminLogin.passwordPlaceholder')} />
             </div>
-            <button type="submit" className="btn btn-primary w-full p-14 mt-10">{t('adminLogin.loginButton')}</button>
+            <button type="submit" className="btn btn-primary w-full">{t('adminLogin.loginButton')}</button>
           </form>
 
           <div className="auth-back-link">

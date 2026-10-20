@@ -38,7 +38,7 @@ function DashboardInner() {
   return (
     <div className="admin-view">
       {toastMsg && (
-        <div className="toast-container block">
+        <div className="toast-container">
           <div className={`toast ${toastType}`}>
             <span className="toast-msg">{toastMsg}</span>
           </div>
@@ -47,24 +47,22 @@ function DashboardInner() {
 
       <header className="header">
         <h1>{t('adminDashboard.title')}</h1>
-        <div className="flex-center gap-12">
+        <div className="filters-bar" style={{ marginBottom: 0, padding: '12px 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
           <input
             type="text"
             placeholder={t('adminDashboard.searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{
-              background: 'rgba(10,10,16,0.9)',
-              border: '1px solid rgba(99,102,241,0.2)',
-              color: 'var(--border-color)',
-              padding: '9px 14px',
-              borderRadius: 8,
-              fontSize: 13,
-              fontFamily: "'Outfit', sans-serif",
-              minWidth: 180,
-            }}
+            className="glass-input"
+            style={{ minWidth: 220, padding: '10px 14px', borderRadius: 10 }}
           />
-          <button onClick={() => { logout(); navigate('/admin/login'); }} className="admin-view btn" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-secondary)', padding: '9px 14px', borderRadius: 8, fontSize: 13, fontFamily: "'Outfit', sans-serif", cursor: 'pointer' }}>{t('adminDashboard.logoutButton')}</button>
+          <button
+            onClick={() => { logout(); navigate('/admin/login'); }}
+            className="btn btn-secondary"
+            style={{ padding: '10px 16px', borderRadius: 10 }}
+          >
+            {t('adminDashboard.logoutButton')}
+          </button>
         </div>
       </header>
 

@@ -731,6 +731,84 @@
   display: none;
 }
 
+.services-sale-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 15px 4px 35px 4px;
+  width: 100%;
+  scroll-snap-type: x mandatory;
+  justify-content: flex-start;
+}
+
+.services-sale-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.service-sale-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.service-sale-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--primary);
+  box-shadow: 0 20px 45px rgba(207, 168, 107, 0.12);
+}
+
+.service-sale-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.service-sale-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.service-sale-name {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.service-sale-salon {
+  font-size: 15px;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+.service-sale-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.service-sale-duration {
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  margin-top: auto;
+}
+
+
 .salon-link {
   flex: 0 0 250px;
   max-width: 100%;
@@ -835,6 +913,80 @@
   height: 4px;
   border-radius: 50%;
   background-color: var(--primary);
+}
+
+.new-badge {
+  position: absolute;
+  top: 14px;
+  right: 80px;
+  background: var(--gold);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--dark, #1a1a1a);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 3;
+}
+
+.hero-cta {
+  margin-top: 24px;
+  padding: 14px 36px;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 28px rgba(207, 168, 107, 0.25);
+  transition: all var(--transition-normal);
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(207, 168, 107, 0.35);
+}
+
+.service-sale-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.price-prefix {
+  opacity: 0.6;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.price-value {
+  font-weight: 700;
+}
+
+.service-sale-duration {
+  align-self: flex-start;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  background: rgba(207, 168, 107, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.service-sale-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: var(--text-secondary, #666);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.service-sale-arrow {
+  width: 16px;
+  height: 16px;
+  stroke: var(--primary);
+  margin-left: 8px;
 }
 
 .salon-content {
@@ -1118,6 +1270,44 @@
   color: var(--text-muted);
   margin-bottom: 28px;
   font-size: 17px;
+}
+
+.section-empty {
+  padding: 60px 20px;
+}
+
+.empty-state-card {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 48px 32px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+}
+
+.empty-icon {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-state-card h3 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-family: 'Cormorant Garamond', serif !important;
+  color: var(--text-main);
+}
+
+.empty-state-card p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 @media (max-width: 1024px) {
@@ -1459,4 +1649,218 @@
     background: var(--primary);
     color: var(--text-white);
   }
+}
+
+/* ============================================================
+   ABOUT VELSOIE SECTION
+   ============================================================ */
+
+.about-velsoie-section {
+  position: relative;
+  padding: 100px 0 80px;
+  overflow: hidden;
+}
+
+.about-velsoie-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  border-radius: 2px;
+}
+
+.about-velsoie-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.about-velsoie-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.about-eyebrow {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 14px;
+  opacity: 0.95;
+}
+
+.about-title {
+  font-size: clamp(2rem, 3.5vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  margin: 0 0 20px;
+}
+
+.about-lead {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0 0 36px;
+  max-width: 520px;
+}
+
+.about-features-list {
+  list-style: none;
+  margin: 0 0 40px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.about-feature-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.about-feature-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(200, 130, 125, 0.12);
+  border: 1px solid rgba(200, 130, 125, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.about-feature-item:hover .about-feature-icon {
+  background: rgba(200, 130, 125, 0.22);
+  transform: scale(1.08);
+}
+
+.about-feature-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.about-feature-title {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.about-feature-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.about-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 32px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #0a0a0c;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-shadow: 0 4px 20px rgba(200, 130, 125, 0.35);
+  align-self: flex-start;
+}
+
+.about-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(200, 130, 125, 0.5);
+  opacity: 0.95;
+}
+
+.about-velsoie-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.about-mockup-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+}
+
+.about-mockup-glow {
+  position: absolute;
+  inset: -24px;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(200, 130, 125, 0.15) 0%, transparent 70%);
+  border-radius: 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.about-mockup-img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(200, 130, 125, 0.25);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(200, 130, 125, 0.12);
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.about-mockup-img:hover {
+  transform: scale(1.015) translateY(-4px);
+}
+
+.about-mockup-badge {
+  position: absolute;
+  bottom: -20px;
+  right: 20px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #0a0a0c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(200, 130, 125, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="light"] .about-feature-icon {
+  background: rgba(200, 130, 125, 0.1);
+  border-color: rgba(200, 130, 125, 0.3);
+}
+
+@media (max-width: 900px) {
+  .about-velsoie-container {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  .about-velsoie-visual { order: -1; }
+  .about-mockup-wrapper { max-width: 100%; }
+  .about-lead { max-width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .about-velsoie-section { padding: 60px 0 60px; }
+  .about-mockup-badge { right: 12px; bottom: -16px; font-size: 0.8rem; padding: 9px 16px; }
 }

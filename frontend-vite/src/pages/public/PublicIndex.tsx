@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+﻿import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useGeo } from '../../hooks/useGeo';
@@ -8,14 +8,27 @@ import PublicSearchBar from './PublicSearchBar';
 import PublicSalonStates from './PublicSalonStates';
 import PublicFooter from './PublicFooter';
 import SalonGridSection from './SalonGridSection';
+import FeaturedServicesSection from './FeaturedServicesSection';
 import TreatmentCategories from './components/TreatmentCategories';
 import HowItWorksSection from './components/HowItWorksSection';
+import AboutVelsoieSection from './components/AboutVelsoieSection';
 import { SERVICE_CATEGORIES_DATA } from './components/ServiceCategoriesData';
 import { getGenderCategory, type Salon } from './SalonCard';
 import '../../styles/index.css';
 
 interface TenantsResponse {
   tenants?: Salon[];
+}
+
+interface FeaturedService {
+  id: number;
+  name: string;
+  price: number;
+  duration: number;
+  salon_name: string;
+  slug: string;
+  service_image?: string;
+  salon_logo?: string;
 }
 
 export default function PublicIndex() {
@@ -25,6 +38,8 @@ export default function PublicIndex() {
   const countryName = geo.country;
   const [allSalons, setAllSalons] = useState<Salon[]>([]);
   const [filtered, setFiltered] = useState<Salon[]>([]);
+  const [newProfessionals, setNewProfessionals] = useState<Salon[]>([]);
+  const [featuredServices, setFeaturedServices] = useState<FeaturedService[]>([]);
   const [currentGenderFilter, setCurrentGenderFilter] = useState<string>('all');
   const [currentServiceFilter, setCurrentServiceFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +54,8 @@ export default function PublicIndex() {
   const featuredGridRef = useRef<HTMLDivElement>(null);
   const trendingGridRef = useRef<HTMLDivElement>(null);
   const newGridRef = useRef<HTMLDivElement>(null);
+  const newProfessionalsGridRef = useRef<HTMLDivElement>(null);
+  const featuredServicesGridRef = useRef<HTMLDivElement>(null);
   const femCollectionGridRef = useRef<HTMLDivElement>(null);
   const menCollectionGridRef = useRef<HTMLDivElement>(null);
   const allSalonsGridRef = useRef<HTMLDivElement>(null);
@@ -59,9 +76,17 @@ export default function PublicIndex() {
       .then(data => setAppointmentsCount(data.count || 0))
       .catch(() => setAppointmentsCount(0));
 
-    api.get<{ services: string[] }>('/api/services/all')
+     api.get<{ services: string[] }>('/api/services/all')
       .then(data => setAllServices(data.services || []))
       .catch(() => setAllServices([]));
+
+    api.get<{ tenants: Salon[] }>('/api/tenants/new-professionals')
+      .then(data => setNewProfessionals(data.tenants || []))
+      .catch(() => setNewProfessionals([]));
+
+    api.get<{ services: FeaturedService[] }>('/api/services/featured')
+      .then(data => setFeaturedServices(data.services || []))
+      .catch(() => setFeaturedServices([]));
   }, [t]);
 
   const filterSalons = useCallback(() => {
@@ -261,6 +286,47 @@ export default function PublicIndex() {
           />
         )}
 
+        {!loading && !error && newProfessionals.length > 0 && (
+          <SalonGridSection
+            title={t('publicIndex.newProfessionalsTitle')}
+            subtitle={t('publicIndex.newProfessionalsSubtitle')}
+            salons={newProfessionals}
+            gridRef={newProfessionalsGridRef}
+            defaultServices={defaultServices}
+            dotCount={getDotCount(newProfessionalsGridRef, newProfessionals.length)} // eslint-disable-line react-hooks/refs
+            onDotClick={(idx) => scrollToSalon(idx, newProfessionalsGridRef)}
+            headerStyle={{ marginTop: 60 }}
+            showNewBadge
+          />
+        )}
+        {!loading && !error && newProfessionals.length === 0 && (
+          <section className="section-empty" aria-hidden="true">
+            <div className="empty-state-card">
+              <span className="empty-icon">✨</span>
+              <h3>{t('publicIndex.noFeaturedSalons')}</h3>
+              <p>{t('publicIndex.noFeaturedSalonsDesc')}</p>
+            </div>
+          </section>
+        )}
+
+        {!loading && !error && featuredServices.length > 0 && (
+          <FeaturedServicesSection
+            title={t('publicIndex.serviceSaleTitle')}
+            subtitle={t('publicIndex.serviceSaleSubtitle')}
+            services={featuredServices}
+            gridRef={featuredServicesGridRef}
+          />
+        )}
+        {!loading && !error && featuredServices.length === 0 && (
+          <section className="section-empty" aria-hidden="true">
+            <div className="empty-state-card">
+              <span className="empty-icon">💎</span>
+              <h3>{t('publicIndex.noFeaturedServices')}</h3>
+              <p>{t('publicIndex.noFeaturedServicesDesc')}</p>
+            </div>
+          </section>
+        )}
+
         {!loading && !error && collectionSalons.fem.length > 0 && (
           <SalonGridSection
             eyebrow={t('publicIndex.collectionFemSectionTitle')}
@@ -313,6 +379,8 @@ export default function PublicIndex() {
       </main>
 
       <HowItWorksSection />
+
+      <AboutVelsoieSection />
 
       <PublicFooter appointmentsCount={appointmentsCount} />
     </>

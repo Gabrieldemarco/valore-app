@@ -11,9 +11,10 @@ interface SalonGridSectionProps {
   dotCount: number;
   onDotClick: (idx: number) => void;
   headerStyle?: React.CSSProperties;
+  showNewBadge?: boolean;
 }
 
-export default function SalonGridSection({ eyebrow, title, subtitle, salons, gridRef, defaultServices, dotCount, onDotClick, headerStyle }: SalonGridSectionProps) {
+export default function SalonGridSection({ eyebrow, title, subtitle, salons, gridRef, defaultServices, dotCount, onDotClick, headerStyle, showNewBadge = false }: SalonGridSectionProps) {
   return (
     <>
       <div className="section-header" style={headerStyle}>
@@ -23,7 +24,7 @@ export default function SalonGridSection({ eyebrow, title, subtitle, salons, gri
       </div>
       <div className="salons-grid" ref={gridRef}>
         {salons.map(salon => (
-          <SalonCard key={salon.id} salon={salon} defaultServices={defaultServices} />
+          <SalonCard key={salon.id} salon={salon} defaultServices={defaultServices} showNewBadge={showNewBadge} />
         ))}
       </div>
       {dotCount > 1 && (

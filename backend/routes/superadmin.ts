@@ -85,10 +85,10 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
   router.put('/super-admin/tenants/:id', authenticateSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { business_name, status, plan, billing_email, subscription_status } = req.body;
+      const { business_name, status, plan, billing_email, subscription_status, is_featured, display_order, featured_from, featured_to } = req.body;
       const result = await query(
-        `UPDATE tenants SET business_name = COALESCE($1, business_name), status = COALESCE($2, status), plan = COALESCE($3, plan), billing_email = COALESCE($4, billing_email), subscription_status = COALESCE($5, subscription_status), updated_at = NOW() WHERE id = $6 RETURNING *`,
-        [business_name, status, plan, billing_email, subscription_status, id]
+        `UPDATE tenants SET business_name = COALESCE($1, business_name), status = COALESCE($2, status), plan = COALESCE($3, plan), billing_email = COALESCE($4, billing_email), subscription_status = COALESCE($5, subscription_status), is_featured = COALESCE($6, is_featured), display_order = COALESCE($7, display_order), featured_from = $8, featured_to = $9, updated_at = NOW() WHERE id = $10 RETURNING *`,
+        [business_name, status, plan, billing_email, subscription_status, is_featured, display_order, featured_from, featured_to, id]
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Peluquería no encontrada' });
       res.json({ message: 'Peluquería actualizada', tenant: result.rows[0] });
@@ -195,6 +195,95 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
       );
       res.json({ payments: result.rows });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar pagos' }); }
+  });
+
+  // ========== SERVICES FOR TENANT ==========
+  router.get('/super-admin/tenants/:tenantId/services', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const { tenantId } = req.params;
+      const result = await query(
+        `SELECT id, name, price, duration, image, active, is_featured, category, description, category_id, tenant_id
+         FROM services
+         WHERE tenant_id = $1
+         ORDER BY name ASC`,
+        [tenantId]
+      );
+      res.json({ services: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar servicios' }); }
+  });
+
+  router.put('/super-admin/services/:id', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { is_featured, display_order } = req.body;
+      
+      // Si se quiere marcar como destacado, verificar que tenga imagen
+      if (is_featured === true) {
+        const service = await queryOne('SELECT image FROM services WHERE id = $1', [id]);
+        if (!service || !service.image) {
+          return res.status(400).json({ error: 'El servicio debe tener una imagen para ser destacado' });
+        }
+      }
+      
+      const result = await query(
+        `UPDATE services SET is_featured = COALESCE($1, is_featured), display_order = COALESCE($2, display_order), updated_at = NOW() WHERE id = $3 RETURNING *`,
+        [is_featured, display_order, id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Servicio no encontrado' });
+      res.json({ message: 'Servicio actualizado', service: result.rows[0] });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al actualizar servicio' }); }
+  });
+
+  // Subida de imagen para servicio
+  router.post('/super-admin/services/:id/image', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { image, filename } = req.body;
+      
+      if (!image) return res.status(400).json({ error: 'Imagen requerida' });
+      
+      const allowedTypes: Record<string, string> = {
+        jpeg: 'jpg', jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp'
+      };
+      
+      const matches = image.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (!matches) return res.status(400).json({ error: 'Formato de imagen inválido' });
+      
+      const mimeType = matches[1].toLowerCase();
+      const ext = allowedTypes[mimeType];
+      if (!ext) return res.status(400).json({ error: 'Tipo de imagen no soportado' });
+      
+      const base64Data = matches[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      if (buffer.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Imagen muy grande (max 5MB)' });
+      
+      const fs = require('fs');
+      const path = require('path');
+      const crypto = require('crypto');
+      
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      
+      const uniqueName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      const filepath = path.join(uploadsDir, uniqueName);
+      
+      await fs.promises.writeFile(filepath, buffer);
+      
+      const imageUrl = `/uploads/${uniqueName}`;
+      
+      // Actualizar servicio con la nueva imagen
+      await query(
+        `UPDATE services SET image = $1, updated_at = NOW() WHERE id = $2`,
+        [imageUrl, id]
+      );
+      
+      logger.info('Imagen de servicio subida: ' + imageUrl);
+      res.json({ success: true, url: imageUrl, message: 'Imagen subida' });
+    } catch (err: any) {
+      logger.error('Upload service image error:', err);
+      res.status(500).json({ error: 'Error al subir imagen' });
+    }
   });
 
   router.post('/super-admin/invoices', authenticateSuperAdmin, async (req, res) => {

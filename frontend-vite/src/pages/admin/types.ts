@@ -7,6 +7,10 @@ export interface Tenant {
   status: string;
   trial_end_date: string | null;
   created_at: string;
+  is_featured: boolean;
+  display_order: number;
+  featured_from: string | null;
+  featured_to: string | null;
 }
 
 export interface TenantDetail extends Tenant {
@@ -37,6 +41,23 @@ export interface Payment {
   created_at: string;
   invoice_number: string | null;
   invoice_description: string | null;
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  price: number;
+  duration: number;
+  image: string | null;
+  active: boolean;
+  is_featured: boolean;
+  category: string;
+  description: string;
+  category_id: number | null;
+  tenant_id: number;
+  display_order: number;
+  featured_from: string | null;
+  featured_to: string | null;
 }
 
 export interface Stats {

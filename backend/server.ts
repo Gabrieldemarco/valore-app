@@ -107,7 +107,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       connectSrc: ["'self'", "https://oauth2.googleapis.com", "https://www.googleapis.com", "https://accounts.google.com"],
       // accounts.google.com necesita poder abrir iframes para el flujo OAuth (postMessage)
-      frameSrc: ["'self'", "https://accounts.google.com", "https://challenges.cloudflare.com"],
+      frameSrc: ["'self'", "https://accounts.google.com", "https://challenges.cloudflare.com", "https://www.google.com", "https://maps.google.com", "https://google.com"],
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -658,7 +658,9 @@ function gracefulShutdown(signal) {
       await closeRedis();
       try {
         await notificationWorker.close();
-      } catch {}
+      } catch (err) {
+        logger.debug('Error closing notification worker:', err);
+      }
       process.exit(0);
     }).catch(err => {
       logger.error('❌ Error cerrando pool:', err.message);

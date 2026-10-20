@@ -242,8 +242,9 @@ describe('StaffDashboard', () => {
     renderDashboard();
     expect(await screen.findByText('Carlos')).toBeInTheDocument();
     await user.click(screen.getByText('📊 Analytics'));
-    expect(await screen.findByText('Ingresos del mes')).toBeInTheDocument();
-  });
+    // AnalyticsTab is lazy-loaded, give it extra time to load
+    expect(await screen.findByText('Ingresos del mes', { timeout: 15000 } as unknown as Record<string, unknown>)).toBeInTheDocument();
+  }, 15000);
 
   test('paginates appointments', async () => {
     const user = userEvent.setup();

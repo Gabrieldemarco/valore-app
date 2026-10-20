@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface PublicHeroProps {
@@ -36,6 +37,9 @@ export default function PublicHero({ countryName, currentGenderFilter, onSelectG
       <div className="hero-content">
         <h1>{countryName ? t('publicIndex.heroTitle', { country: countryName }) : t('publicIndex.heroTitleNoCountry')}</h1>
         <p>{t('publicIndex.heroSubtitle')}</p>
+        <Link to="/staff/register" className="btn btn-accent hero-cta">
+          {t('publicIndex.registerSalon')}
+        </Link>
         <div className="gender-filter-bar">
           {[
             { key: 'all', label: () => t('publicIndex.filterAll') },

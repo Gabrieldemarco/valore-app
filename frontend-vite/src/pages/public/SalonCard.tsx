@@ -43,9 +43,10 @@ export function getGenderCategory(salon: Salon): 'hombre' | 'mujer' | 'unisex' {
 interface SalonCardProps {
   salon: Salon;
   defaultServices: string[];
+  showNewBadge?: boolean;
 }
 
-export default function SalonCard({ salon, defaultServices }: SalonCardProps) {
+export default function SalonCard({ salon, defaultServices, showNewBadge = false }: SalonCardProps) {
   const { t } = useTranslation();
   const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
   const services = salon.services || defaultServices;
@@ -59,9 +60,12 @@ export default function SalonCard({ salon, defaultServices }: SalonCardProps) {
             ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />
             : <div className="salon-image-fallback"><span className="salon-initials">{getInitials(salon.business_name)}</span></div>
           }
-          <span className="salon-badge">
-            {gender === 'hombre' ? t('publicIndex.badgeCaballeros') : gender === 'mujer' ? t('publicIndex.badgeDamas') : t('publicIndex.badgeUnisex')}
-          </span>
+           <span className="salon-badge">
+             {gender === 'hombre' ? t('publicIndex.badgeCaballeros') : gender === 'mujer' ? t('publicIndex.badgeDamas') : t('publicIndex.badgeUnisex')}
+           </span>
+           {showNewBadge && (
+             <span className="new-badge">{t('publicIndex.newBadge')}</span>
+           )}
         </div>
         <div className="salon-content">
           <h3 className="salon-name text-gradient">{salon.business_name}</h3>

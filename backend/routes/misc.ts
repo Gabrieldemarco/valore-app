@@ -193,7 +193,57 @@ export default function(apiLimiter) {
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar peluquerías' }); }
   });
 
-  // ========== TENANTS CERCA DE UNA UBICACIÓN ==========
+    // ========== NUEVOS PROFESIONALES / SALONES DESTACADOS ==========
+  router.get('/tenants/new-professionals', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 15;
+      const result = await query(
+        `SELECT t.id, t.slug, t.business_name, t.brand_logo_url, t.business_address,
+                t.landing_hero_image, t.landing_description, t.landing_gallery, t.lat, t.lng, t.category,
+                (SELECT json_agg(s.name) FROM services s WHERE s.tenant_id = t.id AND s.active = true) as services,
+                (SELECT json_agg(st.name) FROM staff st WHERE st.tenant_id = t.id AND st.active = true) as staff_names,
+                (SELECT MIN(s.price) FROM services s WHERE s.tenant_id = t.id AND s.active = true AND s.price > 0) AS min_price,
+                st.name as new_staff_name, st.photo_url as new_staff_photo, st.specialties,
+                st.created_at as new_staff_created_at
+         FROM tenants t
+         JOIN (
+           SELECT DISTINCT ON (tenant_id) tenant_id, id, name, photo_url, specialties, created_at
+           FROM staff
+           WHERE active = true
+           ORDER BY tenant_id, created_at DESC
+         ) st ON st.tenant_id = t.id
+         WHERE t.status = 'active' AND t.landing_enabled = true AND t.is_featured = true
+           AND (t.featured_from IS NULL OR t.featured_from <= NOW())
+           AND (t.featured_to IS NULL OR t.featured_to >= NOW())
+         ORDER BY t.display_order ASC, t.created_at DESC
+         LIMIT $1`,
+        [limit]
+      );
+      res.json({ tenants: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar salones destacados' }); }
+  });
+
+   // ========== SERVICIOS DESTACADOS / OFERTAS ==========
+  router.get('/services/featured', async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT s.id, s.name, s.price, s.duration, t.business_name as salon_name, t.slug,
+                s.image as service_image, t.brand_logo_url as salon_logo
+         FROM services s
+         JOIN tenants t ON s.tenant_id = t.id
+         WHERE s.active = true AND s.is_featured = true
+           AND (s.featured_from IS NULL OR s.featured_from <= NOW())
+           AND (s.featured_to IS NULL OR s.featured_to >= NOW())
+           AND t.status = 'active' AND t.landing_enabled = true
+           AND s.price > 0
+         ORDER BY s.display_order ASC, s.price ASC
+         LIMIT 12`
+      );
+      res.json({ services: result.rows });
+    } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar servicios destacados' }); }
+  });
+
+   // ========== TENANTS CERCA DE UNA UBICACIÓN ==========
   router.get('/tenants/nearby', async (req, res) => {
     try {
       const lat = parseFloat(req.query.lat as string);

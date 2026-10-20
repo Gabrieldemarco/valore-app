@@ -146,4 +146,47 @@ describe('Misc Routes', () => {
       expect(res.body.error).toContain('inválido');
     });
   });
+
+  describe('GET /api/tenants', () => {
+    it('devuelve tenants públicos', async () => {
+      query.mockResolvedValueOnce({ rows: [{ id: 1, slug: 'test', business_name: 'Test Salon' }] });
+      const res = await request(app).get('/api/tenants');
+      expect(res.status).toBe(200);
+      expect(res.body.tenants).toHaveLength(1);
+    });
+  });
+
+  describe('GET /api/tenants/new-professionals', () => {
+    it('devuelve tenants con nuevos profesionales', async () => {
+      query.mockResolvedValueOnce({ rows: [{ id: 1, slug: 'test', business_name: 'Test Salon', new_staff_name: 'Ana', new_staff_photo: 'photo.jpg', new_staff_created_at: '2026-10-01T00:00:00Z' }] });
+      const res = await request(app).get('/api/tenants/new-professionals');
+      expect(res.status).toBe(200);
+      expect(res.body.tenants).toHaveLength(1);
+      expect(res.body.tenants[0].new_staff_name).toBe('Ana');
+    }, 30000);
+
+    it('devuelve error 500 en caso de fallo', async () => {
+      query.mockRejectedValueOnce(new Error('DB error'));
+      const res = await request(app).get('/api/tenants/new-professionals');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Error al cargar salones destacados');
+    }, 30000);
+  });
+
+  describe('GET /api/services/featured', () => {
+    it('devuelve servicios destacados', async () => {
+      query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'Corte', price: 50, salon_name: 'Test Salon', slug: 'test' }] });
+      const res = await request(app).get('/api/services/featured');
+      expect(res.status).toBe(200);
+      expect(res.body.services).toHaveLength(1);
+      expect(res.body.services[0].name).toBe('Corte');
+    }, 30000);
+
+    it('devuelve error 500 en caso de fallo', async () => {
+      query.mockRejectedValueOnce(new Error('DB error'));
+      const res = await request(app).get('/api/services/featured');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Error al cargar servicios destacados');
+    }, 30000);
+  });
 });

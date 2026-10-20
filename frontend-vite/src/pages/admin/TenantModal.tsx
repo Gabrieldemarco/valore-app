@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
-import type { TenantDetail, Invoice, Payment } from './types';
+import type { TenantDetail, Invoice, Payment, Service } from './types';
 
 interface Props {
   tenantId: number | null;
@@ -11,28 +11,31 @@ interface Props {
   loadData: () => void;
 }
 
-type ModalTab = 'info' | 'invoices' | 'payments';
+type ModalTab = 'info' | 'invoices' | 'payments' | 'services';
 
 export default function TenantModal({ tenantId, onClose, showToast, loadData }: Props) {
   const { t } = useTranslation();
   const [detail, setDetail] = useState<TenantDetail | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [activeTab, setActiveTab] = useState<ModalTab>('info');
   const [reactivateMode, setReactivateMode] = useState<'extend_trial' | 'upgrade_pro'>('extend_trial');
   const [extendDays, setExtendDays] = useState(15);
   const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
   const [newInvoiceDesc, setNewInvoiceDesc] = useState('');
+  const [draggedId, setDraggedId] = useState<number | null>(null);
 
   useEffect(() => {
     if (tenantId === null) return;
-    setActiveTab('info'); // eslint-disable-line react-hooks/set-state-in-effect
+    setActiveTab('info');
     setReactivateMode('extend_trial');
     setNewInvoiceAmount('');
     setNewInvoiceDesc('');
     api.get<{ tenant: TenantDetail }>(`/api/super-admin/tenants/${tenantId}`).then(r => setDetail(r.tenant)).catch(() => showToast(t('adminDashboard.toastLoadError'), 'error'));
     api.get<{ invoices: Invoice[] }>(`/api/super-admin/tenants/${tenantId}/invoices`).then(r => setInvoices(r.invoices || [])).catch(() => setInvoices([]));
     api.get<{ payments: Payment[] }>(`/api/super-admin/tenants/${tenantId}/payments`).then(r => setPayments(r.payments || [])).catch(() => setPayments([]));
+    api.get<{ services: Service[] }>(`/api/super-admin/tenants/${tenantId}/services`).then(r => setServices(r.services || [])).catch(() => setServices([]));
   }, [tenantId, showToast, t]);
 
   if (tenantId === null) return null;
@@ -84,7 +87,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const handlePayInvoiceMP = async (invoiceId: number) => {
     try {
       const res = await api.post<{ init_point: string }>('/api/payments/mercadopago/create', { invoiceId });
-      if (res.init_point) window.location.href = res.init_point; // eslint-disable-line react-hooks/immutability
+      if (res.init_point) window.location.href = res.init_point;
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('common.error'), 'error');
     }
@@ -124,70 +127,244 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
     }
   };
 
+  const handleToggleFeatured = async () => {
+    if (!detail) return;
+    if (!detail.is_featured && (detail.status === 'suspended' || detail.trial_expired)) {
+      if (!window.confirm(t('adminDashboard.confirmFeaturedSuspended'))) return;
+    }
+    try {
+      await api.put(`/api/super-admin/tenants/${tenantId}`, { is_featured: !detail.is_featured });
+      showToast(detail.is_featured ? t('adminDashboard.toastFeaturedRemoved') : t('adminDashboard.toastFeaturedAdded'), 'success');
+      loadData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
+  const handleUpdateDisplayOrder = async (type: 'tenant' | 'service', order: number, serviceId?: number) => {
+    try {
+      if (type === 'tenant') {
+        await api.put(`/api/super-admin/tenants/${tenantId}`, { display_order: order });
+      } else if (serviceId) {
+        await api.put(`/api/super-admin/services/${serviceId}`, { display_order: order });
+      }
+      showToast(t('adminDashboard.toastOrderUpdated'), 'success');
+      loadData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
+  const formatDatetimeLocal = (dateStr: string | null): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    // Convert to local timezone for datetime-local input
+    const offset = d.getTimezoneOffset() * 60000;
+    const local = new Date(d.getTime() - offset);
+    return local.toISOString().slice(0, 16);
+  };
+
+  const handleUpdateTenantFeaturedDates = async (field: 'featured_from' | 'featured_to', value: string) => {
+    try {
+      const isoValue = value ? new Date(value).toISOString() : null;
+      await api.put(`/api/super-admin/tenants/${tenantId}`, { [field]: isoValue });
+      showToast(t('adminDashboard.toastOrderUpdated'), 'success');
+      loadData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    
+    const draggedIndex = services.findIndex(s => s.id === draggedId);
+    const targetIndex = services.findIndex(s => s.id === targetId);
+    
+    const newServices = [...services];
+    const [removed] = newServices.splice(draggedIndex, 1);
+    newServices.splice(targetIndex, 0, removed);
+    
+    const updates = newServices.map((s, i) => ({ id: s.id, display_order: i }));
+    
+    try {
+      for (const update of updates) {
+        await api.put(`/api/super-admin/services/${update.id}`, { display_order: update.display_order });
+      }
+      setServices(newServices);
+      showToast(t('adminDashboard.toastOrderUpdated'), 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+    
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => setDraggedId(null);
+
+  const handleToggleServiceFeatured = async (serviceId: number, currentFeatured: boolean) => {
+    try {
+      if (currentFeatured === false) {
+        const service = services.find(s => s.id === serviceId);
+        if (service && !service.image) {
+          showToast(t('adminDashboard.toastServiceNoImage'), 'error');
+          return;
+        }
+      }
+      await api.put(`/api/super-admin/services/${serviceId}`, { is_featured: !currentFeatured });
+      showToast(currentFeatured ? t('adminDashboard.toastServiceFeaturedRemoved') : t('adminDashboard.toastServiceFeaturedAdded'), 'success');
+      setServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_featured: !currentFeatured } : s));
+      loadData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
+  const handleUpdateServiceFeaturedDates = async (serviceId: number, field: 'featured_from' | 'featured_to', value: string) => {
+    try {
+      const isoValue = value ? new Date(value).toISOString() : null;
+      await api.put(`/api/super-admin/services/${serviceId}`, { [field]: isoValue });
+      setServices(prev => prev.map(s => s.id === serviceId ? { ...s, [field]: isoValue } : s));
+      showToast(t('adminDashboard.toastOrderUpdated'), 'success');
+      loadData();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('common.error'), 'error');
+    }
+  };
+
+  const handleUploadServiceImage = async (serviceId: number, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('filename', file.name);
+      const res = await api.postForm<{ url: string }>(`/api/super-admin/services/${serviceId}/image`, formData, 'superAdmin');
+      setServices(prev => prev.map(s => s.id === serviceId ? { ...s, image: res.url } : s));
+      showToast(t('adminDashboard.toastImageUploaded'), 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('adminDashboard.toastImageError'), 'error');
+    }
+  };
+
   return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal-content" onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
+    <div className="modal-overlay open" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <h2>{detail?.business_name || t('adminDashboard.detailName')}</h2>
-          <button className="admin-close-modal" onClick={onClose}>&times;</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {detail && (
+              <a
+                href={`/p/${detail.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                {t('adminDashboard.viewLanding')}
+              </a>
+            )}
+            <button className="close-modal" onClick={onClose}>&times;</button>
+          </div>
         </div>
 
-        <div className="admin-modal-tabs">
-          <button className={`admin-modal-tab ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>{t('adminDashboard.modalTabInfo')}</button>
-          <button className={`admin-modal-tab ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>{t('adminDashboard.modalTabInvoices')}</button>
-          <button className={`admin-modal-tab ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}>{t('adminDashboard.modalTabPayments')}</button>
+        <div className="modal-tabs">
+          <button className={`modal-tab ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>{t('adminDashboard.modalTabInfo')}</button>
+          <button className={`modal-tab ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')}>{t('adminDashboard.modalTabInvoices')}</button>
+          <button className={`modal-tab ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}>{t('adminDashboard.modalTabPayments')}</button>
+          <button className={`modal-tab ${activeTab === 'services' ? 'active' : ''}`} onClick={() => setActiveTab('services')}>{t('adminDashboard.modalTabServices')}</button>
         </div>
 
         {activeTab === 'info' && detail && (
           <div>
             {detail.trial_expired && (
-              <div className="admin-alert-expired">
+              <div className="alert-expired">
                 {t('adminDashboard.alertTrialExpired')}
               </div>
             )}
-            <div className="admin-detail-grid">
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailName')}</label><span>{detail.business_name || '-'}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailSlug')}</label><span>{detail.slug || '-'}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailEmail')}</label><span>{detail.notification_email || '-'}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailPhone')}</label><span>{detail.business_phone || '-'}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailPlan')}</label><span>{(detail.plan || 'free').toUpperCase()}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailStatus')}</label><span>{detail.status || '-'}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailTrialEnd')}</label><span>{detail.trial_end_date ? new Date(detail.trial_end_date).toLocaleDateString() : t('adminDashboard.detailNoExpiry')}</span></div>
-              <div className="admin-detail-item"><label>{t('adminDashboard.detailRegistered')}</label><span>{detail.created_at ? new Date(detail.created_at).toLocaleDateString() : '-'}</span></div>
+            <div className="detail-grid">
+              <div className="detail-item"><label>{t('adminDashboard.detailName')}</label><span>{detail.business_name || '-'}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailSlug')}</label><span>{detail.slug || '-'}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailEmail')}</label><span>{detail.notification_email || '-'}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailPhone')}</label><span>{detail.business_phone || '-'}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailPlan')}</label><span>{(detail.plan || 'free').toUpperCase()}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailStatus')}</label><span>{detail.status || '-'}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailTrialEnd')}</label><span>{detail.trial_end_date ? new Date(detail.trial_end_date).toLocaleDateString() : t('adminDashboard.detailNoExpiry')}</span></div>
+              <div className="detail-item"><label>{t('adminDashboard.detailRegistered')}</label><span>{detail.created_at ? new Date(detail.created_at).toLocaleDateString() : '-'}</span></div>
+              <div className="detail-item">
+                <label>{t('adminDashboard.detailFeatured')}</label>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-checked={detail.is_featured}
+                    checked={detail.is_featured}
+                    onChange={handleToggleFeatured}
+                    tabIndex={0}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+              <div className="detail-item">
+                <label>{t('adminDashboard.detailFeaturedFrom')}</label>
+                <input type="datetime-local" value={formatDatetimeLocal(detail.featured_from)} onChange={e => handleUpdateTenantFeaturedDates('featured_from', e.target.value)} style={{ width: '200px' }} />
+              </div>
+              <div className="detail-item">
+                <label>{t('adminDashboard.detailFeaturedTo')}</label>
+                <input type="datetime-local" value={formatDatetimeLocal(detail.featured_to)} onChange={e => handleUpdateTenantFeaturedDates('featured_to', e.target.value)} style={{ width: '200px' }} />
+              </div>
+              <div className="detail-item">
+                <label>{t('adminDashboard.detailDisplayOrder')}</label>
+                <input type="number" value={detail.display_order || 0} min="0" onChange={e => handleUpdateDisplayOrder('tenant', parseInt(e.target.value) || 0)} style={{ width: '80px' }} />
+              </div>
             </div>
-            <div className="admin-actions-row">
+            <div className="actions-row">
               {!detail.trial_expired && detail.status !== 'suspended' && (
-                <button className="admin-btn admin-btn-warning admin-btn-sm" onClick={handleSuspend}>{t('adminDashboard.suspendButton')}</button>
+                <button className="btn btn-warning btn-sm" onClick={handleSuspend}>{t('adminDashboard.suspendButton')}</button>
               )}
-              <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={handleDelete}>{t('adminDashboard.deleteButton')}</button>
+              <button className="btn btn-danger btn-sm" onClick={handleDelete}>{t('adminDashboard.deleteButton')}</button>
             </div>
             {(detail.trial_expired || detail.status === 'suspended') && (
-              <div className="admin-reactivation-box">
+              <div className="reactivation-box">
                 <h4>{t('adminDashboard.reactivateTitle')}</h4>
-                <div className="admin-reactivation-options">
-                  <label className={`admin-reactivation-option ${reactivateMode === 'extend_trial' ? 'selected' : ''}`} onClick={() => setReactivateMode('extend_trial')}>
+                <div className="reactivation-options">
+                  <label className={`reactivation-option ${reactivateMode === 'extend_trial' ? 'selected' : ''}`} onClick={() => setReactivateMode('extend_trial')}>
                     <input type="radio" name="reactivateMode" checked={reactivateMode === 'extend_trial'} onChange={() => setReactivateMode('extend_trial')} />
-                    <div className="admin-reactivation-option-label">
+                    <div className="reactivation-option-label">
                       <strong>{t('adminDashboard.reactivateExtendTrial')}</strong>
                       <span>{t('adminDashboard.reactivateExtendTrialDesc')}</span>
                     </div>
                   </label>
-                  <label className={`admin-reactivation-option ${reactivateMode === 'upgrade_pro' ? 'selected' : ''}`} onClick={() => setReactivateMode('upgrade_pro')}>
+                  <label className={`reactivation-option ${reactivateMode === 'upgrade_pro' ? 'selected' : ''}`} onClick={() => setReactivateMode('upgrade_pro')}>
                     <input type="radio" name="reactivateMode" checked={reactivateMode === 'upgrade_pro'} onChange={() => setReactivateMode('upgrade_pro')} />
-                    <div className="admin-reactivation-option-label">
+                    <div className="reactivation-option-label">
                       <strong>{t('adminDashboard.reactivateUpgradePro')}</strong>
                       <span>{t('adminDashboard.reactivateUpgradeProDesc')}</span>
                     </div>
                   </label>
                 </div>
                 {reactivateMode === 'extend_trial' && (
-                  <div className="admin-days-input-row">
+                  <div className="days-input-row">
                     <input type="number" value={extendDays} min="1" max="365" onChange={e => setExtendDays(parseInt(e.target.value) || 15)} />
                     <label>{t('adminDashboard.reactivateDaysLabel', { days: extendDays })}</label>
                   </div>
                 )}
-                <div className="admin-reactivate-action">
-                  <button className="admin-btn admin-btn-reactivate" onClick={handleReactivate}>{t('adminDashboard.reactivateNowButton')}</button>
+                <div className="reactivate-action">
+                  <button className="btn btn-reactivate" onClick={handleReactivate}>{t('adminDashboard.reactivateNowButton')}</button>
                 </div>
               </div>
             )}
@@ -196,21 +373,21 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
         {activeTab === 'payments' && (
           <div>
-            <h3 className="admin-section-title">{t('adminDashboard.paymentsTitle')}</h3>
-            <table className="admin-small-table">
+            <h3 className="section-title">{t('adminDashboard.paymentsTitle')}</h3>
+            <table className="small-table">
               <thead>
                 <tr><th>{t('adminDashboard.paymentsTableID')}</th><th>{t('adminDashboard.paymentsTableInvoice')}</th><th>{t('adminDashboard.paymentsTableAmount')}</th><th>{t('adminDashboard.paymentsTableCurrency')}</th><th>{t('adminDashboard.paymentsTableStatus')}</th><th>{t('adminDashboard.paymentsTableDate')}</th></tr>
               </thead>
               <tbody>
                 {payments.length === 0 ? (
-                  <tr><td colSpan={6} className="admin-empty-row">{t('adminDashboard.paymentsEmpty')}</td></tr>
+                  <tr><td colSpan={6} className="empty-row">{t('adminDashboard.paymentsEmpty')}</td></tr>
                 ) : payments.map(p => (
                   <tr key={p.id}>
-                    <td className="admin-muted">{p.mp_payment_id || p.id}</td>
+                    <td className="muted">{p.mp_payment_id || p.id}</td>
                     <td>{p.invoice_number || '-'}</td>
-                    <td className="admin-bold">${parseFloat(String(p.amount)).toLocaleString()}</td>
-                    <td className="admin-muted">{p.currency}</td>
-                    <td><span className={`admin-badge ${p.status === 'approved' ? 'admin-badge-active' : p.status === 'pending' ? 'admin-badge-expired' : 'admin-badge-suspended'}`}>{p.status}</span></td>
+                    <td className="bold">${parseFloat(String(p.amount)).toLocaleString()}</td>
+                    <td className="muted">{p.currency}</td>
+                    <td><span className={`badge ${p.status === 'approved' ? 'badge-active' : p.status === 'pending' ? 'badge-expired' : 'badge-suspended'}`}>{p.status}</span></td>
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
@@ -221,27 +398,27 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
         {activeTab === 'invoices' && (
           <div>
-            <h3 className="admin-section-title">{t('adminDashboard.invoicesTitle')}</h3>
-            <table className="admin-small-table">
+            <h3 className="section-title">{t('adminDashboard.invoicesTitle')}</h3>
+            <table className="small-table">
               <thead>
                 <tr><th>{t('adminDashboard.invoicesTableNumber')}</th><th>{t('adminDashboard.invoicesTableAmount')}</th><th>{t('adminDashboard.invoicesTableStatus')}</th><th>{t('adminDashboard.invoicesTableMethod')}</th><th>{t('adminDashboard.invoicesTableDate')}</th><th>{t('adminDashboard.invoicesTableAction')}</th></tr>
               </thead>
               <tbody>
                 {invoices.length === 0 ? (
-                  <tr><td colSpan={6} className="admin-empty-row">{t('adminDashboard.invoicesEmpty')}</td></tr>
+                  <tr><td colSpan={6} className="empty-row">{t('adminDashboard.invoicesEmpty')}</td></tr>
                 ) : invoices.map(inv => (
                   <tr key={inv.id}>
                     <td>{inv.invoice_number}</td>
-                    <td className="admin-bold">${parseFloat(String(inv.amount)).toLocaleString()}</td>
-                    <td><span className={`admin-badge ${inv.status === 'paid' ? 'admin-badge-active' : 'admin-badge-expired'}`}>{inv.status === 'paid' ? t('adminDashboard.invoiceStatusPaid') : t('adminDashboard.invoiceStatusPending')}</span></td>
-                    <td className="admin-muted">{inv.payment_method || '-'}</td>
+                    <td className="bold">${parseFloat(String(inv.amount)).toLocaleString()}</td>
+                    <td><span className={`badge ${inv.status === 'paid' ? 'badge-active' : 'badge-expired'}`}>{inv.status === 'paid' ? t('adminDashboard.invoiceStatusPaid') : t('adminDashboard.invoiceStatusPending')}</span></td>
+                    <td className="muted">{inv.payment_method || '-'}</td>
                     <td>{new Date(inv.issue_date).toLocaleDateString()}</td>
                     <td>
                       {inv.status !== 'paid' && (
                         <>
-                          <button className="admin-btn admin-btn-success admin-btn-sm" onClick={() => handlePayInvoiceMP(inv.id)}>{t('adminDashboard.invoicePayMP')}</button>
-                          <button className="admin-btn admin-btn-sm" onClick={() => handlePayInvoiceStripe(inv.id)}>Stripe</button>
-                          <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={() => handlePayInvoiceManual(inv.id)}>{t('adminDashboard.invoicePayManual')}</button>
+                          <button className="btn btn-success btn-sm" onClick={() => handlePayInvoiceMP(inv.id)}>{t('adminDashboard.invoicePayMP')}</button>
+                          <button className="btn btn-sm" onClick={() => handlePayInvoiceStripe(inv.id)}>Stripe</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => handlePayInvoiceManual(inv.id)}>{t('adminDashboard.invoicePayManual')}</button>
                         </>
                       )}
                     </td>
@@ -249,20 +426,121 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
                 ))}
               </tbody>
             </table>
-            <h3 className="admin-section-title">{t('adminDashboard.newInvoiceTitle')}</h3>
-            <form className="admin-invoice-form" onSubmit={handleCreateInvoice}>
-              <div className="admin-full-width">
+            <h3 className="section-title">{t('adminDashboard.newInvoiceTitle')}</h3>
+            <form className="invoice-form" onSubmit={handleCreateInvoice}>
+              <div className="form-group full-width">
                 <label>{t('adminDashboard.newInvoiceAmountLabel')}</label>
                 <input type="number" value={newInvoiceAmount} required step="0.01" placeholder={t('adminDashboard.newInvoiceAmountPlaceholder')} onChange={e => setNewInvoiceAmount(e.target.value)} />
               </div>
-              <div className="admin-full-width">
+              <div className="form-group full-width">
                 <label>{t('adminDashboard.newInvoiceDescLabel')}</label>
                 <input type="text" value={newInvoiceDesc} placeholder={t('adminDashboard.newInvoiceDescPlaceholder')} onChange={e => setNewInvoiceDesc(e.target.value)} />
               </div>
-              <div className="admin-full-width admin-form-action">
-                <button type="submit" className="admin-btn admin-btn-primary">{t('adminDashboard.newInvoiceCreateButton')}</button>
+              <div className="form-group full-width form-action">
+                <button type="submit" className="btn btn-primary">{t('adminDashboard.newInvoiceCreateButton')}</button>
               </div>
             </form>
+          </div>
+        )}
+
+        {activeTab === 'services' && (
+          <div>
+            <h3 className="section-title">{t('adminDashboard.servicesTitle')}</h3>
+            {services.length === 0 ? (
+              <p className="empty-state">{t('adminDashboard.noServicesFound')}</p>
+            ) : (
+              <table className="small-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 36 }}></th>
+                    <th>{t('adminDashboard.servicesTableImage')}</th>
+                    <th>{t('adminDashboard.servicesTableName')}</th>
+                    <th>{t('adminDashboard.servicesTablePrice')}</th>
+                    <th>{t('adminDashboard.servicesTableDuration')}</th>
+                    <th>{t('adminDashboard.servicesTableCategory')}</th>
+                    <th>{t('adminDashboard.servicesTableStatus')}</th>
+                    <th>{t('adminDashboard.servicesTableFeatured')}</th>
+                    <th>{t('adminDashboard.servicesTableFeaturedFrom')}</th>
+                    <th>{t('adminDashboard.servicesTableFeaturedTo')}</th>
+                    <th>{t('adminDashboard.servicesTableAction')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services.map(s => (
+                    <tr
+                      key={s.id}
+                      draggable
+                      onDragStart={e => handleDragStart(e, s.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={e => handleDrop(e, s.id)}
+                      onDragEnd={handleDragEnd}
+                      style={{ cursor: 'grab' }}
+                    >
+                      <td>
+                        <span className="drag-handle" title={t('adminDashboard.dragToReorder')}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 3v16M15 3v16M4 7h16M4 17h16" />
+                          </svg>
+                        </span>
+                      </td>
+                      <td>
+                        {s.image ? (
+                          <img src={s.image} alt={s.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8 }} />
+                        ) : (
+                          <span className="muted">{t('adminDashboard.noImage')}</span>
+                        )}
+                      </td>
+                      <td>{s.name}</td>
+                      <td className="bold">${parseFloat(String(s.price)).toLocaleString()}</td>
+                      <td>{s.duration} min</td>
+                      <td className="muted">{s.category || '-'}</td>
+                      <td><span className={`badge ${s.active ? 'badge-active' : 'badge-suspended'}`}>{s.active ? t('adminDashboard.servicesActive') : t('adminDashboard.servicesInactive')}</span></td>
+                      <td>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            role="switch"
+                            aria-checked={s.is_featured}
+                            checked={s.is_featured}
+                            onChange={() => handleToggleServiceFeatured(s.id, s.is_featured)}
+                            tabIndex={0}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </td>
+                      <td>
+                        <input
+                          type="datetime-local"
+                          value={formatDatetimeLocal(s.featured_from)}
+                          onChange={e => handleUpdateServiceFeaturedDates(s.id, 'featured_from', e.target.value)}
+                          style={{ width: '150px', fontSize: '11px', padding: '4px 6px' }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="datetime-local"
+                          value={formatDatetimeLocal(s.featured_to)}
+                          onChange={e => handleUpdateServiceFeaturedDates(s.id, 'featured_to', e.target.value)}
+                          style={{ width: '150px', fontSize: '11px', padding: '4px 6px' }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => e.target.files?.[0] && handleUploadServiceImage(s.id, e.target.files[0])}
+                          style={{ display: 'none' }}
+                          id={`upload-${s.id}`}
+                        />
+                        <label htmlFor={`upload-${s.id}`} className="btn btn-secondary btn-sm" style={{ padding: '6px 10px', fontSize: 12 }}>
+                          {s.image ? t('adminDashboard.changeImage') : t('adminDashboard.uploadImage')}
+                        </label>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>

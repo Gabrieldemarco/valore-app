@@ -1,6 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import crypto from 'crypto'
+
+const buildHash = crypto.randomBytes(8).toString('hex')
 
 export default defineConfig({
   plugins: [
@@ -16,6 +19,12 @@ export default defineConfig({
       },
       manifest: false,
     }),
+    {
+      name: 'html-build-hash',
+      transformIndexHtml(html) {
+        return html.replace('</head>', `  <meta name="build-hash" content="${buildHash}">\n</head>`)
+      },
+    },
   ],
   optimizeDeps: {
     exclude: ['@fullcalendar/core', '@fullcalendar/react', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction', '@fullcalendar/list', 'fullcalendar'],
