@@ -10,7 +10,7 @@ env:
   NODE_ENV: test
 
 jobs:
-  frontend-build:
+  frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,18 +23,18 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend-vite/package-lock.json
       - run: npm ci
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
       - name: Build frontend
         run: npm run build
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend-vite/dist
-          retention-days: 1
+      - name: Unit tests
+        run: npm test
 
   backend:
     runs-on: ubuntu-latest
-    needs: frontend-build
+    needs: frontend
     services:
       postgres:
         image: postgres:16
@@ -53,11 +53,10 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
-      - name: Download frontend build for SPA catch-all tests
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
+      - name: Create minimal frontend dist for SPA catch-all tests
+        run: |
+          mkdir -p frontend/dist
+          echo '<!DOCTYPE html><html><head><title>Test</title></head><body><div id="root"></div></body></html>' > frontend/dist/index.html
       - name: TypeScript type check
         working-directory: backend
         run: npm run typecheck
@@ -66,25 +65,4 @@ jobs:
         run: npm run lint
       - name: Run backend tests
         working-directory: backend
-        run: npm test
-
-  frontend:
-    runs-on: ubuntu-latest
-    needs: frontend-build
-    defaults:
-      run:
-        working-directory: frontend-vite
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: frontend-vite/package-lock.json
-      - run: npm ci
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-      - name: Lint
-        run: npm run lint
-      - name: Unit tests
         run: npm test
