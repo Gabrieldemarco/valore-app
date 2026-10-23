@@ -10,8 +10,25 @@ env:
   NODE_ENV: test
 
 jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-vite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend-vite/package-lock.json
+      - run: npm ci
+      - name: Build frontend
+        run: npm run build
+
   backend:
     runs-on: ubuntu-latest
+    needs: frontend-build
     services:
       postgres:
         image: postgres:16
@@ -30,6 +47,8 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
+      - name: Copy frontend build for SPA catch-all tests
+        run: cp -r ../frontend-vite/dist ./frontend/dist
       - name: TypeScript type check
         working-directory: backend
         run: npm run typecheck
@@ -42,6 +61,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    needs: frontend-build
     defaults:
       run:
         working-directory: frontend-vite
