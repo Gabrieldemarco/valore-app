@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import { VitePWA } from 'vite-plugin-pwa'
 import crypto from 'crypto'
 

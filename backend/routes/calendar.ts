@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { query, queryOne } from '../database';
 import config from '../config';
 import logger from '../services/logger';
-import { authenticateStaff } from '../middleware';
+import { authenticateStaff, requireFeature } from '../middleware';
 import { buildAuthUrl, exchangeCodeForTokens, syncStaffCalendar, getCalendarStatus } from '../services/google-calendar';
 import { buildSmtpAuthUrl, exchangeCodeForSmtpTokens, getSmtpAccessToken, getSmtpStatus, deleteSmtpTokens, storeSmtpTokens } from '../services/google-smtp';
 
@@ -94,7 +94,7 @@ export default function calendarRoutes() {
     }
   });
 
-  router.get('/api/calendar/status', authenticateStaff, async (req, res) => {
+  router.get('/api/calendar/status', authenticateStaff, requireFeature('calendar_sync'), async (req, res) => {
     try {
       const staffId = (req as any).user?.id;
       if (!staffId) return res.status(401).json({ error: 'Staff required' });
@@ -106,7 +106,7 @@ export default function calendarRoutes() {
     }
   });
 
-  router.post('/api/calendar/sync', authenticateStaff, async (req, res) => {
+  router.post('/api/calendar/sync', authenticateStaff, requireFeature('calendar_sync'), async (req, res) => {
     try {
       const staffId = (req as any).user?.id;
       const tenantId = (req as any).user?.tenant_id;
@@ -119,7 +119,7 @@ export default function calendarRoutes() {
     }
   });
 
-  router.delete('/api/calendar/disconnect', authenticateStaff, async (req, res) => {
+  router.delete('/api/calendar/disconnect', authenticateStaff, requireFeature('calendar_sync'), async (req, res) => {
     try {
       const staffId = (req as any).user?.id;
       if (!staffId) return res.status(401).json({ error: 'Staff required' });

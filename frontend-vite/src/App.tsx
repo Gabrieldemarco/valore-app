@@ -12,6 +12,7 @@ const AppointmentManage = lazy(() => import('./pages/public/AppointmentManage'))
 const Terms = lazy(() => import('./pages/public/Terms'));
 const VerifyEmail = lazy(() => import('./pages/public/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
+const WebsiteStudio = lazy(() => import('./pages/public/WebsiteStudio'));
 const StaffLogin = lazy(() => import('./pages/staff/Login'));
 const StaffRegister = lazy(() => import('./pages/staff/Register'));
 const ForgotPassword = lazy(() => import('./pages/staff/ForgotPassword'));
@@ -55,7 +56,8 @@ function App() {
               <Route path="/p/:slug" element={<Landing />} />
               <Route path="/p/:slug/manage/:token" element={<AppointmentManage />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
+               <Route path="/verify-email" element={<VerifyEmail />} />
+               <Route path="/p/:slug/website" element={<WebsiteStudio />} />
               <Route path="/staff/login" element={<StaffLogin />} />
               <Route path="/staff/register" element={<StaffRegister />} />
               <Route path="/register" element={<Navigate to="/staff/register" replace />} />

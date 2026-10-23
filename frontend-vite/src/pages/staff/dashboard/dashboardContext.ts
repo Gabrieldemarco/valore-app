@@ -26,6 +26,7 @@ export interface PlanInfo {
   trialDaysLeft?: number | null;
   last_payment_date?: string | null;
   price?: number;
+  features?: string[];
 }
 
 export interface Invoice {

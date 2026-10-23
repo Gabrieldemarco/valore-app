@@ -17,6 +17,9 @@ export default function PublicHeader() {
           <a href="#salons" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>
             {t('publicIndex.navSalones')}
           </a>
+          <a href="#pricing" style={{ fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 13 }}>
+            {t('publicIndex.navPlanes') || 'Planes'}
+          </a>
           <Link to="/staff/register" className="btn btn-secondary btn-outline" style={{ padding: '8px 18px', borderRadius: 30, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', fontSize: 11 }}>
             {t('publicIndex.navSumate')}
           </Link>

@@ -34,10 +34,10 @@
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "memory-cache": "^0.2.0",
-    "mercadopago": "^2.12.1",
+    "mercadopago": "^3.6.1",
     "morgan": "^1.10.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^10.2.1",
     "pg": "^8.20.0",
     "prom-client": "^15.0.0",
     "response-time": "^2.3.4",
@@ -45,10 +45,10 @@
     "stripe": "^16.12.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
-    "twilio": "^6.0.0",
-    "uuid": "^9.0.0",
-    "web-push": "^3.6.7",
     "tsx": "^4.22.3",
+    "twilio": "^6.0.0",
+    "uuid": "^14.0.3",
+    "web-push": "^3.6.7",
     "winston": "^3.19.0"
   },
   "devDependencies": {
@@ -56,12 +56,12 @@
     "@types/node": "^25.9.1",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.0",
     "cross-env": "^10.1.0",
     "eslint": "^8.56.0",
     "jest": "^30.4.2",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "typescript": "^6.0.3"
@@ -86,7 +86,8 @@
       "json"
     ],
     "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^uuid$": "<rootDir>/tests/__mocks__/uuid.js"
     }
   }
 }

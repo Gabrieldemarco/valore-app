@@ -7,6 +7,7 @@ import { body } from 'express-validator';
 import { query, queryOne } from '../database';
 import { authenticate, authenticateStaff, checkTenantActive, checkTrialExpiration, validate } from '../middleware';
 import logger from '../services/logger';
+import { PLANS } from '../services/payment-config';
 
 /**
  * Rutas misceláneas: agenda personal, health check, listado público de tenants, upload
@@ -137,12 +138,24 @@ export default function(apiLimiter) {
   router.get('/health', async (req, res) => {
     try {
       await query('SELECT 1');
+      
+      // Check Redis connection
+      let redisStatus = 'disconnected';
+      try {
+        const { pingRedis } = await import('../services/redis');
+        const redisOk = await pingRedis();
+        redisStatus = redisOk ? 'connected' : 'disconnected';
+      } catch {
+        redisStatus = 'disconnected';
+      }
+
       res.json({
         status: 'ok',
         environment: process.env.NODE_ENV || 'development',
         sentry: Boolean(process.env.SENTRY_DSN),
         uptime_seconds: Math.round(process.uptime()),
-        database: 'PostgreSQL'
+        database: 'PostgreSQL',
+        redis: redisStatus
       });
     } catch (err: any) {
       logger.error('Health check error', { error: err?.message || err });
@@ -315,6 +328,32 @@ export default function(apiLimiter) {
     } catch (err: any) {
       logger.error('Upload error:', err);
       res.status(500).json({ error: 'Error al subir imagen' });
+    }
+  });
+
+  // GET public pricing info
+  router.get('/pricing', (req, res) => {
+    try {
+      const prices = ['basico', 'estandar', 'premium'].map(plan => {
+        const p = PLANS[plan];
+        return {
+          plan_name: plan,
+          price: p.price,
+          price_usd: p.price_usd,
+          currency: p.currency,
+          currency_usd: p.currency_usd,
+          promo_price: p.promo_price || null,
+          promo_price_usd: p.promo_price_usd || null,
+          promo_months: p.promo_months || 0,
+          name: p.name,
+          limits: p.limits,
+        };
+      });
+
+      res.json({ prices });
+    } catch (err: any) {
+      logger.error('Error fetching pricing:', err);
+      res.status(500).json({ error: 'Error al cargar precios' });
     }
   });
 

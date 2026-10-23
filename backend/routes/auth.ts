@@ -125,10 +125,12 @@ export default function(loginLimiter, passwordResetLimiter) {
     body('businessName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre del negocio debe tener entre 2 y 100 caracteres').escape(),
     body('email').isEmail().withMessage('Email inválido').normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Contraseña debe tener al menos 6 caracteres'),
-    body('category').optional().isIn(['peluqueria', 'cejas', 'uñas', 'maquillaje', 'facial', 'depilacion', 'masajes']).withMessage('Categoría inválida')
+    body('category').optional().isIn(['peluqueria', 'cejas', 'uñas', 'maquillaje', 'facial', 'depilacion', 'masajes']).withMessage('Categoría inválida'),
+    body('plan').optional().isIn(['free', 'basico', 'estandar', 'premium']).withMessage('Plan inválido')
   ], validate, async (req, res) => {
     try {
-      const { businessName, email, password, phone, address, category } = req.body;
+      const { businessName, email, password, phone, address, category, plan } = req.body;
+      const tenantPlan = plan && ['basico', 'estandar', 'premium'].includes(plan) ? plan : 'free';
       if (!businessName || !email || !password) return res.status(400).json({ error: 'Faltan datos obligatorios' });
       if (password.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
       const existingStaff = await queryOne('SELECT id FROM staff WHERE email = $1', [email]);
@@ -146,7 +148,7 @@ export default function(loginLimiter, passwordResetLimiter) {
       const tenantResult = await query(
         `INSERT INTO tenants (slug, business_name, business_address, business_phone, notification_email, smtp_email, landing_enabled, status, opening_hours, plan, category, trial_start_date, trial_end_date)
          VALUES ($1, $2, $3, $4, $5, $6, true, 'active', $7, $8, $9, NOW(), NOW() + INTERVAL '15 days') RETURNING id`,
-        [slug, businessName, address || '', phone || '', email, email, JSON.stringify({ startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] }), 'free', category || 'peluqueria']
+         [slug, businessName, address || '', phone || '', email, email, JSON.stringify({ startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] }), tenantPlan, category || 'peluqueria']
       );
 
       const newTenantId = tenantResult.rows[0].id;

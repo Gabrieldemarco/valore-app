@@ -11,7 +11,21 @@ module.exports = {
     max_memory_restart: '500M',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 3000,
+      FORCE_HTTPS: 'true',
+      SENTRY_DSN: '',
+      TURNSTILE_SECRET_KEY: '',
+      TURNSTILE_SITE_KEY: '',
+      TWILIO_ACCOUNT_SID: '',
+      TWILIO_AUTH_TOKEN: '',
+      TWILIO_WHATSAPP_FROM: '',
+      METRICS_ENABLED: 'true',
+      METRICS_BASIC_AUTH_USER: 'admin',
+      METRICS_BASIC_AUTH_PASS: 'change_me_secure_password',
+      SWAGGER_UI_ENABLED: 'true',
+      SWAGGER_BASIC_AUTH_USER: 'admin',
+      SWAGGER_BASIC_AUTH_PASS: 'change_me_secure_password',
+      LOG_LEVEL: 'info'
     },
     env_development: {
       NODE_ENV: 'development',

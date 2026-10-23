@@ -79,3 +79,13 @@ export async function closeRedis(): Promise<void> {
     try { await client.quit(); } catch { /* ignore */ }
   }
 }
+
+export async function pingRedis(): Promise<boolean> {
+  if (!enabled || !client) return false;
+  try {
+    const result = await client.ping();
+    return result === 'PONG';
+  } catch {
+    return false;
+  }
+}

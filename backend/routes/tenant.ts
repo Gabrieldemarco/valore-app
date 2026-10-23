@@ -1,6 +1,6 @@
 
 import { Router } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import sanitizeHtml from 'sanitize-html';
@@ -15,7 +15,8 @@ import { validate,
   authenticateStaff,
   checkTenantActive,
   checkTrialExpiration,
-  checkPlanLimits, } from '../middleware';
+  checkPlanLimits,
+  requireFeature } from '../middleware';
 
 /**
  * @param {(invoice: any, tenant: any, req: import('express').Request, returnPath?: string) => Promise<any>} createMercadoPagoPreference
@@ -325,6 +326,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
           trial_end_date: tenant.trial_end_date,
           trialDaysLeft,
           last_payment_date: tenant.last_payment_date,
+          features: PLANS[normalizePlan(tenant.plan)]?.features || [],
           plans: {
             basico: { ...PLANS.basico, id: 'basico' },
             estandar: { ...PLANS.estandar, id: 'estandar' },
@@ -414,7 +416,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   });
 
   router.post('/tenant/invoices/:id/pay', authenticateStaff, [
-    body('id').isInt().withMessage('invoiceId inválido'),
+    param('id').isInt().withMessage('invoiceId inválido'),
   ], validate, async (req, res) => {
     try {
       const invoiceId = parseInt(req.params.id, 10);
@@ -1159,7 +1161,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.get('/tenant/stats/revenue-by-month', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.get('/tenant/stats/revenue-by-month', authenticateStaff, checkTenantActive, requireFeature('analytics_advanced', 'analytics_basic'), async (req, res) => {
     try {
       const result = await query(
         `SELECT
@@ -1179,7 +1181,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.get('/tenant/stats/revenue-by-staff', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.get('/tenant/stats/revenue-by-staff', authenticateStaff, checkTenantActive, requireFeature('analytics_advanced', 'analytics_basic'), async (req, res) => {
     try {
       const result = await query(
         `SELECT
@@ -1201,7 +1203,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.get('/tenant/stats/top-services', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.get('/tenant/stats/top-services', authenticateStaff, checkTenantActive, requireFeature('analytics_advanced', 'analytics_basic'), async (req, res) => {
     try {
       const result = await query(
         `SELECT
@@ -1223,7 +1225,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   });
 
   // ===== COUPONS =====
-  router.get('/tenant/coupons', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.get('/tenant/coupons', authenticateStaff, checkTenantActive, requireFeature('coupons'), async (req, res) => {
     try {
       const result = await query(
         'SELECT * FROM coupons WHERE tenant_id = $1 ORDER BY created_at DESC',
@@ -1242,7 +1244,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('discount_value').isFloat({ min: 0 }).withMessage('Valor de descuento inválido'),
   ];
 
-  router.post('/tenant/coupons', authenticateStaff, checkTenantActive, createCouponValidation, validate, async (req, res) => {
+  router.post('/tenant/coupons', authenticateStaff, checkTenantActive, requireFeature('coupons'), createCouponValidation, validate, async (req, res) => {
     try {
       const { code, discount_type, discount_value, min_appointment_amount, max_uses, expires_at } = req.body;
       const exists = await queryOne(
@@ -1263,7 +1265,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.put('/tenant/coupons/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.put('/tenant/coupons/:id', authenticateStaff, checkTenantActive, requireFeature('coupons'), async (req, res) => {
     try {
       const { id } = req.params;
       const { code, discount_type, discount_value, min_appointment_amount, max_uses, expires_at, active } = req.body;
@@ -1288,7 +1290,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
-  router.delete('/tenant/coupons/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.delete('/tenant/coupons/:id', authenticateStaff, checkTenantActive, requireFeature('coupons'), async (req, res) => {
     try {
       const { id } = req.params;
       const result = await query('DELETE FROM coupons WHERE id = $1 AND tenant_id = $2 RETURNING id', [id, req.user.tenant_id]);
@@ -1376,7 +1378,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('description').optional().trim().escape(),
   ];
 
-  router.get('/tenant/products', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.get('/tenant/products', authenticateStaff, checkTenantActive, requireFeature('pos_full', 'pos_basic'), async (req, res) => {
     try {
       const result = await query(
         'SELECT id, name, description, price, cost, stock, min_stock, category, sku, image_url, active, created_at FROM products WHERE tenant_id = $1 ORDER BY name',
@@ -1386,7 +1388,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar productos' }); }
   });
 
-  router.post('/tenant/products', authenticateStaff, checkTenantActive, productValidation, validate, async (req, res) => {
+  router.post('/tenant/products', authenticateStaff, checkTenantActive, requireFeature('pos_full', 'pos_basic'), productValidation, validate, async (req, res) => {
     try {
       const { name, description, price, cost, stock, min_stock, category, sku, image_url } = req.body;
 
@@ -1403,7 +1405,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al crear producto' }); }
   });
 
-  router.put('/tenant/products/:id', authenticateStaff, checkTenantActive, productValidation, validate, async (req, res) => {
+  router.put('/tenant/products/:id', authenticateStaff, checkTenantActive, requireFeature('pos_full', 'pos_basic'), productValidation, validate, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, description, price, cost, stock, min_stock, category, sku, image_url, active } = req.body;
@@ -1423,7 +1425,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al actualizar producto' }); }
   });
 
-  router.delete('/tenant/products/:id', authenticateStaff, checkTenantActive, async (req, res) => {
+  router.delete('/tenant/products/:id', authenticateStaff, checkTenantActive, requireFeature('pos_full', 'pos_basic'), async (req, res) => {
     try {
       const result = await query('DELETE FROM products WHERE id = $1 AND tenant_id = $2 RETURNING id', [req.params.id, req.user.tenant_id]);
       if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });

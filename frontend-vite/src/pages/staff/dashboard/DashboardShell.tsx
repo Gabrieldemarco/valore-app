@@ -37,7 +37,10 @@ export default function DashboardShell({ children }: Props) {
 
   const handleLogout = useCallback(() => { logout(); navigate('/staff/login'); }, [logout, navigate]);
 
-  const tabs: { key: Tab; label: string }[] = [
+  const planFeatures = plan?.features || [];
+  const hasFeature = (f: string) => planFeatures.includes(f);
+
+  const allTabs: { key: Tab; label: string }[] = [
     { key: 'list', label: t('staffDashboard.tabList') },
     { key: 'calendar', label: t('staffDashboard.tabCalendar') },
     { key: 'staff', label: t('staffDashboard.tabStaff') },
@@ -51,6 +54,17 @@ export default function DashboardShell({ children }: Props) {
     { key: 'pos', label: t('staffDashboard.tabPOS') },
     { key: 'waitlist', label: t('staffDashboard.tabWaitlist') },
   ];
+
+  const visibleTabs = allTabs.filter(tab => {
+    if (tab.key === 'analytics') return hasFeature('analytics_advanced') || hasFeature('analytics_basic');
+    if (tab.key === 'coupons') return hasFeature('coupons');
+    if (tab.key === 'products') return hasFeature('products') || hasFeature('pos_full') || hasFeature('pos_basic');
+    if (tab.key === 'pos') return hasFeature('pos_full') || hasFeature('pos_basic');
+    if (tab.key === 'waitlist') return hasFeature('waitlist');
+    return true;
+  });
+
+  const tabs = visibleTabs;
 
   const exportToCSV = useCallback(() => {
     if (appointments.length === 0) return;

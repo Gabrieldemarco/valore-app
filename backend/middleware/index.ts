@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
-import { PLANS, normalizePlan } from '../services/payment-config';
+import { PLANS, normalizePlan, hasFeature } from '../services/payment-config';
 const config = require('../config');
 
 /**
@@ -43,17 +43,23 @@ function authenticate(allowedRoles) {
 
 /** Autenticación para staff y admin */
 function authenticateStaff(req, res, next) {
+  logger.debug('[AUTH] authenticateStaff called');
   try {
     const authHeader = req.headers.authorization;
+    logger.debug('[AUTH] authHeader:', authHeader ? 'present' : 'missing');
     if (!authHeader) return res.status(401).json({ error: 'Token requerido' });
     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    logger.debug('[AUTH] token extracted, length:', token.length);
     const decoded: any = jwt.verify(token, config.JWT_SECRET, { algorithms: [config.JWT_ALGORITHM] });
-    if (!['staff', 'admin'].includes(decoded.role)) {
+    logger.debug('[AUTH] token verified, role:', decoded.role);
+    if (!['staff', 'admin', 'super_admin'].includes(decoded.role)) {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
     req.user = decoded;
+    logger.debug('[AUTH] next() called');
     next();
   } catch (err: any) {
+    logger.error('[AUTH] error:', err.message);
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 }
@@ -159,6 +165,32 @@ async function checkPlanLimits(tenantId, resource) {
 }
 
 /**
+ * Verifica que el tenant tenga una característica específica según su plan.
+ * @param {...string} features
+ * @returns {import('express').RequestHandler}
+ */
+function requireFeature(...features) {
+  return (req, res, next) => {
+    if (!req.user?.tenant_id) {
+      return res.status(401).json({ error: 'Autenticación requerida' });
+    }
+    queryOne('SELECT plan FROM tenants WHERE id = $1', [req.user.tenant_id])
+      .then((tenant: any) => {
+        if (!tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
+        const hasAny = features.some(f => hasFeature(tenant.plan, f));
+        if (!hasAny) {
+          return res.status(403).json({ error: `Funcionalidad "${features.join(' o ')}" no disponible en el plan actual` });
+        }
+        next();
+      })
+      .catch((err: any) => {
+        logger.error('Error en requireFeature', { error: err.message });
+        res.status(500).json({ error: 'Error interno' });
+      });
+  };
+}
+
+/**
  * Identifica al tenant por slug, inyecta req.tenant y setea contexto de sesión.
  * @type {import('express').RequestHandler}
  */
@@ -184,5 +216,6 @@ export {
   checkTenantActive,
   checkTrialExpiration,
   checkPlanLimits,
+  requireFeature,
   identifyTenant,
 };

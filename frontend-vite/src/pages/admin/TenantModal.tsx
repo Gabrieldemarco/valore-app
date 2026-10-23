@@ -28,10 +28,6 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
   useEffect(() => {
     if (tenantId === null) return;
-    setActiveTab('info');
-    setReactivateMode('extend_trial');
-    setNewInvoiceAmount('');
-    setNewInvoiceDesc('');
     api.get<{ tenant: TenantDetail }>(`/api/super-admin/tenants/${tenantId}`).then(r => setDetail(r.tenant)).catch(() => showToast(t('adminDashboard.toastLoadError'), 'error'));
     api.get<{ invoices: Invoice[] }>(`/api/super-admin/tenants/${tenantId}/invoices`).then(r => setInvoices(r.invoices || [])).catch(() => setInvoices([]));
     api.get<{ payments: Payment[] }>(`/api/super-admin/tenants/${tenantId}/payments`).then(r => setPayments(r.payments || [])).catch(() => setPayments([]));
@@ -87,7 +83,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const handlePayInvoiceMP = async (invoiceId: number) => {
     try {
       const res = await api.post<{ init_point: string }>('/api/payments/mercadopago/create', { invoiceId });
-      if (res.init_point) window.location.href = res.init_point;
+      if (res.init_point) window.location.assign(res.init_point);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('common.error'), 'error');
     }
@@ -96,7 +92,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const handlePayInvoiceStripe = async (invoiceId: number) => {
     try {
       const res = await api.post<{ checkout_url: string }>('/api/payments/stripe/create', { invoiceId });
-      if (res.checkout_url) window.location.href = res.checkout_url;
+      if (res.checkout_url) window.location.assign(res.checkout_url);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('common.error'), 'error');
     }

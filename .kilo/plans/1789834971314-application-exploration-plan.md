@@ -1,63 +1,211 @@
-# Plan: Fix Google OAuth & SMTP Authentication Issues
+# Auditoría Completa Backend Velsoie - Local vs VPS
 
-## Contexto
-- Backend corriendo en VPS (puerto 3000)
-- Headers de seguridad en `server.ts` ya corregidos (Referrer-Policy, COOP)
-- Credenciales SMTP en `.env` actualizadas (velsoie09@gmail.com / kkgssqsmbtlcsvfj) pero auth falla con error 535
-- Código de notificaciones push en `cron-billing.ts` incluye correctamente `s.email as staff_email`
-- `notifyStaff()` importa y usa `staff_email` correctamente
+## Resumen Ejecutivo
 
-## Tareas
+El backend tiene **3 formas de despliegue** que usan configuraciones distintas:
+1. **Local Development**: `tsx server.ts` con `.env` directo (PostgreSQL local, Redis local)
+2. **VPS con PM2**: `ecosystem.config.js` + PM2 (PostgreSQL local/remoto, Redis local/remoto)
+3. **VPS con Docker**: `docker-compose.yml` (contenedores PostgreSQL, Redis, App)
 
-### 1. Corregir Error de Google OAuth Code 5 (Origen Faltante)
-**Estado**: A la espera de configuración externa
-- Agregar `https://velsoie.com` y `https://www.velsoie.com` a Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID → "Authorized JavaScript origins"
-- Publicar pantalla de consentimiento desde "Testing" a "Production" (o agregar usuarios de prueba)
-- El `GOOGLE_CLIENT_ID` en `.env` debe coincidir con el configurado en Google Console
+---
 
-### 2. Corregir Fallo de Autenticación SMTP (Error 535)
-**Estado**: Investigando
+## 1. Configuración por Entorno
 
-El error "Invalid login: 535-5.7.8 Username and Password not accepted" indica que Gmail rechazó las credenciales. Opciones:
+| Variable | Local (.env) | VPS PM2 (ecosystem.config.js) | VPS Docker (docker-compose.yml) |
+|----------|--------------|-------------------------------|----------------------------------|
+| **NODE_ENV** | No definido → `development` | `production` (env) / `development` (env_development) | `production` |
+| **PORT** | 3000 | 3000 | 3000 |
+| **DATABASE_URL** | `postgresql://velsoie:...@localhost:5432/agenda_app` | Heredada de `.env` | `postgresql://postgres:${DB_PASSWORD}@postgres:5432/${DB_NAME}` |
+| **REDIS** | `127.0.0.1:6379` (default en notificationQueue) | Heredado de `.env` | `redis://redis:6379` |
+| **SMTP_SERVICE** | `gmail` | Heredado | No definido (usa SMTP_HOST/PORT) |
+| **SMTP_USER** | `velsoie09@gmail.com` | Heredado | `${SMTP_USER}` |
+| **SMTP_PASS** | `amekbgfulmqlxfcr` | Heredado | `${SMTP_PASS}` |
+| **ALLOWED_ORIGINS** | `https://velsoie.com,https://www.velsoie.com,https://www.nexo-dev.com,https://nexo-dev.com` | Heredado | `${ALLOWED_ORIGINS}` |
+| **BASE_URL** | `https://velsoie.com` | Heredado | `${BASE_URL}` |
+| **FORCE_HTTPS** | **NO DEFINIDO** | Heredado | **NO DEFINIDO** |
+| **FRONTEND_URL** | `https://velsoie.com` | Heredado | `${FRONTEND_URL}` |
 
-#### Opción A: Generar App Password (Recomendado)
-Gmail requiere App Passwords para SMTP cuando 2FA está activado:
-1. Activar 2FA en la cuenta velsoie09@gmail.com
-2. Generar App Password para "Mail"
-3. Actualizar `SMTP_PASS` en `backend/.env` con la contraseña de 16 caracteres
-4. Reiniciar el backend
+---
 
-#### Opción B: Permitir Apps Menos Seguras
-Gmail ha descontinuado esta opción, pero si está disponible:
-1. Activar "Less secure app access" en la cuenta Google
-2. Reiniciar backend
+## 2. Diferencias Críticas Detectadas
 
-#### Opción C: Cambiar Proveedor SMTP
-Usar un servicio SMTP dedicado (SendGrid, Mailgun):
-1. Crear cuenta con proveedor SMTP
-2. Actualizar `backend/.env` con nuevas credenciales SMTP
-3. Ajustar `createEmailTransporter()` en `services/email.ts` si es necesario
-4. Reiniciar backend
+### ❌ PROBLEMAS EN PRODUCCIÓN (VPS)
 
-### 3. Verificar Notificaciones de Staff
-**Estado**: Código correcto
+| Problema | Impacto | Ubicación |
+|----------|---------|-----------|
+| **FORCE_HTTPS no configurado** | No fuerza HTTPS, HSTS deshabilitado | `.env`, `docker-compose.yml`, `ecosystem.config.js` |
+| **SMTP_PASS puede ser App Password vencido** | Error 535 "Invalid login" | `.env` línea 43 |
+| **Google OAuth origins** | Error 5 "Origin not allowed" | Google Cloud Console (no en código) |
+| **SENTRY_DSN no configurado** | Sin monitoreo de errores | `.env`, `docker-compose.yml` |
+| **TURNSTILE keys no configuradas** | CAPTCHA no funciona en producción | `.env` |
+| **TWILIO no configurado** | WhatsApp en modo simulado | `.env`, `docker-compose.yml` |
+| **WORKER notificaciones** | Se inicia en `server.ts` línea 56 - ¿se ejecuta en PM2 cluster? | `server.ts:56` |
 
-El sistema de notificaciones está implementado correctamente:
-- `cron-billing.ts` línea 437: query SQL incluye `s.email as staff_email`
-- `cron-billing.ts` línea 491: Llama `notifyStaff(apt, {...})` con objeto tenant
-- `notifications.ts` líneas 97-163: `notifyStaff()` usa `appointment.staff_email`
-- `server.ts` líneas 530-537: Cron job diario a las 20:00 llama `sendAppointmentReminders()`
+### ⚠️ INCONSISTENCIAS ENTRE ENTORNOS
 
-No se necesitan cambios de código. El problema es puramente la autenticación SMTP.
+| Diferencia | Local | VPS Docker | VPS PM2 |
+|------------|-------|------------|---------|
+| DB Host | `localhost` | `postgres` (container) | `localhost` o IP externa |
+| DB User/Pass | `velsoie:2d9730f2...` | `postgres:${DB_PASSWORD}` | Depende de `.env` |
+| Redis Host | `127.0.0.1` | `redis` (container) | `127.0.0.1` o IP externa |
+| SMTP Config | `SMTP_SERVICE=gmail` | `SMTP_HOST/PORT/SECURE` | `SMTP_SERVICE=gmail` |
 
-## Validación
-1. Después de corregir credenciales SMTP, probar o verificar logs para "✅ Email enviado"
-2. Probar Google OAuth intentando login desde el frontend
-3. Verificar que no haya errores en logs de backend sobre "Invalid login" o "Error code: 5"
+---
 
-## Riesgos
-- Google puede bloquear intentos de login desde nuevas ubicaciones (VPS) - requerirá aprobación
-- Generar App Password requiere tener 2FA activado en la cuenta Gmail
+## 3. Arquitectura de Notificaciones (Crítico para SMTP)
+
+```
+cron-billing.ts (sendAppointmentReminders)
+    │
+    ▼
+notifications.ts (notifyStaff, sendClientConfirmation)
+    │
+    ▼
+notificationQueue.ts (BullMQ + Redis)
+    │
+    ▼
+notificationWorker.ts (Worker BullMQ - concurrency: 5)
+    │
+    ├── Email → createEmailTransporterWithGoogle()
+    │       ├── Intenta Gmail XOAUTH2 (si tenantId + google_smtp_tokens)
+    │       └── Fallback: SMTP tradicional (SMTP_USER/SMTP_PASS o per-tenant)
+    ├── WhatsApp → Twilio
+    ├── Push → Web Push (VAPID)
+    └── SMS → Simulado
+```
+
+**Puntos clave:**
+- Emails se encolan en Redis (BullMQ), NO se envían síncronamente
+- Worker procesa la cola asíncronamente
+- Si Redis falla → las notificaciones NO se envían
+- Per-tenant SMTP: columnas `smtp_email`, `smtp_password` en tabla `tenants`
+
+---
+
+## 4. Google OAuth - Dos Flujos Distintos
+
+| Flujo | Callback URL | Uso |
+|-------|--------------|-----|
+| **Google Sign-In (Clientes/Staff)** | `GOOGLE_CALLBACK_URL` = `https://velsoie.com/api/auth/google/callback` | Login usuarios |
+| **Google SMTP OAuth (Por tenant)** | `GOOGLE_SMTP_CALLBACK_URL` = `https://velsoie.com/auth/google/callback` | Autorizar Gmail per-tenant |
+
+**Ambos requieren en Google Cloud Console:**
+- Authorized JavaScript origins: `https://velsoie.com`, `https://www.velsoie.com`
+- Authorized redirect URIs: ambas callback URLs
+- OAuth consent screen: **Publicado en Production** (no Testing)
+
+---
+
+## 5. Cron Jobs Programados (server.ts)
+
+| Horario | Función | Descripción |
+|---------|---------|-------------|
+| `0 0 1 * *` | `generateMonthlyInvoices()` | Facturación mensual planes pagos |
+| `0 8 * * *` | `suspendExpiredFreeTrials()` | Suspender trials vencidos |
+| `0 20 * * *` | `sendAppointmentReminders()` | **Recordatorios turnos (ENVÍA EMAILS)** |
+| `0 9 * * *` | Trial ending warning | Aviso trial por expirar (3 días) |
+| `0 10 * * *` | `sendPaymentReminders()` | Recordatorios pago (3 días antes) |
+| `0 3 * * *` | `backupDatabase()` | Backup DB (pg_dump) |
+| `0 23 * * *` | `suspendOverdueTenants()` | Suspender facturas vencidas >7 días |
+| `*/30 * * * *` | Google Calendar sync | Sincronizar calendarios staff |
+
+---
+
+## 6. Variables Faltantes en .env Actual vs .env.example
+
+| Variable | En .env | En .env.example | Estado |
+|----------|---------|-----------------|--------|
+| `FORCE_HTTPS` | ❌ | ✅ | **FALTA** |
+| `SENTRY_DSN` | ❌ | ✅ | **FALTA** |
+| `TURNSTILE_SECRET_KEY` | ❌ | ✅ | **FALTA** |
+| `TURNSTILE_SITE_KEY` | ❌ | ✅ | **FALTA** |
+| `STRIPE_SECRET_KEY` | ❌ | ✅ | No usada (opcional) |
+| `STRIPE_WEBHOOK_SECRET` | ❌ | ✅ | No usada (opcional) |
+| `TWILIO_ACCOUNT_SID` | ❌ | ✅ | **FALTA** (WhatsApp simulado) |
+| `TWILIO_AUTH_TOKEN` | ❌ | ✅ | **FALTA** |
+| `TWILIO_WHATSAPP_FROM` | ❌ | ✅ | **FALTA** |
+| `LOG_LEVEL` | ❌ | ✅ | Opcional |
+| `DB_SSL_REJECT_UNAUTHORIZED` | ❌ | ✅ | Opcional |
+| `DB_POOL_MAX` | ❌ | ✅ | Opcional (default 30) |
+| `METRICS_ENABLED` | ❌ | ✅ | Opcional |
+| `SWAGGER_UI_ENABLED` | ❌ | ✅ | Opcional |
+| `SWAGGER_BASIC_AUTH_USER/PASS` | ❌ | ✅ | **REQUERIDO si Swagger en prod** |
+
+---
+
+## 7. Plan de Acción Priorizado
+
+### 🔴 CRÍTICO (Bloquean producción)
+
+1. **Configurar FORCE_HTTPS=true** en `.env`, `docker-compose.yml`, `ecosystem.config.js`
+2. **Regenerar App Password Gmail** (2FA obligatorio) → actualizar `SMTP_PASS` en `.env`
+3. **Google Cloud Console**: Agregar origins + publicar consent screen
+4. **Verificar Redis accesible** en VPS (¿contenedor o externo?)
+5. **Verificar PostgreSQL accesible** en VPS (¿contenedor o externo?)
+
+### 🟡 IMPORTANTE (Funcionalidad completa)
+
+6. **Configurar TURNSTILE** (Cloudflare CAPTCHA) - keys en .env
+7. **Configurar TWILIO** para WhatsApp real (Account SID, Auth Token, From number)
+8. **Configurar SENTRY_DSN** para monitoreo errores
+9. **Agregar variables Swagger/Metrics auth** si se usan en producción
+
+### 🟢 MEJORAS (Consistencia)
+
+10. **Unificar configuración DB/Redis** entre Docker y PM2
+11. **Documentar despliegue PM2 vs Docker** (¿cuál se usa en VPS?)
+12. **Health check** incluye DB pero no Redis - agregar check Redis
+13. **Worker notificaciones** - verificar que no haya múltiples workers en PM2 cluster mode
+
+---
+
+## 8. Pruebas de Validación Post-Fix
+
+```bash
+# 1. Verificar variables de entorno
+NODE_ENV=production node scripts/check-env.js
+
+# 2. Test health check (incluye DB)
+curl https://velsoie.com/api/health
+
+# 3. Test SMTP real (desencolar notificación de prueba)
+# Revisar logs: "✅ Email enviado a:" vs "📧 [SIMULADO]"
+
+# 4. Test Google OAuth
+# Intentar login desde https://velsoie.com
+
+# 5. Test cron recordatorios (forzar ejecución o esperar 20:00)
+# Ver logs: "🔔 [CRON] Enviando recordatorios..."
+
+# 6. Verificar worker notificaciones corriendo
+# pm2 list | grep notification  (si usa PM2)
+# docker logs <container> | grep "Worker de notificaciones"
+```
+
+---
+
+## 9. Archivos Clave a Modificar
+
+| Archivo | Cambios Necesarios |
+|---------|-------------------|
+| `backend/.env` | Agregar FORCE_HTTPS, SENTRY_DSN, TURNSTILE, TWILIO, regenerar SMTP_PASS |
+| `docker-compose.yml` | Agregar FORCE_HTTPS, SENTRY_DSN, TURNSTILE, TWILIO, SMTP vars |
+| `ecosystem.config.js` | Agregar FORCE_HTTPS, SENTRY_DSN, TURNSTILE, TWILIO en env |
+| `backend/config.js` | Ya valida correctamente (requiere SMTP en prod) |
+
+---
+
+## 10. Preguntas para Definir Estrategia
+
+1. **¿VPS usa PM2 o Docker?** (ecosystem.config.js vs docker-compose.yml)
+2. **¿Base de datos en contenedor Docker o PostgreSQL externo/gestionado?**
+3. **¿Redis en contenedor Docker o Redis externo/gestionado?**
+4. **¿SMTP global (velsoie09@gmail.com) o per-tenant Gmail OAuth?**
+5. **¿Stripe se va a usar o solo MercadoPago?**
+
+---
+
+**Estado actual**: Backend funcional en local, problemas de configuración en VPS (SMTP, OAuth, HTTPS). El código de notificaciones está bien implementado con queue asíncrona, el problema es puramente configuración de credenciales y origins OAuth.
 
 ---
 

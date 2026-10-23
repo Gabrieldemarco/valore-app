@@ -12,6 +12,7 @@ import FeaturedServicesSection from './FeaturedServicesSection';
 import TreatmentCategories from './components/TreatmentCategories';
 import HowItWorksSection from './components/HowItWorksSection';
 import AboutVelsoieSection from './components/AboutVelsoieSection';
+import PricingSection from './components/PricingSection';
 import { SERVICE_CATEGORIES_DATA } from './components/ServiceCategoriesData';
 import { getGenderCategory, type Salon } from './SalonCard';
 import '../../styles/index.css';
@@ -381,6 +382,8 @@ export default function PublicIndex() {
       <HowItWorksSection />
 
       <AboutVelsoieSection />
+
+      <PricingSection />
 
       <PublicFooter appointmentsCount={appointmentsCount} />
     </>

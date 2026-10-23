@@ -1,0 +1,205 @@
+/* ============================================================
+   WebsiteRenderer - Public Site Styles
+   ============================================================ */
+
+.ws-public-site {
+  font-family: var(--ws-font-body);
+  color: var(--text-main);
+  background: var(--bg-deep);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.ws-site-content {
+  width: 100%;
+}
+
+/* Float booking button */
+.ws-float-booking {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--ws-primary), var(--ws-secondary));
+  color: var(--text-white);
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 50px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  animation: floatUp 0.6s ease-out;
+}
+
+.ws-float-booking:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: var(--text-white);
+}
+
+.ws-float-booking:active {
+  transform: translateY(0);
+}
+
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Preview Wrapper Styles
+   ============================================================ */
+
+.ws-preview-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-preview-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ws-preview-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ws-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--ws-primary);
+  color: var(--text-white);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ws-template-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ws-preview-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ws-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.ws-btn--primary {
+  background: var(--ws-primary);
+  color: var(--text-white);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ws-btn--primary:hover {
+  background: var(--ws-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.ws-btn--secondary {
+  background: var(--glass-bg);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+}
+
+.ws-btn--secondary:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+
+.ws-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.ws-btn--ghost:hover {
+  background: var(--glass-bg);
+  color: var(--text-main);
+  border-color: var(--glass-border);
+}
+
+.ws-preview-content {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.ws-preview-content .ws-public-site {
+  min-height: calc(100vh - 80px);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .ws-preview-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .ws-preview-actions {
+    flex-direction: column;
+  }
+  
+  .ws-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ws-float-booking {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    justify-content: center;
+    padding: 14px;
+    border-radius: 12px;
+  }
+  
+  .ws-float-booking span {
+    display: none;
+  }
+}

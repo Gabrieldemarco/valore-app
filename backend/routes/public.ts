@@ -917,5 +917,41 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   });
 
-  return router;
+  // GET published website config for tenant (public)
+  router.get('/:slug/website', identifyTenant, async (req, res) => {
+    try {
+      const website = await queryOne(
+        'SELECT config, status, published_at FROM tenant_websites WHERE tenant_id = $1 AND status = $2',
+        [req.tenant.id, 'published']
+      );
+
+      if (!website) {
+        return res.status(404).json({ error: 'Sitio web no publicado' });
+      }
+
+      const { config, published_at } = website;
+      const tenant = req.tenant;
+
+      res.json({
+        config,
+        publishedAt: published_at,
+        tenant: {
+          id: tenant.id,
+          slug: tenant.slug,
+          businessName: tenant.business_name,
+          logo: tenant.brand_logo_url,
+          services: tenant.services || [],
+          staff: tenant.staff || [],
+          address: tenant.business_address,
+          phone: tenant.business_phone,
+          email: tenant.notification_email,
+        },
+      });
+    } catch (err: any) {
+      logger.error('Error fetching public website:', err);
+      res.status(500).json({ error: 'Error al cargar el sitio web' });
+    }
+   });
+
+   return router;
 }

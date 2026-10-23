@@ -37,18 +37,22 @@ pool.on('error', (err) => {
  * @returns {Promise<import('pg').QueryResult>}
  */
 const query = async (text: string, params?: any[]) => {
+  logger.debug('[DB] query start:', text.substring(0, 100));
   const client = await pool.connect();
+  logger.debug('[DB] client acquired');
   try {
     const res = await client.query({
       text,
       values: params,
       statement_timeout: 5000
     });
+    logger.debug('[DB] query done, rows:', res.rows.length);
     return res;
   } catch (err: any) {
     logger.error(`❌ Query error: message="${err?.message}" code=${err?.code} detail="${err?.detail}"`);
     throw err;
   } finally {
+    logger.debug('[DB] client released');
     client.release();
   }
 };
@@ -59,7 +63,9 @@ const query = async (text: string, params?: any[]) => {
  * @returns {Promise<any>}
  */
 const queryOne = async (text: string, params?: any[]) => {
+  logger.debug('[DB] queryOne start:', text.substring(0, 100));
   const res = await query(text, params);
+  logger.debug('[DB] queryOne done');
   return res.rows[0] || null;
 };
 

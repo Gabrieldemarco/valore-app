@@ -317,6 +317,7 @@ app.use('/api', require('./routes/misc').default(apiLimiter));
 app.use('/api', require('./routes/push').default());
 app.use('/api', require('./routes/google').default());
 app.use('/', require('./routes/calendar').default());
+app.use('/api', require('./routes/website').default);
 
 // ========== SWAGGER API DOCS ==========
 if (config.SWAGGER_UI_ENABLED) {

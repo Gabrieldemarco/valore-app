@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { query, queryOne } from '../database';
 import logger from '../services/logger';
 import { validate, authenticateStaff, authenticateSuperAdmin } from '../middleware';
@@ -105,7 +105,7 @@ export default function createStripeRouter(createStripeCheckout, PLANS) {
   });
 
   router.post('/payments/stripe/invoices/:id', authenticateStaff, [
-    body('id').isInt().withMessage('invoiceId inválido'),
+    param('id').isInt().withMessage('invoiceId inválido'),
   ], validate, async (req, res) => {
     try {
       if (!process.env.STRIPE_SECRET_KEY) {

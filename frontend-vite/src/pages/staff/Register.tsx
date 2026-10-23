@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 
@@ -8,10 +8,15 @@ import '../../styles/auth.css';
 
 export default function StaffRegister() {
   const { t } = useTranslation();
-  const [form, setForm] = useState({ businessName: '', email: '', password: '', phone: '', address: '', category: 'peluqueria' });
+  const location = useLocation();
+  const queryPlan = new URLSearchParams(location.search).get('plan') || 'free';
+  const initialPlan = ['free', 'basico', 'estandar', 'premium'].includes(queryPlan) ? queryPlan : 'free';
+  
+  const [form, setForm] = useState({ businessName: '', email: '', password: '', phone: '', address: '', category: 'peluqueria', plan: initialPlan });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));

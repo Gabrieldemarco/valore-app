@@ -11,7 +11,7 @@ const STRIPE_CURRENCY = /** @type {string} */(process.env.STRIPE_CURRENCY || 'us
 
 const LEGACY_PLAN_MAP = { pro: 'estandar', enterprise: 'premium' };
 
-/** @type {{ [key: string]: { price: number, price_usd: number, name: string, currency: string, currency_usd: string, promo_price: number, promo_price_usd: number, promo_months: number, limits?: { staff: number|null, services: number|null, products: number|null, appointmentsPerDay: number|null } } }} */
+/** @type {{ [key: string]: { price: number, price_usd: number, name: string, currency: string, currency_usd: string, promo_price: number, promo_price_usd: number, promo_months: number, limits?: { staff: number|null, services: number|null, products: number|null, appointmentsPerDay: number|null }, features?: string[] } }} */
 const PLANS = {
   free: {
     price: 0,
@@ -23,6 +23,7 @@ const PLANS = {
     promo_price_usd: 0,
     promo_months: 0,
     limits: { staff: 1, services: 5, products: 5, appointmentsPerDay: 10 },
+    features: [],
   },
   basico: {
     price: parseFloat(process.env.PLAN_BASICO_PRICE || '400'),
@@ -34,6 +35,7 @@ const PLANS = {
     promo_price_usd: parseFloat(process.env.PLAN_BASICO_PROMO_PRICE_USD || '7'),
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: 1, services: 10, products: 10, appointmentsPerDay: null },
+    features: ['appointments', 'basic_reminders', 'landing_basic', 'service_categories'],
   },
   estandar: {
     price: parseFloat(process.env.PLAN_ESTANDAR_PRICE || '760'),
@@ -45,6 +47,7 @@ const PLANS = {
     promo_price_usd: parseFloat(process.env.PLAN_ESTANDAR_PROMO_PRICE_USD || '14'),
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: 3, services: 30, products: 30, appointmentsPerDay: null },
+    features: ['appointments', 'whatsapp_reminders', 'email_reminders', 'landing_custom_css', 'analytics_basic', 'pos_basic', 'calendar_sync', 'service_featured'],
   },
   premium: {
     price: parseFloat(process.env.PLAN_PREMIUM_PRICE || '1160'),
@@ -56,6 +59,7 @@ const PLANS = {
     promo_price_usd: parseFloat(process.env.PLAN_PREMIUM_PROMO_PRICE_USD || '21'),
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: null, services: null, products: null, appointmentsPerDay: null },
+    features: ['appointments', 'whatsapp_reminders', 'email_reminders', 'sms_reminders', 'landing_custom_css', 'landing_custom_html', 'analytics_advanced', 'pos_full', 'calendar_sync', 'service_featured', 'custom_domain', 'priority_support', 'google_analytics', 'waitlist', 'coupons', 'products', 'financial_reports'],
   },
 };
 
@@ -153,6 +157,30 @@ function formatMoney(amount, locale = MP_LOCALE, currency = MP_CURRENCY) {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
 }
 
+/**
+ * Verifica si un plan tiene una característica específica.
+ * @param {string} [plan]
+ * @param {string} feature
+ * @returns {boolean}
+ */
+function hasFeature(plan, feature) {
+  const normalized = normalizePlan(plan);
+  const planInfo = PLANS[normalized];
+  if (!planInfo) return false;
+  const features = planInfo.features || [];
+  return features.includes(feature);
+}
+
+/**
+ * Verifica si un plan tiene una característica específica (alias).
+ * @param {string} [plan]
+ * @param {string} feature
+ * @returns {boolean}
+ */
+function hasFeatureAccess(plan, feature) {
+  return hasFeature(plan, feature);
+}
+
 export {
   MP_CURRENCY,
   MP_LOCALE,
@@ -163,6 +191,8 @@ export {
   normalizePlan,
   isPaidPlan,
   getEffectivePlanPrice,
+  hasFeature,
+  hasFeatureAccess,
   formatMoney,
   loadPlanPricesFromDB,
   reloadPlanPrices,
