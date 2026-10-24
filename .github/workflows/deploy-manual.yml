@@ -9,7 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 22
+      # -- Build Frontend ------------------------------------------------
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -24,21 +25,56 @@ jobs:
         working-directory: frontend-vite
         run: npm run build
 
-      - name: Deploy via SSH
-        uses: easingthemes/ssh-deploy@v5
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
-          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
-          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
-          SOURCE: .
-          TARGET: ${{ secrets.DEPLOY_PATH }}
-          ARGS: -avz --delete --exclude='node_modules' --exclude='.git' --exclude='.env' --exclude='backend/tests' --exclude='frontend-vite/node_modules' --exclude='frontend-vite/src'
-          SCRIPT_BEFORE_REQUIRED: true
-          SCRIPT_BEFORE: |
-            whoami
-            echo "Starting manual deploy to ${{ secrets.DEPLOY_PATH }}"
-          SCRIPT_AFTER: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            docker compose down
-            docker compose up -d --build
-            echo "Deploy complete"
+      # -- Compile Backend TypeScript -> JS ------------------------------
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Compile TypeScript backend
+        working-directory: backend
+        run: npx tsc
+
+      # -- Deploy via SSH rsync ------------------------------------------
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync files to VPS
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='backend/node_modules' \
+            --exclude='frontend-vite/node_modules' \
+            --exclude='frontend-vite/src' \
+            --exclude='backend/tests' \
+            --exclude='backend/logs' \
+            --exclude='backend/uploads' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
+
+      # -- Post-deploy: migrate + restart PM2 ---------------------------
+      - name: Run migrations and restart PM2
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "$DEPLOY_USER@$DEPLOY_HOST" bash << EOF
+            set -e
+            cd "$DEPLOY_PATH/backend"
+            echo "Installing production deps..."
+            npm ci --omit=dev
+            echo "Running migrations..."
+            node migrations/run-migrations.js
+            echo "Reloading PM2..."
+            pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
+            pm2 save
+            echo "Deploy complete!"
+            pm2 list
+          EOF
