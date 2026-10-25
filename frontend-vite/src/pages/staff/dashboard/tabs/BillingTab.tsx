@@ -15,7 +15,7 @@ export default function BillingTab() {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<'mercadopago' | 'stripe'>('mercadopago');
   const { plan, invoices, settings, loadInvoices } = useDashboard();
-  const { subscribeToPlan, handlePayInvoice, cancelSubscription } = useDashboardCRUD();
+  const { subscribeToPlan, handlePayInvoice } = useDashboardCRUD();
 
   return (
     <div className="glass-panel mt-24 p-24">
@@ -46,25 +46,20 @@ export default function BillingTab() {
           {plan.plan === 'free' && plan.trialDaysLeft != null && (
             <p className="text-muted m-0 mt-8">{t('staffDashboard.billingTrialDays', { days: plan.trialDaysLeft })}</p>
           )}
-          <div className="flex flex-wrap gap-16 mt-16">
-            {plan.plan !== 'estandar' && plan.plan !== 'premium' && (
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanStandard')}</button>
-            )}
-            {plan.plan !== 'premium' && (
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
-            )}
-            {plan.plan !== 'free' && (
-              <button className="dash-btn dash-btn-cancel" onClick={() => window.confirm(t('staffDashboard.billingCancelConfirm')) && cancelSubscription()}>{t('staffDashboard.billingCancelSubscription')}</button>
-            )}
-          </div>
+          {plan.status !== 'active' && (
+            <div className="flex flex-wrap gap-16 mt-16">
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="glass-panel mb-20 p-20" style={{ border: '1px solid rgba(197,168,128,0.35)' }}>
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
           <p className="text-muted m-0 mb-14">{t('staffDashboard.notAvailable')}</p>
           <div className="flex flex-wrap gap-16 mt-16">
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanStandard')}</button>
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
           </div>
         </div>
       )}
