@@ -49,7 +49,7 @@ describe('useCategoryCRUD', () => {
       expect(api.post).toHaveBeenCalledWith('/api/tenant/categories', { name: 'Cortes', parent_id: null });
     });
     expect(mockLoadCategories).toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('Categoría creada', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith('staffDashboard.toastCategoryCreated', 'success');
   });
 
   test('updateCategory calls PUT then refreshes', async () => {
@@ -61,7 +61,7 @@ describe('useCategoryCRUD', () => {
       expect(api.put).toHaveBeenCalledWith('/api/tenant/categories/1', { name: 'Cortes Edit', parent_id: null });
     });
     expect(mockLoadCategories).toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('Categoría actualizada', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith('staffDashboard.toastCategoryUpdated', 'success');
   });
 
   test('deleteCategory calls DELETE then refreshes categories and services', async () => {
@@ -74,7 +74,7 @@ describe('useCategoryCRUD', () => {
     });
     expect(mockLoadCategories).toHaveBeenCalled();
     expect(mockLoadServices).toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('Categoría eliminada', 'success');
+    expect(mockAddToast).toHaveBeenCalledWith('staffDashboard.toastCategoryDeleted', 'success');
   });
 
   test('shows error toast on API failure', async () => {

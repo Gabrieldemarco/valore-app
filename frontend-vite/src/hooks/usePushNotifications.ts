@@ -55,26 +55,26 @@ export function usePushNotifications() {
       const permission = await Notification.requestPermission();
       setPermission(permission);
       if (permission !== 'granted') {
-        setError('Permiso denegado');
+        setError('pushNotifications.errorPermissionDenied');
         setLoading(false);
         return;
       }
 
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        setError('Las notificaciones push requieren HTTPS');
+        setError('pushNotifications.errorHTTPSRequired');
         setLoading(false);
         return;
       }
 
       const vapidKey = await getVapidKey();
       if (!vapidKey) {
-        setError('Push no configurado en el servidor');
+        setError('pushNotifications.errorNotConfigured');
         setLoading(false);
         return;
       }
 
       if (!('serviceWorker' in navigator)) {
-        setError('Service Workers no soportados');
+        setError('pushNotifications.errorSWNotSupported');
         setLoading(false);
         return;
       }
@@ -86,7 +86,7 @@ export function usePushNotifications() {
           reg = await navigator.serviceWorker.register('/sw.js');
         } catch (swErr: unknown) {
           logger.error('SW registration failed:', swErr);
-          setError('El Service Worker no pudo registrarse');
+          setError('pushNotifications.errorSWRegistration');
           setLoading(false);
           return;
         }
@@ -115,14 +115,14 @@ export function usePushNotifications() {
       const errObj = err as { name?: string; message?: string };
       logger.error('Push subscribe error:', errObj.name, errObj.message, err);
       const msg = errObj.name === 'AbortError'
-        ? 'El servicio de notificaciones no está disponible (posiblemente bloqueado por red o firewall)'
+        ? 'pushNotifications.errorAborted'
         : errObj.name === 'NetworkError'
-          ? 'Error de red al conectar con el servicio de notificaciones'
+          ? 'pushNotifications.errorNetwork'
           : errObj.name === 'InvalidStateError'
-            ? 'El Service Worker no está activo'
+            ? 'pushNotifications.errorInvalidState'
             : errObj.name === 'NotSupportedError'
-              ? 'Push no soportado en este navegador'
-              : errObj.message || 'Error al suscribir';
+              ? 'pushNotifications.errorNotSupported'
+              : errObj.message || 'pushNotifications.errorSubscribe';
       setError(msg);
     } finally {
       setLoading(false);
@@ -141,7 +141,7 @@ export function usePushNotifications() {
       setSubscribed(false);
     } catch (err: unknown) {
       const errObj = err as { message?: string };
-      setError(errObj.message || 'Error al desuscribir');
+      setError(errObj.message || 'pushNotifications.errorUnsubscribe');
     } finally {
       setLoading(false);
     }

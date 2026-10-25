@@ -51,10 +51,10 @@ export default function ServicesTab() {
               </div>
               <div className="form-group mb-0">
                 <label className="text-sm text-muted mb-4 block">
-                  Categoría
+                  {t('staffLandingEditor.serviceCategoryLabel')}
                 </label>
                 <select className="glass-input" value={s.category_id ?? ''} onChange={e => updateService(i, 'category_id', e.target.value ? parseInt(e.target.value, 10) : (null as unknown as string | number))}>
-                  <option value="">Sin categoría</option>
+                  <option value="">{t('staffLandingEditor.serviceCategoryNone')}</option>
                   {flatten(categories).map(c => (
                     <option key={c.id} value={c.id}>{'── '.repeat(c.depth)}{c.name}</option>
                   ))}

@@ -1,4 +1,5 @@
 import { useState, useEffect, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import SalonCard, { type Salon } from './SalonCard';
 
 interface SalonGridSectionProps {
@@ -28,6 +29,7 @@ export default function SalonGridSection({
   showNewBadge = false,
   variant = 'default',
 }: SalonGridSectionProps) {
+  const { t } = useTranslation();
   const [activeDot, setActiveDot] = useState(0);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function SalonGridSection({
         </div>
       </div>
       {dotCount > 1 && (
-        <div className="slider-pagination-dots" role="tablist" aria-label="Paginación de salones">
+        <div className="slider-pagination-dots" role="tablist" aria-label={t('publicIndex.salonPagination')}>
           {Array.from({ length: dotCount }).map((_, idx) => (
             <button
               key={idx}
@@ -71,7 +73,7 @@ export default function SalonGridSection({
               aria-selected={activeDot === idx}
               className={`slider-dot${activeDot === idx ? ' active' : ''}`}
               onClick={() => onDotClick(idx)}
-              aria-label={`Ir al grupo ${idx + 1}`}
+              aria-label={t('publicIndex.salonPaginationGroup', { group: idx + 1 })}
             />
           ))}
         </div>

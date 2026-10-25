@@ -60,12 +60,12 @@ export default function PublicSearchBar({
   }, []);
 
   return (
-    <section className="search-section search-section--sticky" aria-label={t('publicIndex.searchSectionLabel', 'Encontrá tu próximo turno')}>
+    <section className="search-section search-section--sticky" aria-label={t('publicIndex.searchSectionLabel')}>
       <div className="container">
         <div className="search-heading">
-          <span className="section-eyebrow">{t('publicIndex.searchEyebrow', 'Tu próximo look empieza acá')}</span>
-          <h2>{t('publicIndex.searchTitle', 'Encontrá un salón y reservá tu turno')}</h2>
-          <p>{t('publicIndex.searchSubtitle', 'Filtrá por servicio, profesional, ubicación o fecha.')}</p>
+          <span className="section-eyebrow">{t('publicIndex.searchEyebrow')}</span>
+          <h2>{t('publicIndex.searchTitle')}</h2>
+          <p>{t('publicIndex.searchSubtitle')}</p>
         </div>
         <div className={`search-box${filtersExpanded ? ' search-box--expanded' : ''}`}>
           <div className="search-input-wrapper search-input-wrapper--service" ref={serviceDropdownRef}>

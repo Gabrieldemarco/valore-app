@@ -17,7 +17,7 @@ export default function LandingFooterSection({ businessName, businessAddress, bu
         <div className="footer-content">
           <p><strong>{businessName}</strong></p>
           {businessAddress && <p>{businessAddress}</p>}
-          {businessPhone && <p>Tel: {businessPhone}</p>}
+          {businessPhone && <p>{t('landing.phonePrefix')}: {businessPhone}</p>}
           {hasSocial && (
             <div className="footer-socials">
               {social.instagram && <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="footer-social-link">📷</a>}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 
 import PhoneInput from '../../components/PhoneInput';
@@ -98,7 +98,14 @@ export default function StaffRegister() {
           <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, marginBottom: 20 }}>
             <input type="checkbox" id="acceptTerms" required style={{ marginTop: 3, cursor: 'pointer', accentColor: 'var(--primary)', width: 'auto', height: 'auto' }} />
             <label htmlFor="acceptTerms" style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none', fontWeight: 400, marginBottom: 0 }}>
-              {t('staffRegister.acceptThe')} <Link to="/terms#terms" target="_blank" className="text-primary no-underline font-500">{t('common.termsAndConditions')}</Link>, la <Link to="/terms#privacy" target="_blank" className="text-primary no-underline font-500">{t('common.privacyPolicy')}</Link> y la <Link to="/terms#cancellations" target="_blank" className="text-primary no-underline font-500">{t('common.cancellationPolicy')}</Link> de Velsoie.
+              <Trans
+                i18nKey="staffRegister.acceptTerms"
+                components={{
+                  terms: <Link to="/terms#terms" target="_blank" className="text-primary no-underline font-500" />,
+                  privacy: <Link to="/terms#privacy" target="_blank" className="text-primary no-underline font-500" />,
+                  cancellation: <Link to="/terms#cancellations" target="_blank" className="text-primary no-underline font-500" />,
+                }}
+              />
             </label>
           </div>
 

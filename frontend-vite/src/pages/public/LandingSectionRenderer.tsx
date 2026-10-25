@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { useTranslation } from 'react-i18next';
 import ScrollReveal from '../../components/ScrollReveal';
 import LandingHeroSection from './LandingHeroSection';
 import LandingServicesSection from './LandingServicesSection';
@@ -96,6 +97,7 @@ export default function LandingSectionRenderer({
   captchaEnabled, captchaSiteKey, captchaToken, onSetCaptchaToken,
   showWaitlistForm, waitlistMsg, waitlistErr, onSetShowWaitlistForm, onJoinWaitlist,
 }: Props) {
+  const { t } = useTranslation();
   const renderSection = (block: LayoutBlock) => {
     if (!block.enabled) return null;
 
@@ -256,9 +258,9 @@ export default function LandingSectionRenderer({
               <div className="section-divider wide" />
             </ScrollReveal>
             <ScrollReveal delay={1}>
-              <h2 className="section-title">{block.title || 'Ubicación'}</h2>
+              <h2 className="section-title">{block.title || t('landing.locationTitle')}</h2>
               <div className="custom-block-content">
-                <iframe src={mapSrc} title="Ubicación" width="100%" height="400" style={{ border: 0 }} allowFullScreen loading="lazy" />
+                <iframe src={mapSrc} title={t('landing.locationTitle')} width="100%" height="400" style={{ border: 0 }} allowFullScreen loading="lazy" />
               </div>
             </ScrollReveal>
           </section>

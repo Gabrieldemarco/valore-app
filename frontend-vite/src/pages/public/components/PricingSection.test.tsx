@@ -13,7 +13,8 @@ vi.mock('../../../api/client', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: { months?: number }) => {
+    i18n: { resolvedLanguage: 'es-UY' },
+    t: (key: string, opts?: { months?: number; percent?: number }) => {
       const map: Record<string, string> = {
         'publicIndex.pricingEyebrow': 'Planes y Tarifas',
         'publicIndex.pricingTitle': 'Precios transparentes para tu salón',
@@ -28,6 +29,7 @@ vi.mock('react-i18next', () => ({
         'publicIndex.pricingCta': 'Comenzar 15 días gratis',
         'publicIndex.pricingCurrencyLocal': 'UYU ($)',
         'publicIndex.pricingCurrencyUSD': 'USD ($)',
+        'publicIndex.pricingCurrencySelector': 'Selector de moneda',
         'publicIndex.pricingTrustNoContract': 'Sin permanencia ni contratos',
         'publicIndex.pricingTrustTrial': '15 días de prueba completa',
         'publicIndex.pricingTrustInstant': 'Activación en 2 minutos',
@@ -35,6 +37,9 @@ vi.mock('react-i18next', () => ({
       };
       if (key === 'publicIndex.pricingPromoMonths') {
         return `Promo primeros ${opts?.months || 3} meses`;
+      }
+      if (key === 'publicIndex.pricingDiscount') {
+        return `-${opts?.percent}% de descuento`;
       }
       return map[key] || key;
     },
@@ -90,6 +95,8 @@ describe('PricingSection', () => {
       expect(screen.getByText('Estándar')).toBeInTheDocument();
       expect(screen.getByText('Premium')).toBeInTheDocument();
       expect(screen.getByText('Básico')).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'Selector de moneda' })).toBeInTheDocument();
+      expect(screen.getByText('-26% de descuento')).toBeInTheDocument();
     });
 
     // Check popular badge

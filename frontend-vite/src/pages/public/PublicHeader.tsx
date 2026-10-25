@@ -37,7 +37,7 @@ export default function PublicHeader() {
           className="mobile-menu-toggle"
           aria-expanded={menuOpen}
           aria-controls="public-navigation"
-          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={menuOpen ? t('publicIndex.closeMenu') : t('publicIndex.openMenu')}
           onClick={() => setMenuOpen(prev => !prev)}
         >
           <span />

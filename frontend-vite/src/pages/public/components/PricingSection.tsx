@@ -22,7 +22,7 @@ interface PlanPrice {
 }
 
 export default function PricingSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [prices, setPrices] = useState<PlanPrice[]>([]);
   const [currencyMode, setCurrencyMode] = useState<'local' | 'usd'>('local');
 
@@ -40,46 +40,46 @@ export default function PricingSection() {
     const key = planKey.toLowerCase();
     if (key.includes("estandar") || key.includes("standard")) {
       return {
-        label: t("publicIndex.pricingPlanStandardLabel") || "Estándar",
-        desc: t("publicIndex.pricingPlanStandardDesc") || "Para salones boutique y estudios en crecimiento.",
+        label: t("publicIndex.pricingPlanStandardLabel"),
+        desc: t("publicIndex.pricingPlanStandardDesc"),
         isPopular: true,
         features: [
-          t("publicIndex.pricingFeatureStaff3") || "Hasta 3 profesionales",
-          t("publicIndex.pricingFeatureServices30") || "Hasta 30 servicios y productos",
-          t("publicIndex.pricingFeatureUnlimitedBookings") || "Turnos online 24/7 sin límite",
-          t("publicIndex.pricingFeatureRemindersFull") || "Recordatorios por WhatsApp y Email",
-          t("publicIndex.pricingFeatureClientHistory") || "Fichas e historial de clientes",
-          t("publicIndex.pricingFeatureFinancialReports") || "Control de caja y reportes",
-          t("publicIndex.pricingFeaturePrioritySupport") || "Soporte prioritario por WhatsApp",
+          t("publicIndex.pricingFeatureStaff3"),
+          t("publicIndex.pricingFeatureServices30"),
+          t("publicIndex.pricingFeatureUnlimitedBookings"),
+          t("publicIndex.pricingFeatureRemindersFull"),
+          t("publicIndex.pricingFeatureClientHistory"),
+          t("publicIndex.pricingFeatureFinancialReports"),
+          t("publicIndex.pricingFeaturePrioritySupport"),
         ],
       };
     }
     if (key.includes("premium")) {
       return {
-        label: t("publicIndex.pricingPlanPremiumLabel") || "Premium",
-        desc: t("publicIndex.pricingPlanPremiumDesc") || "Para grandes salones, franquicias y spas de alta demanda.",
+        label: t("publicIndex.pricingPlanPremiumLabel"),
+        desc: t("publicIndex.pricingPlanPremiumDesc"),
         isPopular: false,
         features: [
-          t("publicIndex.pricingFeatureStaffUnlimited") || "Profesionales y staff ilimitados",
-          t("publicIndex.pricingFeatureServicesUnlimited") || "Servicios y productos ilimitados",
-          t("publicIndex.pricingFeatureUnlimitedBookings") || "Turnos online 24/7 sin límite",
-          t("publicIndex.pricingFeatureRemindersOmnichannel") || "Recordatorios inteligentes multicanal",
-          t("publicIndex.pricingFeatureAdvancedAnalytics") || "Métricas avanzadas de ocupación",
-          t("publicIndex.pricingFeatureCustomLanding") || "Página web propia con diseño exclusivo",
-          t("publicIndex.pricingFeatureVipSupport") || "Soporte VIP 24/7 y asesoría estratégica",
+          t("publicIndex.pricingFeatureStaffUnlimited"),
+          t("publicIndex.pricingFeatureServicesUnlimited"),
+          t("publicIndex.pricingFeatureUnlimitedBookings"),
+          t("publicIndex.pricingFeatureRemindersOmnichannel"),
+          t("publicIndex.pricingFeatureAdvancedAnalytics"),
+          t("publicIndex.pricingFeatureCustomLanding"),
+          t("publicIndex.pricingFeatureVipSupport"),
         ],
       };
     }
     return {
-      label: t("publicIndex.pricingPlanBasicLabel") || "Básico",
-      desc: t("publicIndex.pricingPlanBasicDesc") || "Para profesionales independientes y barberos individuales.",
+      label: t("publicIndex.pricingPlanBasicLabel"),
+      desc: t("publicIndex.pricingPlanBasicDesc"),
       isPopular: false,
       features: [
-        t("publicIndex.pricingFeatureStaff1") || "1 profesional / barbero",
-        t("publicIndex.pricingFeatureServices10") || "Hasta 10 servicios en carta",
-        t("publicIndex.pricingFeatureUnlimitedBookings") || "Turnos online 24/7 sin límite",
-        t("publicIndex.pricingFeatureRemindersBasic") || "Notificaciones por email",
-        t("publicIndex.pricingFeatureClientHistory") || "Fichas de clientes e historial",
+        t("publicIndex.pricingFeatureStaff1"),
+        t("publicIndex.pricingFeatureServices10"),
+        t("publicIndex.pricingFeatureUnlimitedBookings"),
+        t("publicIndex.pricingFeatureRemindersBasic"),
+        t("publicIndex.pricingFeatureClientHistory"),
       ],
     };
   };
@@ -88,7 +88,10 @@ export default function PricingSection() {
     if (val === null || val === undefined) return "0";
     const num = typeof val === "string" ? parseFloat(val) : val;
     if (isNaN(num)) return "0";
-    return num % 1 === 0 ? num.toLocaleString('es-UY') : num.toFixed(2);
+    const locale = i18n.resolvedLanguage || i18n.language;
+    return num % 1 === 0
+      ? num.toLocaleString(locale)
+      : num.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const planMap = new Map(prices.map(p => [p.plan_name?.toLowerCase(), p]));
@@ -120,30 +123,30 @@ export default function PricingSection() {
       <div className="container pricing-container">
         <div className="pricing-header">
           <span className="pricing-eyebrow">
-            {t("publicIndex.pricingEyebrow") || "Planes y Tarifas"}
+            {t("publicIndex.pricingEyebrow")}
           </span>
           <h2 className="pricing-title">
-            {t("publicIndex.pricingTitle") || "Precios transparentes para tu salón"}
+            {t("publicIndex.pricingTitle")}
           </h2>
           <p className="pricing-subtitle">
-            {t("publicIndex.pricingSubtitle") || "Elegí el plan perfecto para gestionar tus turnos, profesionales y clientes. 15 días de prueba gratis, sin tarjeta de crédito."}
+            {t("publicIndex.pricingSubtitle")}
           </p>
 
           {hasUsdOption && (
-            <div className="pricing-currency-toggle" role="group" aria-label="Selector de Moneda">
+            <div className="pricing-currency-toggle" role="group" aria-label={t("publicIndex.pricingCurrencySelector")}>
               <button
                 type="button"
                 className={`pricing-currency-btn ${currencyMode === 'local' ? 'active' : ''}`}
                 onClick={() => setCurrencyMode('local')}
               >
-                {t("publicIndex.pricingCurrencyLocal") || "UYU ($)"}
+                {t("publicIndex.pricingCurrencyLocal")}
               </button>
               <button
                 type="button"
                 className={`pricing-currency-btn ${currencyMode === 'usd' ? 'active' : ''}`}
                 onClick={() => setCurrencyMode('usd')}
               >
-                {t("publicIndex.pricingCurrencyUSD") || "USD ($)"}
+                {t("publicIndex.pricingCurrencyUSD")}
               </button>
             </div>
           )}
@@ -178,7 +181,7 @@ export default function PricingSection() {
                 {planInfo.isPopular && (
                   <div className="pricing-popular-badge">
                     <span className="badge-sparkle" aria-hidden="true">✨</span>
-                    <span>{t("publicIndex.pricingBadgePopular") || "Más Popular"}</span>
+                    <span>{t("publicIndex.pricingBadgePopular")}</span>
                   </div>
                 )}
 
@@ -187,7 +190,7 @@ export default function PricingSection() {
                     <h3 className="pricing-plan-name">{planInfo.label}</h3>
                     {hasPromo && discountPercent > 0 && (
                       <span className="pricing-discount-chip">
-                        -{discountPercent}% OFF
+                        {t("publicIndex.pricingDiscount", { percent: discountPercent })}
                       </span>
                     )}
                   </div>
@@ -199,7 +202,7 @@ export default function PricingSection() {
                     <div className="pricing-promo-banner">
                       <span className="promo-badge-icon" aria-hidden="true">🏷️</span>
                       <span className="promo-badge-text">
-                        {t("publicIndex.pricingPromoMonths", { months: plan.promo_months }) || `Promo primeros ${plan.promo_months} meses`}
+                        {t("publicIndex.pricingPromoMonths", { months: plan.promo_months })}
                       </span>
                     </div>
                   ) : (
@@ -211,14 +214,14 @@ export default function PricingSection() {
                     <span className="pricing-price-amount">{formatNumber(priceToShow)}</span>
                     <span className="pricing-price-suffix">
                       <span className="pricing-currency-code">{currencyCode}</span>
-                      <span className="pricing-period">{t("publicIndex.pricingPerMonth") || "/mes"}</span>
+                      <span className="pricing-period">{t("publicIndex.pricingPerMonth")}</span>
                     </span>
                   </div>
 
                   {originalPrice != null && (
                     <div className="pricing-strikethrough-row">
                       <span className="pricing-strike-label">
-                        {t("publicIndex.pricingOriginalPrice") || "Antes"}:
+                        {t("publicIndex.pricingOriginalPrice")}:
                       </span>
                       <del className="pricing-strike-value">
                         {currencySymbol} {formatNumber(originalPrice)} {currencyCode}
@@ -232,13 +235,13 @@ export default function PricingSection() {
                     to={`/staff/register?plan=${plan.key}`}
                     className={`btn ${planInfo.isPopular ? 'btn-pricing-primary' : 'btn-pricing-outline'}`}
                   >
-                    {t("publicIndex.pricingCta") || "Comenzar 15 días gratis"}
+                    {t("publicIndex.pricingCta")}
                     <svg className="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </Link>
                   <p className="pricing-cta-trial-hint">
-                    {t("publicIndex.pricingTrialNote") || "15 días gratis • Sin tarjeta requerida • Cancelás cuando quieras"}
+                    {t("publicIndex.pricingTrialNote")}
                   </p>
                 </div>
 
@@ -246,7 +249,7 @@ export default function PricingSection() {
 
                 <div className="pricing-features-box">
                   <div className="pricing-features-title">
-                    {t("publicIndex.pricingIncludes") || "Todo lo que incluye:"}
+                    {t("publicIndex.pricingIncludes")}
                   </div>
                   <ul className="pricing-features-list">
                     {planInfo.features.map((feature, idx) => (
@@ -272,25 +275,25 @@ export default function PricingSection() {
             <svg className="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <span>{t("publicIndex.pricingTrustNoContract") || "Sin permanencia ni contratos"}</span>
+            <span>{t("publicIndex.pricingTrustNoContract")}</span>
           </div>
           <div className="pricing-trust-item">
             <svg className="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span>{t("publicIndex.pricingTrustTrial") || "15 días de prueba completa"}</span>
+            <span>{t("publicIndex.pricingTrustTrial")}</span>
           </div>
           <div className="pricing-trust-item">
             <svg className="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            <span>{t("publicIndex.pricingTrustInstant") || "Activación en 2 minutos"}</span>
+            <span>{t("publicIndex.pricingTrustInstant")}</span>
           </div>
           <div className="pricing-trust-item">
             <svg className="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
-            <span>{t("publicIndex.pricingTrustSupport") || "Soporte personalizado por WhatsApp"}</span>
+            <span>{t("publicIndex.pricingTrustSupport")}</span>
           </div>
         </div>
       </div>

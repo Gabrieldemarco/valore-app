@@ -69,31 +69,31 @@ export function useServiceCRUD() {
 
   const addServiceImage = useCallback(async (serviceId: number, url: string): Promise<ServiceImage | null> => {
     if (!url || !serviceId) {
-      addToast('Seleccioná un servicio primero o ingresá una URL', 'error');
+      addToast(t('staffDashboard.toastServiceImageRequiresServiceOrUrl'), 'error');
       return null;
     }
     try {
       const res = await api.post<{ image: ServiceImage }>(`/api/tenant/services/${serviceId}/images`, { url });
-      addToast('Imagen agregada', 'success');
+      addToast(t('staffDashboard.toastServiceImageAdded'), 'success');
       return res.image;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al agregar imagen';
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastServiceImageAddError');
       addToast(msg, 'error');
       return null;
     }
-  }, [addToast]);
+  }, [addToast, t]);
 
   const deleteServiceImage = useCallback(async (serviceId: number, imageId: number) => {
     try {
       await api.delete(`/api/tenant/services/${serviceId}/images/${imageId}`);
-      addToast('Imagen eliminada', 'success');
+      addToast(t('staffDashboard.toastServiceImageDeleted'), 'success');
       return true;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al eliminar imagen';
+      const msg = e instanceof Error ? e.message : t('staffDashboard.toastServiceImageDeleteError');
       addToast(msg, 'error');
       return false;
     }
-  }, [addToast]);
+  }, [addToast, t]);
 
   const uploadServiceImage = useCallback(async (_file: File, dataUrl?: string): Promise<string | null> => {
     try {

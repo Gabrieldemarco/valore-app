@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import PublicIndex from './PublicIndex';
 import * as apiClient from '../../api/client';
 import { ThemeProvider } from '../../contexts/ThemeContext';
+import i18n from '../../i18n';
 
 const mockSalons = {
   tenants: [
@@ -124,6 +125,32 @@ describe('PublicIndex', () => {
       expect(screen.queryAllByText('Barbería Clásica').length).toBe(0);
     });
     expect(screen.getAllByText('Salón Elegance').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('updates the full homepage search heading when the language changes', async () => {
+    await i18n.changeLanguage('es');
+    const user = userEvent.setup();
+    renderPublicIndex(mockSalons);
+
+    expect(screen.getByText('Tu próximo look empieza acá')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Encontrá un salón y reservá tu turno' })).toBeInTheDocument();
+    expect(screen.getByText('Filtrá por servicio, profesional, ubicación o fecha.')).toBeInTheDocument();
+
+    await user.click(screen.getByText('EN'));
+    await waitFor(() => {
+      expect(screen.getByText('Your next look starts here')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Find a salon and book your appointment' })).toBeInTheDocument();
+      expect(screen.getByText('Filter by service, professional, location, or date.')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('PT'));
+    await waitFor(() => {
+      expect(screen.getByText('Seu próximo visual começa aqui')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Encontre um salão e agende seu horário' })).toBeInTheDocument();
+      expect(screen.getByText('Filtre por serviço, profissional, localização ou data.')).toBeInTheDocument();
+    });
+
+    await i18n.changeLanguage('es');
   });
 
   it('renders hero section with title and subtitle', () => {

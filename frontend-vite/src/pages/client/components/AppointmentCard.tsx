@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next';
+import { getAppointmentStatusLabel } from '../../../utils/appointmentStatus';
+
 interface Appointment {
   id: number;
   service: string;
@@ -12,6 +15,7 @@ interface Props {
 }
 
 export default function AppointmentCard({ appointment: a, showPrice }: Props) {
+  const { t } = useTranslation();
   const statusClass = showPrice
     ? 'dash-status-cancelled'
     : a.status === 'confirmed'
@@ -28,7 +32,7 @@ export default function AppointmentCard({ appointment: a, showPrice }: Props) {
         <td className="p-12">{new Date(a.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
       )}
       <td className="table-cell-pad-center">
-        <span className={`dash-appointment-status ${statusClass}`}>{a.status}</span>
+        <span className={`dash-appointment-status ${statusClass}`}>{getAppointmentStatusLabel(a.status, t)}</span>
       </td>
     </tr>
   );

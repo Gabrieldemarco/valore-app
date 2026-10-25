@@ -4,11 +4,18 @@ import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import { exportInvoicePdf } from '../../../../utils/invoicePdf';
 
+const INVOICE_STATUS_TRANSLATION_KEYS: Record<string, string> = {
+  paid: 'invoiceStatusPaid',
+  pending: 'invoiceStatusPending',
+  cancelled: 'invoiceStatusCancelled',
+  overdue: 'invoiceStatusOverdue',
+};
+
 export default function BillingTab() {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<'mercadopago' | 'stripe'>('mercadopago');
   const { plan, invoices, settings, loadInvoices } = useDashboard();
-  const { subscribeToPlan, handlePayInvoice } = useDashboardCRUD();
+  const { subscribeToPlan, handlePayInvoice, cancelSubscription } = useDashboardCRUD();
 
   return (
     <div className="glass-panel mt-24 p-24">
@@ -39,20 +46,25 @@ export default function BillingTab() {
           {plan.plan === 'free' && plan.trialDaysLeft != null && (
             <p className="text-muted m-0 mt-8">{t('staffDashboard.billingTrialDays', { days: plan.trialDaysLeft })}</p>
           )}
-          {plan.status !== 'active' && (
-            <div className="flex flex-wrap gap-16 mt-16">
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-16 mt-16">
+            {plan.plan !== 'estandar' && plan.plan !== 'premium' && (
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanStandard')}</button>
+            )}
+            {plan.plan !== 'premium' && (
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
+            )}
+            {plan.plan !== 'free' && (
+              <button className="dash-btn dash-btn-cancel" onClick={() => window.confirm(t('staffDashboard.billingCancelConfirm')) && cancelSubscription()}>{t('staffDashboard.billingCancelSubscription')}</button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="glass-panel mb-20 p-20" style={{ border: '1px solid rgba(197,168,128,0.35)' }}>
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
           <p className="text-muted m-0 mb-14">{t('staffDashboard.notAvailable')}</p>
           <div className="flex flex-wrap gap-16 mt-16">
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanStandard')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
           </div>
         </div>
       )}
@@ -86,7 +98,13 @@ export default function BillingTab() {
                   <td className="table-cell-pad">#{inv.id}</td>
                   <td className="table-cell-pad-right">${inv.amount}</td>
                   <td className="table-cell-pad">{inv.due_date}</td>
-                  <td className="table-cell-pad"><span className={`dash-appointment-status dash-status-${inv.status}`}>{inv.status}</span></td>
+                  <td className="table-cell-pad">
+                    <span className={`dash-appointment-status dash-status-${inv.status}`}>
+                      {INVOICE_STATUS_TRANSLATION_KEYS[inv.status]
+                        ? t(`staffDashboard.${INVOICE_STATUS_TRANSLATION_KEYS[inv.status]}`)
+                        : inv.status}
+                    </span>
+                  </td>
                   <td className="table-cell-pad-center">
                     {inv.status === 'pending' && (
                       <button className="dash-btn dash-btn-success" onClick={() => handlePayInvoice(inv.id, provider)}>{t('staffDashboard.invoicePayButton')}</button>

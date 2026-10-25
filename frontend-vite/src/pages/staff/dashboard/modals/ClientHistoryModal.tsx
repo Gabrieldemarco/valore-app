@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
+import { getAppointmentStatusLabel } from '../../../../utils/appointmentStatus';
 
 export default function ClientHistoryModal() {
   const { t, i18n } = useTranslation();
@@ -42,7 +43,7 @@ export default function ClientHistoryModal() {
                       <td className="p-10">{new Date(a.appointment_date || a.date).toLocaleDateString(i18n.language)} {a.time}</td>
                       <td className="p-10">{a.service_name || a.service}</td>
                       <td className="p-10">{a.staff_name || '-'}</td>
-                      <td className="p-10 text-center">{a.status}</td>
+                      <td className="p-10 text-center">{getAppointmentStatusLabel(a.status, t)}</td>
                       <td style={{ padding: 10, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.internal_notes || '-'}</td>
                     </tr>
                   ))}

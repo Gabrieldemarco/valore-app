@@ -51,7 +51,7 @@ export default function FeaturedServicesSection({ title, subtitle, services, gri
                 <span className="price-value">{service.price}</span>
               </div>
               {service.duration && (
-                <span className="service-sale-duration">{service.duration} min</span>
+                <span className="service-sale-duration">{service.duration} {t('landingServices.minutes')}</span>
               )}
               <div className="service-sale-footer">
                 <span>{t('publicIndex.viewSalon')}</span>

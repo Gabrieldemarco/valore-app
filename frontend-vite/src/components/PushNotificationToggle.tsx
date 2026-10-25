@@ -48,7 +48,7 @@ export default function PushNotificationToggle() {
       </div>
       {error && (
         <div className="text-danger text-sm mt-8">
-          {error}
+          {t(error)}
         </div>
       )}
       {permission === 'denied' && (
