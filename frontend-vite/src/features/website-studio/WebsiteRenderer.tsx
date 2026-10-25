@@ -1,6 +1,7 @@
 import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import type { SiteConfig, Block } from './lib/templateEngine';
+import { normalizeSiteConfig } from './schemas/siteConfig';
 import {
   createTemplateEngine,
   renderBlock
@@ -52,9 +53,10 @@ export const WebsiteRenderer = React.memo(function WebsiteRenderer({
   isPreview = false,
   className = '',
 }: WebsiteRendererProps) {
+  const safeConfig = React.useMemo(() => normalizeSiteConfig(config, tenant.id), [config, tenant.id]);
   const engine = React.useMemo(() => 
-    createTemplateEngine({ config, tenant, isPreview }), 
-    [config, tenant, isPreview]
+    createTemplateEngine({ config: safeConfig, tenant, isPreview }), 
+    [safeConfig, tenant, isPreview]
   );
 
   const renderedBlocks = React.useMemo(() => 
@@ -66,10 +68,10 @@ export const WebsiteRenderer = React.memo(function WebsiteRenderer({
     [engine]
   );
 
-  const seoTitle = config.seo?.title || tenant.businessName;
-  const seoDescription = config.seo?.description || `Bienvenido a ${tenant.businessName}. Reserva tu cita online.`;
-  const ogImage = config.seo?.ogImage || tenant.logo;
-  const favicon = config.seo?.favicon || '/favicon.svg';
+  const seoTitle = safeConfig.seo?.title || tenant.businessName;
+  const seoDescription = safeConfig.seo?.description || `Bienvenido a ${tenant.businessName}. Reserva tu cita online.`;
+  const ogImage = safeConfig.seo?.ogImage || tenant.logo;
+  const favicon = safeConfig.seo?.favicon || '/favicon.svg';
   const themeCSS = engine.themeCSS;
 
   const helmetContent = (

@@ -102,6 +102,7 @@ export default function DashboardShell({ children }: Props) {
             </span>
           )}
           <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary fs-14 px-18 py-8">{t('staffDashboard.landingPageLink')}</Link>
+          <Link to="/staff/website-studio" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">Web Studio</Link>
           {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">{t('staffDashboard.viewLanding')}</a>}
           {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary fs-14 no-underline px-14 py-8">{t('staffDashboard.qrButton')}</button>}
           <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary fs-15 px-16 py-8 font-500 rounded">{t('staffDashboard.settingsButton')}</button>

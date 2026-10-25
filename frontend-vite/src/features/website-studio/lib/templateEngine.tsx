@@ -68,7 +68,7 @@ export function generateThemeCSS(theme: SiteConfig['theme']): string {
    Block Renderer Registry
    ============================================================ */
 
-export type BlockRenderer = (block: Block, context: RenderContext) => React.ReactNode;
+export type BlockRenderer = (props: { block: Block; context: RenderContext }) => React.ReactNode;
 
 export interface RenderContext {
   tenant: {
@@ -109,7 +109,10 @@ export function renderBlock(block: Block, context: RenderContext): React.ReactNo
     </div>;
   }
   
-  return renderer(block, context);
+  // Block renderers are React-style functions that receive one props object.
+  // Passing the values as separate arguments leaves `block` undefined inside
+  // the renderer and breaks previews for every template.
+  return renderer({ block, context });
 }
 
 /* ============================================================

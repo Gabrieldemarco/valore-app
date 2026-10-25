@@ -1,0 +1,53 @@
+.ws-admin-page { min-height: 100vh; background: var(--bg-deep); color: var(--text-main); }
+.ws-admin-header { display:flex; justify-content:space-between; gap:24px; align-items:center; padding:24px 32px; border-bottom:1px solid var(--glass-border); background:rgba(10,10,12,.88); position:sticky; top:0; z-index:20; backdrop-filter:blur(18px); }
+.ws-admin-header h1 { margin:8px 0 4px; font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:500; }
+.ws-admin-header p { margin:0; color:var(--text-muted); }
+.ws-admin-back { color:var(--primary); font-size:13px; text-decoration:none; }
+.ws-admin-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.ws-admin-btn { border:1px solid var(--glass-border); border-radius:999px; padding:10px 16px; cursor:pointer; text-decoration:none; font:600 12px/1 Outfit,sans-serif; text-transform:uppercase; letter-spacing:.06em; }
+.ws-admin-btn.primary { border-color:var(--primary); color:var(--text-dark); background:linear-gradient(135deg,var(--primary),var(--accent)); }
+.ws-admin-btn.secondary { color:var(--text-main); background:var(--glass-bg); }
+.ws-admin-btn:disabled { opacity:.55; cursor:wait; }
+.ws-admin-status { border-radius:999px; padding:7px 11px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+.ws-admin-status.published { color:#9be2bb; background:rgba(79,190,125,.12); }
+.ws-admin-status.draft { color:var(--primary); background:rgba(207,168,107,.1); }
+.ws-admin-layout { display:grid; grid-template-columns:minmax(360px,460px) minmax(0,1fr); gap:24px; padding:24px; max-width:1700px; margin:0 auto; }
+.ws-admin-editor { min-width:0; }
+.ws-admin-tabs { display:flex; gap:6px; padding:6px; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; margin-bottom:16px; }
+.ws-admin-tabs button { flex:1; border:0; border-radius:11px; padding:11px 8px; color:var(--text-muted); background:transparent; cursor:pointer; font:600 12px Outfit,sans-serif; }
+.ws-admin-tabs button.active { color:var(--text-dark); background:linear-gradient(135deg,var(--primary),var(--accent)); }
+.ws-admin-panel { border:1px solid var(--glass-border); border-radius:22px; padding:22px; background:var(--glass-bg); }
+.ws-admin-panel h2 { margin:0 0 6px; font:500 28px 'Cormorant Garamond',serif; }
+.ws-admin-help { margin:0 0 20px; color:var(--text-muted); font-size:13px; line-height:1.5; }
+.ws-template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:18px 0 22px; }
+.ws-template-card { display:flex; flex-direction:column; gap:6px; border:1px solid var(--glass-border); border-radius:15px; padding:10px; background:transparent; color:var(--text-main); text-align:left; cursor:pointer; }
+.ws-template-card.active { border-color:var(--primary); box-shadow:0 0 0 2px rgba(207,168,107,.15); }
+.ws-template-card strong { font-size:13px; }
+.ws-template-card small { color:var(--text-muted); font-size:11px; line-height:1.35; }
+.ws-template-swatch { display:block; height:62px; border-radius:10px; }
+.ws-template-swatch.elegant { background:linear-gradient(135deg,#1a1a2e 45%,#cfa86b); }
+.ws-template-swatch.modern { background:linear-gradient(135deg,#0f0f0f 45%,#fff); }
+.ws-template-swatch.minimal { background:linear-gradient(135deg,#f2f2f2 45%,#666); }
+.ws-color-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.ws-color-grid label,.ws-field { display:flex; flex-direction:column; gap:7px; color:var(--text-muted); font-size:12px; }
+.ws-color-grid input { width:100%; height:38px; padding:3px; border:1px solid var(--glass-border); border-radius:8px; background:var(--glass-bg); cursor:pointer; }
+.ws-field { margin-top:15px; }
+.ws-field input,.ws-field textarea { width:100%; box-sizing:border-box; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,0,0,.14); color:var(--text-main); padding:11px 12px; font:400 14px/1.45 Outfit,sans-serif; resize:vertical; }
+.ws-field input:focus,.ws-field textarea:focus { outline:2px solid var(--primary); outline-offset:2px; }
+.ws-admin-card { margin-top:16px; padding:16px; border:1px solid var(--glass-border); border-radius:15px; }
+.ws-admin-card h3 { margin:0; font-size:14px; letter-spacing:.04em; text-transform:uppercase; color:var(--primary); }
+.ws-dropzone { min-height:150px; border:1px dashed rgba(207,168,107,.55); border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--text-muted); text-align:center; cursor:pointer; background:rgba(207,168,107,.04); transition:.2s ease; }
+.ws-dropzone:hover,.ws-dropzone.dragging { border-color:var(--primary); background:rgba(207,168,107,.1); transform:translateY(-2px); }
+.ws-dropzone strong { color:var(--text-main); font-size:15px; }
+.ws-dropzone span { font-size:12px; }
+.ws-dropzone input { display:none; }
+.ws-image-list { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px; }
+.ws-image-list img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--glass-border); }
+.ws-admin-message { margin-top:14px; padding:11px 13px; border-radius:10px; background:rgba(207,168,107,.1); color:var(--primary); font-size:13px; }
+.ws-admin-preview { min-width:0; border:1px solid var(--glass-border); border-radius:22px; overflow:hidden; background:#101014; min-height:720px; }
+.ws-preview-label { display:flex; justify-content:space-between; gap:16px; padding:14px 18px; border-bottom:1px solid var(--glass-border); color:var(--text-main); font-size:13px; }
+.ws-preview-label small { color:var(--text-muted); }
+.ws-preview-frame { height:calc(100vh - 130px); min-height:650px; overflow:auto; }
+.ws-admin-loading { min-height:100vh; display:grid; place-items:center; color:var(--text-muted); }
+@media (max-width:900px) { .ws-admin-header { align-items:flex-start; flex-direction:column; padding:20px; } .ws-admin-actions { justify-content:flex-start; } .ws-admin-layout { grid-template-columns:1fr; padding:14px; } .ws-admin-preview { min-height:600px; } .ws-preview-frame { height:700px; } }
+@media (max-width:480px) { .ws-template-grid { grid-template-columns:1fr; } .ws-admin-actions { width:100%; } .ws-admin-btn { flex:1; text-align:center; } .ws-admin-status { flex-basis:100%; text-align:center; } }

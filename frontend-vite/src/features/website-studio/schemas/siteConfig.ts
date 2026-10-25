@@ -222,6 +222,51 @@ export function createEmptySiteConfig(tenantId: number): SiteConfig {
   };
 }
 
+/**
+ * Makes saved/legacy configurations safe for the renderer. Older drafts may
+ * contain blocks with only an id/type or even null entries; the public site
+ * must still render while those drafts are being edited.
+ */
+export function normalizeSiteConfig(input: unknown, tenantId = 1): SiteConfig {
+  const candidate = (input && typeof input === 'object' ? input : {}) as Partial<SiteConfig> & { blocks?: unknown[]; theme?: Partial<Theme>; seo?: Partial<SiteConfig['seo']> };
+  const template = candidate.template === 'modern' || candidate.template === 'minimal' ? candidate.template : 'elegant';
+  const base = createEmptySiteConfig(Number(candidate.tenantId) > 0 ? Number(candidate.tenantId) : tenantId);
+  const preset = TEMPLATE_PRESETS[template];
+  const defaultBlocks = (preset.blocks || []) as Block[];
+  const defaultsByType = new Map(defaultBlocks.map(block => [block.type, block]));
+  const rawBlocks: unknown[] = Array.isArray(candidate.blocks) ? candidate.blocks as unknown[] : [];
+  const blocks = rawBlocks
+    .filter((block): block is Record<string, unknown> => !!block && typeof block === 'object' && typeof (block as Record<string, unknown>).type === 'string')
+    .map((block, index) => {
+      const fallback = defaultsByType.get(block.type as Block['type']);
+      if (!fallback) return null;
+      return {
+        ...fallback,
+        ...block,
+        id: typeof block.id === 'string' && block.id ? block.id : fallback.id || makeBlockId(),
+        order: Number.isFinite(Number(block.order)) ? Number(block.order) : index,
+        enabled: block.enabled !== false,
+      } as Block;
+    })
+    .filter((block): block is Block => block !== null);
+
+  return {
+    ...base,
+    ...candidate,
+    tenantId: base.tenantId,
+    template,
+    theme: { ...base.theme, ...(candidate.theme || {}) } as Theme,
+    blocks: blocks.length ? blocks : defaultBlocks.map(block => ({ ...block })),
+    seo: { ...base.seo, ...(candidate.seo || {}) },
+    status: candidate.status === 'published' || candidate.status === 'archived' ? candidate.status : 'draft',
+    updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : base.updatedAt,
+  };
+}
+
+function makeBlockId(): string {
+  return globalThis.crypto?.randomUUID?.() || `block-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 /* ============================================================
    Template Presets (starting configs for each template)
    ============================================================ */

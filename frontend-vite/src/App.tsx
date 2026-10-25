@@ -19,6 +19,7 @@ const ForgotPassword = lazy(() => import('./pages/staff/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/staff/ResetPassword'));
 const StaffDashboard = lazy(() => import('./pages/staff/Dashboard'));
 const LandingEditor = lazy(() => import('./pages/staff/LandingEditor'));
+const WebsiteStudioAdmin = lazy(() => import('./pages/staff/WebsiteStudioAdmin'));
 const AdminLogin = lazy(() => import('./pages/admin/Login'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ClientLogin = lazy(() => import('./pages/client/Login'));
@@ -65,6 +66,7 @@ function App() {
               <Route path="/staff/reset-password" element={<ResetPassword />} />
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
               <Route path="/staff/landing-editor" element={<LandingEditor />} />
+              <Route path="/staff/website-studio" element={<WebsiteStudioAdmin />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/client/login" element={<ClientLogin />} />
