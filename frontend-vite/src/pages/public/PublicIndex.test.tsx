@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -101,23 +101,15 @@ describe('PublicIndex', () => {
     expect(salonLink).toBeInTheDocument();
   });
 
-  it('gender filter buttons are rendered and clickable', async () => {
-    const user = userEvent.setup();
-    renderPublicIndex(mockSalons);
+  it('keeps the hero clean and links to the treatment cards below', async () => {
+    const { container } = renderPublicIndex(mockSalons);
     await waitFor(() => {
-      expect(screen.getByText('Caballeros')).toBeInTheDocument();
+      expect(container.querySelector('.hero--text-only')).toBeInTheDocument();
     });
-    expect(screen.getAllByText('Damas').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Unisex').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Todos').length).toBeGreaterThanOrEqual(1);
-    const caballerosBtns = screen.getAllByText('Caballeros');
-    const filterBtn = caballerosBtns.find(el => el.closest('button'));
-    if (filterBtn) await user.click(filterBtn);
-    await waitFor(() => {
-      const allCaba = screen.getAllByText('Caballeros');
-      const activeBtn = allCaba.find(el => el.closest('button')?.classList.contains('active'));
-      expect(activeBtn).toBeTruthy();
-    });
+    expect(container.querySelector('.hero-care-collage')).not.toBeInTheDocument();
+    expect(container.querySelector('.care-filter-bar')).not.toBeInTheDocument();
+    expect(container.querySelector('.hero-actions a[href="#treatment-categories"]')).toBeInTheDocument();
+    expect(container.querySelector('#treatment-categories')).toBeInTheDocument();
   });
 
   it('search filters salons by name', async () => {
@@ -134,32 +126,19 @@ describe('PublicIndex', () => {
     expect(screen.getAllByText('Salón Elegance').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('hero collage click sets gender filter', async () => {
-    const user = userEvent.setup();
-    renderPublicIndex(mockSalons);
-    await waitFor(() => {
-      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
-    });
-    const collageCards = document.querySelectorAll('.collage-card');
-    expect(collageCards.length).toBe(2);
-    if (collageCards[1]) await user.click(collageCards[1]);
-    await waitFor(() => {
-      expect(document.querySelector('.filter-btn.active')).toBeInTheDocument();
-    });
-  });
-
   it('renders hero section with title and subtitle', () => {
     renderPublicIndex(); // no response = loading
     const titles = screen.getAllByText(/Reservá servicios de belleza y bienestar|Reserva servicios de cuidado personal/i);
     expect(titles.length).toBeGreaterThanOrEqual(1);
-    const subs = screen.getAllByText(/Encuentra los mejores establecimientos/i);
+    const subs = screen.getAllByText(/salones y profesionales para cabello/i);
     expect(subs.length).toBeGreaterThanOrEqual(1);
   });
 
   it('has register and login links in header', () => {
     renderPublicIndex(); // no response = loading
-    expect(screen.getByText('Sumate a Velsoie').closest('a')).toHaveAttribute('href', '/staff/register');
-    expect(screen.getByText('Studio Access').closest('a')).toHaveAttribute('href', '/staff/login');
+    const header = screen.getByRole('banner');
+    expect(within(header).getByRole('link', { name: /sumate a velsoie/i })).toHaveAttribute('href', '/staff/register');
+    expect(within(header).getByRole('link', { name: /studio access/i })).toHaveAttribute('href', '/staff/login');
   });
 
   it('renders features section', () => {

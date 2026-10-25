@@ -51,10 +51,11 @@ export default function SalonCard({ salon, defaultServices, showNewBadge = false
   const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
   const services = salon.services || defaultServices;
   const gender = getGenderCategory(salon);
+  const hasPrice = salon.min_price != null && Number(salon.min_price) > 0;
 
   return (
-    <Link to={`/p/${salon.slug}`} className="salon-link">
-      <div className="salon-card glass-panel">
+    <Link to={`/p/${salon.slug}`} className="salon-link salon-link--compact">
+      <div className="salon-card salon-card--compact glass-panel">
         <div className="salon-image-wrapper">
           {imageUrl
             ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />
@@ -80,23 +81,18 @@ export default function SalonCard({ salon, defaultServices, showNewBadge = false
             )}
           </div>
           <div className="salon-services">
-            {services.slice(0, 3).map((s, i) => (
+            {services.slice(0, 2).map((s, i) => (
               <span key={i} className="service-tag">{typeof s === 'object' ? (s as { name?: string }).name : s}</span>
             ))}
           </div>
-          {salon.min_price != null && Number(salon.min_price) > 0 && (
-            <div className="salon-price">
-              {t('landingServices.pricePrefix')}{Number(salon.min_price) % 1 === 0 ? Number(salon.min_price).toString() : Number(salon.min_price).toFixed(2)}
-            </div>
-          )}
-          <div className="salon-footer">
-            <div className="salon-rating">
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 13, height: 13, fill: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: 5 }}>
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-              {t('publicIndex.ratingValue')} <small>({t('publicIndex.ratingLabel')})</small>
-            </div>
-            <span className="btn btn-primary">{t('publicIndex.reserveButton')}</span>
+          <div className="salon-footer salon-footer--cta">
+            {hasPrice && (
+              <span className="salon-price-from">
+                {t('landingServices.pricePrefix')}
+                {Number(salon.min_price) % 1 === 0 ? Number(salon.min_price).toString() : Number(salon.min_price).toFixed(2)}
+              </span>
+            )}
+            <span className="btn btn-primary salon-reserve-btn">{t('publicIndex.reserveButton')}</span>
           </div>
         </div>
       </div>

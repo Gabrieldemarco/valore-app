@@ -7,6 +7,10 @@ interface ServiceCategory {
 
 export const SERVICE_CATEGORIES_DATA: ServiceCategory[] = [
   {
+    key: 'cabello', labelKey: 'publicIndex.catCabello', image: '/uploads/velsoie_hero_model.png',
+    keywords: ['cabello', 'peluquería', 'peluqueria', 'corte', 'corte de pelo', 'color', 'tintura', 'balayage', 'mechas', 'peinado', 'alisado', 'keratina', 'tratamiento capilar', 'barbería', 'barberia', 'barber', 'barba']
+  },
+  {
     key: 'cejas', labelKey: 'publicIndex.catCejas', image: '/uploads/category-cejas.png',
     keywords: ['ceja', 'pestaña', 'henna', 'lifting', 'laminado', 'diseño de ceja']
   },

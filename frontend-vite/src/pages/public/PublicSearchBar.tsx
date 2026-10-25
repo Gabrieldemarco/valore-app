@@ -34,6 +34,7 @@ export default function PublicSearchBar({
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const serviceDropdownRef = useRef<HTMLDivElement>(null);
   const professionalDropdownRef = useRef<HTMLDivElement>(null);
   const locationPopupRef = useRef<HTMLDivElement>(null);
@@ -59,13 +60,19 @@ export default function PublicSearchBar({
   }, []);
 
   return (
-    <section className="search-section">
+    <section className="search-section search-section--sticky" aria-label={t('publicIndex.searchSectionLabel', 'Encontrá tu próximo turno')}>
       <div className="container">
-        <div className="search-box">
-          <div className="search-input-wrapper" ref={serviceDropdownRef}>
+        <div className="search-heading">
+          <span className="section-eyebrow">{t('publicIndex.searchEyebrow', 'Tu próximo look empieza acá')}</span>
+          <h2>{t('publicIndex.searchTitle', 'Encontrá un salón y reservá tu turno')}</h2>
+          <p>{t('publicIndex.searchSubtitle', 'Filtrá por servicio, profesional, ubicación o fecha.')}</p>
+        </div>
+        <div className={`search-box${filtersExpanded ? ' search-box--expanded' : ''}`}>
+          <div className="search-input-wrapper search-input-wrapper--service" ref={serviceDropdownRef}>
             <input
               type="text"
               placeholder={t('publicIndex.searchPlaceholder')}
+              aria-label={t('publicIndex.searchPlaceholder')}
               value={searchQuery}
               onChange={e => onSearchQueryChange(e.target.value)}
               onFocus={() => setShowServiceDropdown(true)}
@@ -88,10 +95,12 @@ export default function PublicSearchBar({
               </div>
             )}
           </div>
-          <div className="search-input-wrapper" ref={professionalDropdownRef}>
+          <div className="search-filters-extra">
+          <div className="search-input-wrapper search-input-wrapper--professional" ref={professionalDropdownRef}>
             <input
               type="text"
               placeholder={t('publicIndex.searchProfessionalPlaceholder')}
+              aria-label={t('publicIndex.searchProfessionalPlaceholder')}
               value={searchProfessional}
               onChange={e => onSearchProfessionalChange(e.target.value)}
               onFocus={() => setShowProfessionalDropdown(true)}
@@ -118,6 +127,7 @@ export default function PublicSearchBar({
             <input
               type="text"
               placeholder={t('publicIndex.searchLocationPlaceholder')}
+              aria-label={t('publicIndex.searchLocationPlaceholder')}
               value={searchLocation}
               onChange={e => onSearchLocationChange(e.target.value)}
               onFocus={() => setShowLocationPopup(true)}
@@ -158,6 +168,7 @@ export default function PublicSearchBar({
             <input
               type="text"
               placeholder={t('publicIndex.searchDatePlaceholder')}
+              aria-label={t('publicIndex.searchDatePlaceholder')}
               value={searchDate ? new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(searchDate + 'T12:00:00')) : ''}
               onChange={e => onSearchDateChange(e.target.value)}
               onFocus={() => setShowDatePicker(true)}
@@ -226,7 +237,16 @@ export default function PublicSearchBar({
               </div>
             )}
           </div>
-          <button className="btn btn-primary" onClick={onSearch} aria-label={t('publicIndex.searchButton')}>
+          </div>
+          <button
+            type="button"
+            className="search-filters-toggle"
+            aria-expanded={filtersExpanded}
+            onClick={() => setFiltersExpanded(prev => !prev)}
+          >
+            {filtersExpanded ? t('publicIndex.searchHideFilters') : t('publicIndex.searchMoreFilters')}
+          </button>
+          <button className="btn btn-primary search-submit-btn" onClick={onSearch} aria-label={t('publicIndex.searchButton')}>
             {t('publicIndex.searchButton')}
           </button>
         </div>

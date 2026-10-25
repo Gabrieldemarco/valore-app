@@ -12,6 +12,7 @@ import FeaturedServicesSection from './FeaturedServicesSection';
 import TreatmentCategories from './components/TreatmentCategories';
 import HowItWorksSection from './components/HowItWorksSection';
 import AboutVelsoieSection from './components/AboutVelsoieSection';
+import EmptyStateIcon from './components/EmptyStateIcon';
 import PricingSection from './components/PricingSection';
 import { SERVICE_CATEGORIES_DATA } from './components/ServiceCategoriesData';
 import { getGenderCategory, type Salon } from './SalonCard';
@@ -52,9 +53,7 @@ export default function PublicIndex() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [appointmentsCount, setAppointmentsCount] = useState<number>(0);
-  const featuredGridRef = useRef<HTMLDivElement>(null);
-  const trendingGridRef = useRef<HTMLDivElement>(null);
-  const newGridRef = useRef<HTMLDivElement>(null);
+  const discoverGridRef = useRef<HTMLDivElement>(null);
   const newProfessionalsGridRef = useRef<HTMLDivElement>(null);
   const featuredServicesGridRef = useRef<HTMLDivElement>(null);
   const femCollectionGridRef = useRef<HTMLDivElement>(null);
@@ -88,7 +87,7 @@ export default function PublicIndex() {
     api.get<{ services: FeaturedService[] }>('/api/services/featured')
       .then(data => setFeaturedServices(data.services || []))
       .catch(() => setFeaturedServices([]));
-  }, [t]);
+  }, [i18n.language]);
 
   const filterSalons = useCallback(() => {
     let result = allSalons;
@@ -137,7 +136,7 @@ export default function PublicIndex() {
       const cat = SERVICE_CATEGORIES.find(c => c.key === currentServiceFilter);
       if (cat) {
         result = result.filter(s => {
-          if (s.category) return s.category === currentServiceFilter;
+          if (s.category === currentServiceFilter) return true;
           const text = [
             s.business_name,
             s.business_address,
@@ -153,12 +152,8 @@ export default function PublicIndex() {
 
   useEffect(() => { filterSalons(); }, [filterSalons]); // eslint-disable-line react-hooks/set-state-in-effect
 
-  const handleGenderFilter = useCallback((filter: string) => {
-    setCurrentGenderFilter(filter);
-    setCurrentServiceFilter('');
-  }, []);
-
   const handleServiceFilter = useCallback((key: string) => {
+    setCurrentGenderFilter('all');
     setCurrentServiceFilter(prev => {
       const next = prev === key ? '' : key;
       return next;
@@ -185,15 +180,26 @@ export default function PublicIndex() {
     return Math.max(0, Math.ceil(count / visible));
   }, []);
 
-  const categorizedSalons = useMemo(() => {
+  const discoverSalons = useMemo(() => {
     const sorted = [...filtered].sort((a, b) => (b.id || 0) - (a.id || 0));
     const total = sorted.length;
     const perCategory = Math.max(2, Math.ceil(total / 3));
-    return {
-      featured: sorted.slice(0, perCategory),
-      trending: sorted.slice(perCategory, perCategory * 2),
-      new: sorted.slice(perCategory * 2, perCategory * 3),
-    };
+    const slices = [
+      sorted.slice(0, perCategory),
+      sorted.slice(perCategory, perCategory * 2),
+      sorted.slice(perCategory * 2, perCategory * 3),
+    ];
+    const seen = new Set<number>();
+    const merged: Salon[] = [];
+    for (const group of slices) {
+      for (const salon of group) {
+        if (!seen.has(salon.id)) {
+          seen.add(salon.id);
+          merged.push(salon);
+        }
+      }
+    }
+    return merged;
   }, [filtered]);
 
   const collectionSalons = useMemo(() => {
@@ -224,8 +230,6 @@ export default function PublicIndex() {
 
       <PublicHero
         countryName={countryName}
-        currentGenderFilter={currentGenderFilter}
-        onSelectGender={handleGenderFilter}
       />
 
       <PublicSearchBar
@@ -249,41 +253,15 @@ export default function PublicIndex() {
       />
 
       <main className="container salons-section" id="salons">
-        {!loading && !error && categorizedSalons.featured.length > 0 && (
+        {!loading && !error && discoverSalons.length > 0 && (
           <SalonGridSection
             title={t('publicIndex.featuredTitle')}
             subtitle={t('publicIndex.featuredSubtitle')}
-            salons={categorizedSalons.featured}
-            gridRef={featuredGridRef}
+            salons={discoverSalons}
+            gridRef={discoverGridRef}
             defaultServices={defaultServices}
-            dotCount={getDotCount(featuredGridRef, categorizedSalons.featured.length)} // eslint-disable-line react-hooks/refs
-            onDotClick={(idx) => scrollToSalon(idx, featuredGridRef)}
-          />
-        )}
-
-        {!loading && !error && categorizedSalons.trending.length > 0 && (
-          <SalonGridSection
-            title={t('publicIndex.trendingTitle')}
-            subtitle={t('publicIndex.trendingSubtitle')}
-            salons={categorizedSalons.trending}
-            gridRef={trendingGridRef}
-            defaultServices={defaultServices}
-            dotCount={getDotCount(trendingGridRef, categorizedSalons.trending.length)} // eslint-disable-line react-hooks/refs
-            onDotClick={(idx) => scrollToSalon(idx, trendingGridRef)}
-            headerStyle={{ marginTop: 60 }}
-          />
-        )}
-
-        {!loading && !error && categorizedSalons.new.length > 0 && (
-          <SalonGridSection
-            title={t('publicIndex.newSalonsTitle')}
-            subtitle={t('publicIndex.newSalonsSubtitle')}
-            salons={categorizedSalons.new}
-            gridRef={newGridRef}
-            defaultServices={defaultServices}
-            dotCount={getDotCount(newGridRef, categorizedSalons.new.length)} // eslint-disable-line react-hooks/refs
-            onDotClick={(idx) => scrollToSalon(idx, newGridRef)}
-            headerStyle={{ marginTop: 60 }}
+            dotCount={getDotCount(discoverGridRef, discoverSalons.length)} // eslint-disable-line react-hooks/refs
+            onDotClick={(idx) => scrollToSalon(idx, discoverGridRef)}
           />
         )}
 
@@ -296,14 +274,14 @@ export default function PublicIndex() {
             defaultServices={defaultServices}
             dotCount={getDotCount(newProfessionalsGridRef, newProfessionals.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, newProfessionalsGridRef)}
-            headerStyle={{ marginTop: 60 }}
             showNewBadge
+            variant="alt"
           />
         )}
         {!loading && !error && newProfessionals.length === 0 && (
           <section className="section-empty" aria-hidden="true">
             <div className="empty-state-card">
-              <span className="empty-icon">✨</span>
+              <EmptyStateIcon variant="salon" />
               <h3>{t('publicIndex.noFeaturedSalons')}</h3>
               <p>{t('publicIndex.noFeaturedSalonsDesc')}</p>
             </div>
@@ -321,7 +299,7 @@ export default function PublicIndex() {
         {!loading && !error && featuredServices.length === 0 && (
           <section className="section-empty" aria-hidden="true">
             <div className="empty-state-card">
-              <span className="empty-icon">💎</span>
+              <EmptyStateIcon variant="service" />
               <h3>{t('publicIndex.noFeaturedServices')}</h3>
               <p>{t('publicIndex.noFeaturedServicesDesc')}</p>
             </div>
@@ -338,7 +316,7 @@ export default function PublicIndex() {
             defaultServices={defaultServices}
             dotCount={getDotCount(femCollectionGridRef, collectionSalons.fem.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, femCollectionGridRef)}
-            headerStyle={{ marginTop: 60 }}
+            variant="alt"
           />
         )}
 
@@ -352,7 +330,6 @@ export default function PublicIndex() {
             defaultServices={defaultServices}
             dotCount={getDotCount(menCollectionGridRef, collectionSalons.men.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, menCollectionGridRef)}
-            headerStyle={{ marginTop: 60 }}
           />
         )}
 
@@ -365,7 +342,7 @@ export default function PublicIndex() {
             defaultServices={defaultServices}
             dotCount={getDotCount(allSalonsGridRef, filtered.length)} // eslint-disable-line react-hooks/refs
             onDotClick={(idx) => scrollToSalon(idx, allSalonsGridRef)}
-            headerStyle={{ marginTop: 60 }}
+            variant="alt"
           />
         )}
 

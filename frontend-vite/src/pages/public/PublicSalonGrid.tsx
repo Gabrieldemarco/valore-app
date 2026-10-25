@@ -43,8 +43,8 @@ function SalonCard({ salon, t, getGenderCategory }: { salon: Salon; t: (key: str
   const gender = getGenderCategory(salon);
 
   return (
-    <Link to={`/p/${salon.slug}`} className="salon-link">
-      <div className="salon-card glass-panel">
+    <Link to={`/p/${salon.slug}`} className="salon-link salon-link--compact">
+      <div className="salon-card salon-card--compact glass-panel">
         <div className="salon-image-wrapper">
           {imageUrl
             ? <img src={fixImageUrl(imageUrl)} alt={salon.business_name} loading="lazy" width="400" height="300" />

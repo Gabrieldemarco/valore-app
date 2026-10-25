@@ -10,20 +10,42 @@ export default function PublicFooter({ appointmentsCount }: PublicFooterProps) {
 
   return (
     <footer className="footer">
-      <p>{t('publicIndex.footerCopyright')}</p>
-        <p className="text-muted-sm" style={{ fontSize: 15, opacity: 0.85, marginBottom: 20, lineHeight: 1.6 }}>
-        {t('publicIndex.footerCTA')}
-      </p>
-      <div className="fs-14 font-600 mb-16 text-primary">
-        {t('publicIndex.appointmentsCounter', { count: appointmentsCount })}
+      <div className="footer-brand">
+        <a href="/" className="footer-logo">
+          <span className="logo-monogram">V</span>
+          <span className="logo-text">Velsoie</span>
+        </a>
+        <p className="footer-tagline">{t('publicIndex.footerTagline')}</p>
       </div>
-      <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 16, opacity: 0.8, display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <Link to="/terms#terms" className="no-underline text-muted font-500">{t('publicIndex.termsLink')}</Link>
-        <span style={{ color: 'rgba(197, 168, 128, 0.2)' }}>|</span>
-        <Link to="/terms#privacy" className="no-underline text-muted font-500">{t('publicIndex.privacyLink')}</Link>
-        <span style={{ color: 'rgba(197, 168, 128, 0.2)' }}>|</span>
-        <Link to="/terms#cancellations" className="no-underline text-muted font-500">{t('publicIndex.cancellationPolicyLink')}</Link>
+
+      <div className="footer-stats-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="18" height="18" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <span>{t('publicIndex.appointmentsCounter', { count: appointmentsCount })}</span>
       </div>
+
+      <p className="footer-cta">{t('publicIndex.footerCTA')}</p>
+
+      <nav className="footer-nav" aria-label={t('publicIndex.footerNavLabel')}>
+        <a href="#salons">{t('publicIndex.navSalones')}</a>
+        <a href="#pricing">{t('publicIndex.navPlanes')}</a>
+        <Link to="/staff/register">{t('publicIndex.navSumate')}</Link>
+        <a href="mailto:soporte@velsoie.uy">{t('publicIndex.footerSupport')}</a>
+      </nav>
+
+      <div className="footer-legal">
+        <Link to="/terms#terms">{t('publicIndex.termsLink')}</Link>
+        <span className="footer-legal-sep" aria-hidden="true">|</span>
+        <Link to="/terms#privacy">{t('publicIndex.privacyLink')}</Link>
+        <span className="footer-legal-sep" aria-hidden="true">|</span>
+        <Link to="/terms#cancellations">{t('publicIndex.cancellationPolicyLink')}</Link>
+      </div>
+
+      <p className="footer-copyright">{t('publicIndex.footerCopyright')}</p>
     </footer>
   );
 }
