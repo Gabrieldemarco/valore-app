@@ -122,6 +122,13 @@
   letter-spacing: -0.5px;
 }
 
+.logo-image {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .nav-links {
   display: flex;
   gap: 28px;
@@ -3123,6 +3130,13 @@
   text-decoration: none;
 }
 
+.footer-logo-image {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .footer-tagline,
 .footer-cta,
 .footer-copyright {
@@ -3342,8 +3356,16 @@
     padding: 10px 16px;
   }
 
+  .footer-logo-image {
+    height: 46px;
+  }
+
   .logo {
     font-size: 25px;
+  }
+
+  .logo-image {
+    height: 32px;
   }
 
   .search-section--sticky {
