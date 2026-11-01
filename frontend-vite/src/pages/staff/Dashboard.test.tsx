@@ -17,6 +17,7 @@ vi.mock('../../api/client', async (importOriginal) => {
         if (path === '/api/tenant/stats/top-services') return Promise.resolve({ services: [{ service: 'Corte', count: 20, avg_price: 500 }, { service: 'Tintura', count: 10, avg_price: 1200 }] });
         return mod.api.get(path);
       },
+      getFresh: mod.api.getFresh,
       post: mod.api.post,
       put: mod.api.put,
       delete: mod.api.delete,
@@ -110,7 +111,10 @@ const mockTopServices = {
   ],
 };
 
-function setupFetchResponses() {
+function setupFetchResponses(
+  calendarAppointments = mockAppointments,
+  calendarPageTwo: typeof mockAppointments.appointments = [],
+) {
   mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/api/tenant/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantSettings) });
@@ -124,7 +128,18 @@ function setupFetchResponses() {
     if (u.includes('/api/tenant/products')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ products: [] }) });
     if (u.includes('/api/calendar/status')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ connected: false }) });
     if (u.includes('/api/tenant/blocked-dates')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ blockedDates: [] }) });
-    if (u.includes('/api/appointments')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAppointments) });
+    if (u.includes('/api/appointments')) {
+      if (u.includes('dateFrom=')) {
+        const pageTwo = new URL(u, window.location.origin).searchParams.get('page') === '2';
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(pageTwo
+            ? { ...calendarAppointments, appointments: calendarPageTwo }
+            : calendarAppointments),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAppointments) });
+    }
     if (u.includes('/api/tenant/stats/summary')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAnalyticsSummary) });
     if (u.includes('/api/tenant/stats/revenue-by-month')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockRevenueByMonth) });
     if (u.includes('/api/tenant/stats/top-services')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTopServices) });
@@ -170,6 +185,42 @@ describe('StaffDashboard', () => {
     expect(screen.getAllByText('Turnos')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Staff')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Servicios')[0]).toBeInTheDocument();
+  });
+
+  test('loads future bookings into the calendar by its visible date range', async () => {
+    const user = userEvent.setup();
+    (useAuth as Mock).mockReturnValue({ staffToken: 'fake-token', staffName: 'Test', isAuthenticated: true, logout: vi.fn() });
+    const bookingDay = new Date();
+    bookingDay.setDate(bookingDay.getDate() + 2);
+    const bookingDate = `${bookingDay.getFullYear()}-${String(bookingDay.getMonth() + 1).padStart(2, '0')}-${String(bookingDay.getDate()).padStart(2, '0')}`;
+    setupFetchResponses(
+      { appointments: [], total: 1, totalPages: 2 },
+      [{
+        id: 3,
+        client_name: 'Reserva futura',
+        service: 'Corte',
+        date: bookingDate,
+        time: '11:00',
+        appointment_date: `${bookingDate}T11:00:00`,
+        status: 'confirmed',
+        client_phone: '+59899333333',
+      }],
+    );
+    renderDashboard();
+
+    expect(await screen.findByText('Carlos')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Calendario' }));
+
+    expect(await screen.findByText('Reserva futura - Corte')).toBeInTheDocument();
+    const calendarRequests = mockFetch.mock.calls
+      .map(([url]) => String(url))
+      .filter(url => url.includes('/api/appointments?') && url.includes('dateFrom='));
+    expect(calendarRequests.length).toBeGreaterThanOrEqual(2);
+    expect(calendarRequests.some(url => new URL(url, window.location.origin).searchParams.get('page') === '2')).toBe(true);
+    const range = new URL(calendarRequests[0], window.location.origin).searchParams;
+    expect(range.has('dateFrom')).toBe(true);
+    expect(range.has('dateTo')).toBe(true);
+    expect(range.has('date')).toBe(false);
   });
 
   test('switches between tabs', async () => {

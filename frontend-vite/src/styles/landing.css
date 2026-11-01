@@ -642,7 +642,7 @@
 .landing-view .step::after {
   content: '';
   position: absolute;
-  top: 24px;
+  top: 28px;
   left: calc(50% + 18px);
   right: calc(-50% + 18px);
   height: 2px;
