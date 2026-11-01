@@ -24,6 +24,7 @@ interface RequestOptions {
   body?: unknown;
   headers?: Record<string, string>;
   role?: 'staff' | 'client' | 'superAdmin';
+  cache?: boolean;
 }
 
 function getToken(role?: 'staff' | 'client' | 'superAdmin'): string | null {
@@ -34,14 +35,14 @@ function getToken(role?: 'staff' | 'client' | 'superAdmin'): string | null {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers: extraHeaders = {}, role } = options;
+  const { method = 'GET', body, headers: extraHeaders = {}, role, cache: shouldCache = true } = options;
   const headers: Record<string, string> = { ...extraHeaders };
   const token = getToken(role);
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (body) headers['Content-Type'] = 'application/json';
 
   const cacheKey = `${method}:${path}`;
-  if (method === 'GET') {
+  if (method === 'GET' && shouldCache) {
     const cached = getCached<T>(cacheKey);
     if (cached) return cached;
   }
@@ -64,7 +65,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || data.message || 'Request failed');
 
-  if (method === 'GET') setCache(cacheKey, data);
+  if (method === 'GET' && shouldCache) setCache(cacheKey, data);
 
   return data;
 }
@@ -75,6 +76,7 @@ export function clearApiCache(): void {
 
 export const api = {
   get: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { role }),
+  getFresh: <T>(path: string, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { role, cache: false }),
   post: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'POST', body, role }),
   postForm: <T>(path: string, body: FormData, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'POST', body, role, headers: {} }),
   put: <T>(path: string, body?: unknown, role?: 'staff' | 'client' | 'superAdmin') => request<T>(path, { method: 'PUT', body, role }),

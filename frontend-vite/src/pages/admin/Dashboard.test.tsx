@@ -86,6 +86,7 @@ describe('AdminDashboard', () => {
       expect(screen.getByText('Panel de Administración')).toBeInTheDocument();
     });
     expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('Establecimientos')).toBeInTheDocument();
     expect(screen.getByText('Barbería Centro')).toBeInTheDocument();
     expect(screen.getByText('Salón Norte')).toBeInTheDocument();
   });
@@ -135,7 +136,7 @@ describe('AdminDashboard', () => {
     setupFetch();
     renderDashboard();
     await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
-    const searchInput = screen.getByPlaceholderText('Buscar salón...');
+    const searchInput = screen.getByPlaceholderText('Buscar establecimiento...');
     await user.type(searchInput, 'Norte');
     await waitFor(() => {
       expect(screen.queryByText('Barbería Centro')).not.toBeInTheDocument();

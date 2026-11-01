@@ -55,14 +55,14 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const loadData = useCallback(() => {
     api.get<Stats>('/api/super-admin/stats/billing', 'superAdmin').then(setStats).catch(() => {});
     const loadTenants = async () => {
-      const firstPage = await api.get<{ tenants: Tenant[]; totalPages: number }>(
+      const firstPage = await api.getFresh<{ tenants: Tenant[]; totalPages: number }>(
         '/api/super-admin/tenants?page=1&limit=100',
         'superAdmin',
       );
       const allTenants = [...firstPage.tenants];
 
       for (let page = 2; page <= firstPage.totalPages; page += 1) {
-        const result = await api.get<{ tenants: Tenant[] }>(
+        const result = await api.getFresh<{ tenants: Tenant[] }>(
           `/api/super-admin/tenants?page=${page}&limit=100`,
           'superAdmin',
         );
