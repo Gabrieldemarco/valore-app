@@ -86,7 +86,7 @@ export default function DashboardShell({ children }: Props) {
   const showStaffFilter = activeTab !== 'staff' && activeTab !== 'services' && activeTab !== 'clients' && staffList.length > 0;
 
   return (
-    <div className="dash-body">
+    <div className="dash-body staff-dashboard">
       {toasts.length > 0 && (
         <div className="dash-toast-container">
           {toasts.map(toast => (

@@ -10,6 +10,8 @@ import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { api } from '../../../../api/client';
 import type { Appointment } from '../dashboardContext';
+import { getAppointmentStatusLabel } from '../../../../utils/appointmentStatus';
+import { CalendarDays, Clock3 } from 'lucide-react';
 
 export default function CalendarTab() {
   const { t } = useTranslation();
@@ -46,22 +48,11 @@ export default function CalendarTab() {
             ? `${appointment.date}T${appointment.time}`
             : appointment.date
         );
-        const colors: Record<string, { bg: string; border: string }> = {
-          confirmed: { bg: 'rgba(34,197,94,0.25)', border: 'var(--success)' },
-          completed: { bg: 'rgba(59,130,246,0.2)', border: 'var(--info)' },
-          cancelled: { bg: 'rgba(239,68,68,0.2)', border: 'var(--danger)' },
-          'no-show': { bg: 'rgba(168,85,247,0.2)', border: 'var(--pending)' },
-          pending: { bg: 'rgba(234,179,8,0.25)', border: 'var(--warning)' },
-        };
-        const color = colors[appointment.status] || colors.pending;
-
         return {
           id: String(appointment.id),
           title: `${appointment.client_name}${(appointment.service_name || appointment.service) ? ` - ${appointment.service_name || appointment.service}` : ''}`,
           start,
-          backgroundColor: color.bg,
-          borderColor: color.border,
-          textColor: 'var(--border-color)',
+          classNames: [`dash-calendar-${appointment.status.replace(/[^a-z-]/g, '')}`],
           extendedProps: { appt: appointment },
         };
       });
@@ -69,7 +60,7 @@ export default function CalendarTab() {
       addToast(t('staffDashboard.toastLoadAppointmentsError'), 'error');
       throw error;
     }
-  }, [addToast, selectedStaff, settings.timezone, t]);
+  }, [addToast, selectedStaff, t]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -79,13 +70,29 @@ export default function CalendarTab() {
   }, []);
 
   return (
-    <div className="glass-panel" style={{ padding: '28px', marginTop: '16px', minHeight: 550 }}>
+    <section className="glass-panel staff-calendar-panel">
+      <header className="staff-calendar-heading">
+        <div className="staff-calendar-title">
+          <span className="staff-calendar-icon"><CalendarDays size={21} /></span>
+          <div>
+            <h2>{t('staffDashboard.tabCalendar')}</h2>
+            <p>{t('staffDashboard.calendarSubtitle')}</p>
+          </div>
+        </div>
+        <span className="staff-calendar-timezone">
+          <Clock3 size={15} />
+          {settings.timezone || 'America/Montevideo'}
+        </span>
+      </header>
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
         initialView="dayGridMonth"
         timeZone={settings.timezone || 'America/Montevideo'}
         locale={esLocale}
+        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+        slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+        nowIndicator
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
@@ -97,8 +104,21 @@ export default function CalendarTab() {
         events={loadCalendarEvents}
         eventContent={arg => {
           const content = document.createElement('div');
-          content.style.cssText = 'padding:2px 4px;font-size:13px;line-height:1.3';
-          content.textContent = arg.event.title;
+          content.className = 'staff-calendar-event';
+          if (arg.timeText) {
+            const time = document.createElement('span');
+            time.className = 'staff-calendar-event-time';
+            time.textContent = arg.timeText;
+            content.appendChild(time);
+          }
+          const title = document.createElement('span');
+          title.className = 'staff-calendar-event-title';
+          title.textContent = arg.event.title;
+          content.appendChild(title);
+          const status = document.createElement('span');
+          status.className = 'staff-calendar-event-status';
+          status.textContent = getAppointmentStatusLabel((arg.event.extendedProps.appt as Appointment).status, t);
+          content.appendChild(status);
           return { domNodes: [content] };
         }}
         eventClick={(info) => {
@@ -106,6 +126,20 @@ export default function CalendarTab() {
           if (appt) setSelectedAppointment(appt);
         }}
       />
-    </div>
+      <div className="staff-calendar-legend" aria-label={t('staffDashboard.calendarStatusLegend')}>
+        {[
+          ['confirmed', 'var(--info)'],
+          ['pending', 'var(--warning)'],
+          ['completed', 'var(--success)'],
+          ['cancelled', 'var(--danger)'],
+          ['no-show', '#a78bfa'],
+        ].map(([status, color]) => (
+          <span key={status} className="staff-calendar-legend-item">
+            <i style={{ backgroundColor: color }} />
+            {getAppointmentStatusLabel(status, t)}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }

@@ -40,8 +40,15 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       });
     });
 
-    // Periodic check for updates every 30 min
-    setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    // Refresh installed dashboards promptly when a user returns to an open tab.
+    const checkForUpdate = () => {
+      if (document.visibilityState === 'visible') {
+        reg.update().catch(error => console.warn('[PWA] Could not check for updates:', error));
+      }
+    };
+    document.addEventListener('visibilitychange', checkForUpdate);
+    window.addEventListener('focus', checkForUpdate);
+    setInterval(checkForUpdate, 5 * 60 * 1000);
 
     // Listen for controllerchange (SW took over)
     let controllerChangeHandled = false;

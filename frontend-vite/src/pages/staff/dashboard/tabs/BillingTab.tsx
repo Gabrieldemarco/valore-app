@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CreditCard, Wallet } from 'lucide-react';
 import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import { exportInvoicePdf } from '../../../../utils/invoicePdf';
@@ -24,14 +25,60 @@ export default function BillingTab() {
           <h3 className="text-gradient m-0">{t('staffDashboard.billingTitle')}</h3>
           <p className="text-muted m-0 mt-6">{t('staffDashboard.billingDescription')}</p>
         </div>
-        <button className="dash-btn dash-btn-success" onClick={() => loadInvoices()}>{t('staffDashboard.billingRefresh')}</button>
       </div>
-      <div className="flex align-items-center gap-16 mb-18">
-        <span className="text-muted">{t('staffDashboard.billingPaymentMethod')}</span>
-        <select className="dash-input" style={{ maxWidth: 220 }} value={provider} onChange={e => setProvider(e.target.value as 'mercadopago' | 'stripe')}>
-          <option value="mercadopago">Mercado Pago (UYU)</option>
-          <option value="stripe">Stripe (USD)</option>
-        </select>
+      <div className="billing-provider-picker">
+        <div className="billing-provider-copy">
+          <h4>{t('staffDashboard.billingPaymentMethod')}</h4>
+          <p>{t('staffDashboard.billingProviderHint')}</p>
+        </div>
+        <div className="billing-provider-options" role="radiogroup" aria-label={t('staffDashboard.billingPaymentMethod')}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={provider === 'mercadopago'}
+            tabIndex={provider === 'mercadopago' ? 0 : -1}
+            data-provider="mercadopago"
+            className={`billing-provider-option${provider === 'mercadopago' ? ' selected' : ''}`}
+            onClick={() => setProvider('mercadopago')}
+            onKeyDown={event => {
+              if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                setProvider('stripe');
+                event.currentTarget.parentElement?.querySelector<HTMLButtonElement>('[data-provider="stripe"]')?.focus();
+              }
+            }}
+          >
+            <Wallet size={21} aria-hidden="true" />
+            <span className="billing-provider-details">
+              <strong>Mercado Pago</strong>
+              <small>{t('staffDashboard.billingLocalCurrency')}</small>
+            </span>
+            <span className="billing-provider-currency">UYU</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={provider === 'stripe'}
+            tabIndex={provider === 'stripe' ? 0 : -1}
+            data-provider="stripe"
+            className={`billing-provider-option${provider === 'stripe' ? ' selected' : ''}`}
+            onClick={() => setProvider('stripe')}
+            onKeyDown={event => {
+              if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                setProvider('mercadopago');
+                event.currentTarget.parentElement?.querySelector<HTMLButtonElement>('[data-provider="mercadopago"]')?.focus();
+              }
+            }}
+          >
+            <CreditCard size={21} aria-hidden="true" />
+            <span className="billing-provider-details">
+              <strong>Stripe</strong>
+              <small>{t('staffDashboard.billingDollars')}</small>
+            </span>
+            <span className="billing-provider-currency">USD</span>
+          </button>
+        </div>
       </div>
       {plan ? (
         <div className="glass-panel mb-20 p-20" style={{ border: '1px solid rgba(197,168,128,0.35)' }}>
@@ -65,11 +112,8 @@ export default function BillingTab() {
           </div>
         </div>
       )}
-      <div className="flex-between gap-16 mb-18">
-        <div>
-          <h3 className="m-0">{t('staffDashboard.billingTitle')}</h3>
-          <p className="text-muted m-0 mt-6">{t('staffDashboard.billingDescription')}</p>
-        </div>
+      <div className="flex-between gap-16 mb-18 billing-invoices-heading">
+        <h3 className="m-0">{t('staffDashboard.invoiceTableNumber')}</h3>
         <button className="dash-btn dash-btn-success" onClick={() => loadInvoices()}>{t('staffDashboard.billingRefresh')}</button>
       </div>
       {invoices.length === 0 ? (

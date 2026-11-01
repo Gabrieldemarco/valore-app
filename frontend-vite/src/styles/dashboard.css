@@ -1493,6 +1493,486 @@
   background-color: rgba(200, 130, 125, 0.05) !important;
 }
 
+/* Staff dashboard polish */
+.staff-dashboard {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(200, 130, 125, 0.08), transparent 34rem),
+    var(--bg-deep);
+}
+
+.staff-dashboard .dash-header {
+  padding: 18px clamp(18px, 4vw, 56px);
+  gap: 20px;
+  background: rgba(18, 12, 12, 0.88);
+  border-bottom-color: rgba(200, 130, 125, 0.2);
+}
+
+.staff-dashboard .dash-header h1 {
+  letter-spacing: -0.035em;
+}
+
+.staff-dashboard .dash-user-info {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.staff-dashboard .dash-container {
+  max-width: 1540px;
+  padding-top: 30px;
+}
+
+.staff-dashboard .dash-stats {
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.staff-dashboard .dash-stat-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(200, 130, 125, 0.16);
+  background: linear-gradient(145deg, rgba(35, 25, 25, 0.92), rgba(22, 17, 18, 0.84));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.staff-dashboard .dash-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(200, 130, 125, 0.36);
+}
+
+.staff-dashboard .dash-stat-label {
+  font-size: 13px;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.staff-dashboard .dash-stat-value {
+  font-size: clamp(28px, 3vw, 36px);
+}
+
+.staff-dashboard .dash-stat-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid rgba(200, 130, 125, 0.18);
+  border-radius: 15px;
+  background: rgba(200, 130, 125, 0.1);
+  color: var(--primary-hover);
+}
+
+.staff-dashboard .dash-tabs {
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(200, 130, 125, 0.16);
+  background: rgba(24, 17, 18, 0.88);
+}
+
+.staff-dashboard .dash-tab {
+  min-height: 40px;
+  padding: 9px 15px;
+  font-weight: 600;
+}
+
+.staff-dashboard .dash-tab.active {
+  background: linear-gradient(135deg, var(--primary), #a96561);
+  color: #201313;
+  box-shadow: 0 5px 16px rgba(200, 130, 125, 0.2);
+}
+
+.staff-dashboard .dash-filters,
+.staff-dashboard .dash-appointment-card {
+  border: 1px solid rgba(200, 130, 125, 0.14);
+  background: linear-gradient(145deg, rgba(35, 25, 25, 0.84), rgba(22, 17, 18, 0.78));
+}
+
+.staff-dashboard .dash-appointment-card {
+  border-left-width: 4px;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.staff-dashboard .dash-appointment-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(200, 130, 125, 0.32);
+}
+
+.staff-calendar-panel {
+  min-height: 550px;
+  margin-top: 16px;
+  padding: clamp(16px, 3vw, 30px);
+  border: 1px solid rgba(200, 130, 125, 0.18);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(200, 130, 125, 0.07), transparent 30rem),
+    linear-gradient(145deg, rgba(35, 25, 25, 0.92), rgba(19, 15, 16, 0.96));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.staff-calendar-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.staff-calendar-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.staff-calendar-title h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: clamp(19px, 2vw, 24px);
+}
+
+.staff-calendar-title p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.staff-calendar-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid rgba(200, 130, 125, 0.25);
+  border-radius: 14px;
+  background: rgba(200, 130, 125, 0.1);
+  color: var(--primary-hover);
+}
+
+.staff-calendar-timezone {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(200, 130, 125, 0.2);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text-muted);
+  background: rgba(200, 130, 125, 0.07);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.staff-calendar-panel .fc .fc-toolbar-title {
+  color: var(--text-main);
+  font-family: inherit !important;
+  font-size: clamp(18px, 2vw, 23px) !important;
+  text-shadow: none;
+}
+
+.staff-calendar-panel .fc .fc-toolbar {
+  margin-bottom: 16px !important;
+}
+
+.staff-calendar-panel .fc .fc-button {
+  border-radius: 11px !important;
+  padding: 8px 13px !important;
+  font-size: 13px !important;
+}
+
+.staff-calendar-panel .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: linear-gradient(135deg, var(--primary), #a96561) !important;
+  border-color: var(--primary) !important;
+  color: #201313 !important;
+}
+
+.staff-calendar-panel .fc .fc-col-header-cell {
+  padding: 10px 0 !important;
+  background: rgba(200, 130, 125, 0.07);
+  color: var(--primary-hover);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.staff-calendar-panel .fc-theme-standard .fc-scrollgrid {
+  border-radius: 15px;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-day-frame {
+  min-height: 104px;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-day-number {
+  padding: 8px 10px !important;
+  color: var(--text-muted);
+}
+
+.staff-calendar-panel .fc .fc-daygrid-day.fc-day-today {
+  background: rgba(200, 130, 125, 0.075) !important;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  color: var(--text-main);
+  border: 0;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-day-number {
+  border-radius: 50%;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-event {
+  margin: 3px 4px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 3px solid var(--primary) !important;
+  border-radius: 6px !important;
+  background: rgba(200, 130, 125, 0.14) !important;
+  box-shadow: none !important;
+}
+
+.staff-calendar-panel .fc .fc-timegrid-event {
+  border: 0 !important;
+  border-left: 3px solid var(--primary) !important;
+  border-radius: 8px !important;
+  background: rgba(200, 130, 125, 0.18) !important;
+  box-shadow: none !important;
+}
+
+.staff-calendar-panel .fc .fc-daygrid-event:hover,
+.staff-calendar-panel .fc .fc-timegrid-event:hover {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+.staff-calendar-event {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  line-height: 1.25;
+}
+
+.staff-calendar-event-time {
+  color: var(--primary-hover);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.staff-calendar-event-title {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+}
+
+.staff-calendar-event-status {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.staff-calendar-panel .dash-calendar-pending {
+  border-left-color: var(--warning) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+.staff-calendar-panel .dash-calendar-completed {
+  border-left-color: var(--success) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+.staff-calendar-panel .dash-calendar-cancelled {
+  border-left-color: var(--danger) !important;
+  background: rgba(239, 68, 68, 0.13) !important;
+}
+
+.staff-calendar-panel .dash-calendar-no-show {
+  border-left-color: #a78bfa !important;
+  background: rgba(168, 85, 247, 0.14) !important;
+}
+
+.staff-calendar-panel .dash-calendar-confirmed {
+  border-left-color: var(--info) !important;
+  background: rgba(96, 165, 250, 0.14) !important;
+}
+
+.staff-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.staff-calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.staff-calendar-legend-item i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.billing-provider-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0 22px;
+  padding: 18px;
+  border: 1px solid rgba(200, 130, 125, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(120deg, rgba(200, 130, 125, 0.09), rgba(30, 24, 25, 0.78));
+}
+
+.billing-provider-copy h4 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 15px;
+}
+
+.billing-provider-copy p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.billing-provider-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.billing-provider-option {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 13px;
+  color: var(--text-main);
+  background: rgba(13, 10, 11, 0.6);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.billing-provider-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(200, 130, 125, 0.55);
+}
+
+.billing-provider-option.selected {
+  border-color: var(--primary);
+  background: rgba(200, 130, 125, 0.17);
+  box-shadow: 0 0 0 2px rgba(200, 130, 125, 0.12);
+}
+
+.billing-provider-option > svg {
+  flex: 0 0 auto;
+  color: var(--primary-hover);
+}
+
+.billing-provider-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.billing-provider-details strong {
+  font-size: 14px;
+}
+
+.billing-provider-details small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.billing-provider-currency {
+  border-radius: 7px;
+  padding: 5px 7px;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.billing-invoices-heading {
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+[data-theme="light"] .staff-dashboard .dash-stat-card,
+[data-theme="light"] .staff-dashboard .dash-tabs,
+[data-theme="light"] .staff-dashboard .dash-filters,
+[data-theme="light"] .staff-dashboard .dash-appointment-card,
+[data-theme="light"] .staff-calendar-panel {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+[data-theme="light"] .staff-calendar-panel .fc .fc-col-header-cell {
+  background: rgba(200, 130, 125, 0.08);
+}
+
+[data-theme="light"] .billing-provider-option {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 720px) {
+  .staff-calendar-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .staff-calendar-panel .fc .fc-toolbar {
+    align-items: stretch;
+  }
+
+  .staff-calendar-panel .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+
+  .staff-calendar-panel .fc .fc-daygrid-day-frame {
+    min-height: 76px;
+  }
+
+  .staff-calendar-panel .fc .fc-daygrid-event {
+    margin: 2px !important;
+  }
+
+  .staff-calendar-event {
+    padding: 3px;
+  }
+
+  .staff-calendar-event-title {
+    font-size: 10px;
+  }
+
+  .staff-calendar-event-status {
+    display: none;
+  }
+
+  .billing-provider-picker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .billing-provider-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== Dashboard buttons harmonized with the global design system ===== */
 .dash-btn,
 .dash-btn-success,
