@@ -3131,10 +3131,12 @@
 }
 
 .footer-logo-image {
-  height: 60px;
+  height: 82px;
   width: auto;
+  max-width: 220px;
   object-fit: contain;
   display: block;
+  flex-shrink: 0;
 }
 
 .footer-tagline,
@@ -3357,7 +3359,8 @@
   }
 
   .footer-logo-image {
-    height: 46px;
+    height: 58px;
+    max-width: 170px;
   }
 
   .logo {

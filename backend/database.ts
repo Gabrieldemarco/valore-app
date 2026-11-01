@@ -97,6 +97,7 @@ async function initDB() {
     logger.info('✅ DB lista y estable');
   } catch (err: any) {
     logger.error('❌ Error initDB:', err.message);
+    throw err;
   } finally {
     client.release();
   }

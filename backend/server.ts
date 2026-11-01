@@ -31,6 +31,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
+import type Stripe from 'stripe';
 import cron from 'node-cron';
 import { enqueueNotification } from './services/notificationQueue';
 import { isConfigured as isMercadoPagoConfigured, createPreference as mpCreatePreference } from './services/mercadopago-client';
@@ -55,13 +56,18 @@ if (process.env.SENTRY_DSN) {
 import { generateMonthlyInvoices, sendPaymentReminders, suspendOverdueTenants, suspendExpiredFreeTrials, backupDatabase, sendAppointmentReminders } from './cron-billing';
 import notificationWorker from './workers/notificationWorker';
 import logger, { stream as loggerStream } from './services/logger';
+import { initWhatsappClient, isWhatsappWebEnabled } from './services/whatsapp-web';
 import morgan from 'morgan';
-import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, PLANS, loadPlanPricesFromDB } from './services/payment-config';
+import { MP_CURRENCY, MP_LOCALE, MP_COUNTRY, STRIPE_CURRENCY, PLANS, loadPlanPricesFromDB, normalizePlan } from './services/payment-config';
 import { generateAvailableSlots } from './services/slots';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './services/swagger';
 import { metricsMiddleware, createMetricsHandler, refreshDbPoolMetrics } from './services/metrics';
 import metricsRegister from './services/metrics';
+
+if (isWhatsappWebEnabled()) {
+  initWhatsappClient().catch((e: Error) => logger.error('WhatsApp Web init:', e.message));
+}
 
 const app = express();
 
@@ -189,13 +195,23 @@ function getBaseUrl(req) {
 async function createMercadoPagoPreference(invoice, tenant, req, returnPath = '/staff/dashboard') {
   const origin = getBaseUrl(req);
   const returnUrl = `${origin}${returnPath}`;
+  const plan = invoice.description && invoice.description.startsWith('subscription:')
+    ? normalizePlan(invoice.description.split(':')[1]?.trim())
+    : null;
+  const planInfo = plan && PLANS[plan] ? PLANS[plan] : null;
+  const mpItemId = planInfo?.mp_item_id || null;
+  const itemTitle = planInfo ? planInfo.name : `Factura ${invoice.invoice_number}`;
+
+  const item = {
+    title: itemTitle,
+    quantity: 1,
+    currency_id: MP_CURRENCY,
+    unit_price: parseFloat(invoice.amount) || 0,
+    ...(mpItemId ? { id: mpItemId } : {}),
+  };
+
   const preference = {
-    items: [{
-      title: `Factura ${invoice.invoice_number}`,
-      quantity: 1,
-      currency_id: MP_CURRENCY,
-      unit_price: parseFloat(invoice.amount) || 0
-    }],
+    items: [item],
     external_reference: String(invoice.id),
     back_urls: {
       success: `${returnUrl}?payment=success`,
@@ -209,7 +225,7 @@ async function createMercadoPagoPreference(invoice, tenant, req, returnPath = '/
 }
 
 /**
- * Crea un Checkout Session de Stripe para una factura (pago único, USD).
+ * Crea un Checkout Session de Stripe para una factura, usando la moneda configurada para el negocio.
  * @param {{ invoice_number: string, amount: number|string, id: number, description?: string }} invoice
  * @param {Tenant} tenant
  * @param {import('express').Request} req
@@ -220,33 +236,44 @@ async function createStripeCheckout(invoice, tenant, req, opts: { returnPath?: s
   const origin = getBaseUrl(req);
   const returnPath = opts.returnPath || '/staff/dashboard';
   const returnUrl = `${origin}${returnPath}`;
-  const stripeCurrency = process.env.STRIPE_CURRENCY || 'usd';
+  const stripeCurrency = STRIPE_CURRENCY;
 
-  // Para suscripción usamos el precio USD del plan; para facturas varias el amount de la factura
+  // Las suscripciones Stripe usan el precio USD definido en la configuración de planes.
   const plan = opts.plan || (invoice.description && invoice.description.startsWith('subscription:')
     ? invoice.description.split(':')[1]?.trim()
     : null);
-  const unitAmount = plan && PLANS[plan]?.price_usd
-    ? PLANS[plan].price_usd
-    : parseFloat(invoice.amount);
+  const invoiceAmount = Number(invoice.amount);
+  const fallbackPlanAmount = plan && PLANS[plan]
+    ? Number(stripeCurrency === 'usd' ? (PLANS[plan].price_usd ?? PLANS[plan].price) : PLANS[plan].price)
+    : Number.NaN;
+  const unitAmount = Number.isFinite(invoiceAmount) && invoiceAmount > 0
+    ? invoiceAmount
+    : fallbackPlanAmount;
 
-  const session = await stripeCreateCheckoutSession({
+  if (!Number.isFinite(unitAmount) || unitAmount <= 0) {
+    throw new Error(`Importe inválido para la factura ${invoice.invoice_number}`);
+  }
+
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     mode: 'payment',
     payment_method_types: ['card'],
-    line_items: [{
-      price_data: {
-        currency: stripeCurrency,
-        product_data: { name: `Factura ${invoice.invoice_number}` },
-        unit_amount: Math.round(unitAmount * 100),
-      },
-      quantity: 1,
-    }],
     metadata: { invoice_id: String(invoice.id), type: plan ? 'subscription' : 'invoice' },
     success_url: `${returnUrl}?payment=success`,
     cancel_url: `${returnUrl}?payment=failure`,
     client_reference_id: String(invoice.id),
+  };
+
+  return stripeCreateCheckoutSession({
+    ...sessionConfig,
+    line_items: [{
+      price_data: {
+        currency: stripeCurrency,
+        product_data: { name: plan && PLANS[plan] ? PLANS[plan].name : `Factura ${invoice.invoice_number}` },
+        unit_amount: Math.round(unitAmount * 100),
+      },
+      quantity: 1,
+    }],
   });
-  return session;
 }
 
 // Rate limiting
@@ -298,9 +325,6 @@ const webhookLimiter = rateLimit({
   legacyHeaders: false
 });
 
-initDB().then(async () => {
-  await loadPlanPricesFromDB(query);
-}).catch(err => logger.error('Error initDB', { error: err.message }));
 
 // ========== I18N ==========
 app.use(i18nMiddleware);
@@ -632,17 +656,33 @@ logger.info('  • Google Calendar Sync: Cada 30 minutos');
 // ========== INICIAR SERVIDOR ==========
 const PORT = process.env.PORT || 3000;
 let server;
-if (process.env.NODE_ENV !== 'test') {
-  server = app.listen(PORT, () => {
-    logger.info(`Backend activo: http://localhost:${PORT}`);
-    logger.info('Entorno:', { NODE_ENV: config.NODE_ENV, FORCE_HTTPS: config.FORCE_HTTPS });
-    logger.info('Monitoreo:', { METRICS_ENABLED: config.METRICS_ENABLED, METRICS_AUTH_ENABLED: config.METRICS_AUTH_ENABLED });
-    logger.info('Documentacion:', { SWAGGER_UI_ENABLED: config.SWAGGER_UI_ENABLED, SWAGGER_BASIC_AUTH_ENABLED: config.SWAGGER_BASIC_AUTH_ENABLED, SWAGGER_UI_ROUTE: config.SWAGGER_UI_ROUTE });
-    logger.info('CORS:', { allowedOrigins: config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.join(', ') : 'any' });
-    logger.info('Rutas clave:', { multiTenant: '/p/:slug/...', staffLogin: '/api/staff/login', superAdminLogin: '/api/super-admin/login', forgotPassword: '/staff/forgot-password' });
-    logger.info(`Frontend servido desde: ${frontendPublicPath}`);
-  });
+async function startServer() {
+  try {
+    // No aceptar tráfico hasta que el esquema y la configuración dinámica estén listos.
+    await initDB();
+    await loadPlanPricesFromDB(query);
+
+    if (process.env.NODE_ENV === 'test') return;
+
+    server = app.listen(PORT, () => {
+      logger.info(`Backend activo: http://localhost:${PORT}`);
+      logger.info('Entorno:', { NODE_ENV: config.NODE_ENV, FORCE_HTTPS: config.FORCE_HTTPS });
+      logger.info('Monitoreo:', { METRICS_ENABLED: config.METRICS_ENABLED, METRICS_AUTH_ENABLED: config.METRICS_AUTH_ENABLED });
+      logger.info('Documentacion:', { SWAGGER_UI_ENABLED: config.SWAGGER_UI_ENABLED, SWAGGER_BASIC_AUTH_ENABLED: config.SWAGGER_BASIC_AUTH_ENABLED, SWAGGER_UI_ROUTE: config.SWAGGER_UI_ROUTE });
+      logger.info('CORS:', { allowedOrigins: config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.join(', ') : 'any' });
+      logger.info('Rutas clave:', { multiTenant: '/p/:slug/...', staffLogin: '/api/staff/login', superAdminLogin: '/api/super-admin/login', forgotPassword: '/staff/forgot-password' });
+      logger.info(`Frontend servido desde: ${frontendPublicPath}`);
+    });
+  } catch (err: any) {
+    logger.error('Error de arranque: la aplicación no se iniciará', { error: err.message });
+    // En producción un proceso sin DB lista pero no operativo es más peligroso
+    // que un fallo que PM2 pueda reiniciar y alertar.
+    if (process.env.NODE_ENV === 'production') process.exit(1);
+    throw err;
+  }
 }
+
+startServer().catch(() => undefined);
 
 export = app;
 
@@ -652,6 +692,10 @@ export = app;
  */
 function gracefulShutdown(signal) {
   logger.info(`\n🛑 Recibido ${signal}, cerrando servidor...`);
+  if (!server) {
+    process.exit(0);
+    return;
+  }
   server.close(() => {
     logger.info('✅ HTTP server cerrado');
     pool.end().then(async () => {
@@ -676,4 +720,3 @@ function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-

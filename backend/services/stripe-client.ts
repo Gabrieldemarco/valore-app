@@ -7,13 +7,14 @@ const STRIPE_API_VERSION = '2024-06-20' as Stripe.LatestApiVersion;
 
 /** @returns {boolean} */
 function isConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+  const key = process.env.STRIPE_SECRET_KEY || '';
+  return /^sk_(test|live)_/.test(key);
 }
 
 /** @returns {boolean} */
 function initStripe() {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) return false;
+  if (!secretKey || !/^sk_(test|live)_/.test(secretKey)) return false;
   stripeClient = new Stripe(secretKey, { apiVersion: STRIPE_API_VERSION });
   return true;
 }
@@ -21,7 +22,7 @@ function initStripe() {
 /** @returns {Stripe} */
 function getStripeClient(): Stripe {
   if (!stripeClient && !initStripe()) {
-    throw new Error('Stripe no configurado (STRIPE_SECRET_KEY)');
+    throw new Error('Stripe requiere STRIPE_SECRET_KEY con formato sk_test_... o sk_live_...; no uses la clave pública pk_...');
   }
   return stripeClient!;
 }

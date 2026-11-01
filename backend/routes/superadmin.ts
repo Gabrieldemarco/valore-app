@@ -149,9 +149,14 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
 
       let updateSql, updateParams;
 
-      if (mode === 'upgrade_pro') {
-        updateSql = `UPDATE tenants SET status = 'active', plan = 'pro', trial_end_date = NULL, updated_at = NOW() WHERE id = $1 RETURNING *`;
-        updateParams = [id];
+      const upgradePlan = mode === 'upgrade_pro' ? 'pro'
+        : mode === 'upgrade_estandar' ? 'estandar'
+        : mode === 'upgrade_premium' ? 'premium'
+        : null;
+
+      if (upgradePlan) {
+        updateSql = `UPDATE tenants SET status = 'active', plan = $1, trial_end_date = NULL, updated_at = NOW() WHERE id = $2 RETURNING *`;
+        updateParams = [upgradePlan, id];
       } else {
         const extensionDays = parseInt(days) || 15;
         updateSql = `UPDATE tenants SET status = 'active', trial_end_date = NOW() + $1::interval, updated_at = NOW() WHERE id = $2 RETURNING *`;
@@ -162,8 +167,10 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
       if (result.rows.length === 0) return res.status(404).json({ error: 'No se pudo reactivar' });
 
       logger.info(`Tenant ${id} reactivado por superadmin (mode: ${mode || 'extend_trial'})`);
+      const planNames = { upgrade_pro: 'Pro', upgrade_estandar: 'Estándar', upgrade_premium: 'Premium' };
+      const planKey = mode && planNames[mode as keyof typeof planNames];
       res.json({
-        message: mode === 'upgrade_pro' ? 'Cuenta actualizada a Pro y reactivada' : `Cuenta reactivada con ${days || 15} días adicionales`,
+        message: planKey ? `Cuenta actualizada al plan ${planKey} y reactivada` : `Cuenta reactivada con ${days || 15} días adicionales`,
         tenant: result.rows[0],
       });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al reactivar' }); }
@@ -311,27 +318,72 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Factura no encontrada' });
       await query('UPDATE tenants SET last_payment_date = NOW() WHERE id = $1', [result.rows[0].tenant_id]);
-      await activateTenantFromPaidInvoice(query, result.rows[0]);
+      await activateTenantFromPaidInvoice(query, result.rows[0], { provider: 'manual' });
       res.json({ message: 'Factura marcada como pagada', invoice: result.rows[0] });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al actualizar factura' }); }
   });
 
   router.get('/super-admin/stats/billing', authenticateSuperAdmin, async (req, res) => {
     try {
-      const totalInvoiced = await queryOne('SELECT SUM(amount) as total FROM invoices WHERE status = \'paid\'');
+      const totalInvoicedByCurrency = await query(
+        `SELECT UPPER(COALESCE(payment.currency,
+           CASE WHEN i.payment_method = 'stripe' THEN 'USD' ELSE 'UYU' END)) AS currency,
+           SUM(i.amount)::numeric(14, 2) AS total
+         FROM invoices i
+         LEFT JOIN LATERAL (
+           SELECT currency FROM payments WHERE invoice_id = i.id ORDER BY created_at DESC LIMIT 1
+         ) payment ON true
+         WHERE i.status = 'paid'
+         GROUP BY 1`
+      );
       const pendingInvoices = await queryOne('SELECT COUNT(*) as count FROM invoices WHERE status = \'pending\'');
       const activeTenants = await queryOne('SELECT COUNT(*) as count FROM tenants WHERE status = \'active\'');
+      const invoicedByCurrency = Object.fromEntries(
+        totalInvoicedByCurrency.rows.map((row: { currency: string; total: string }) => [
+          row.currency,
+          parseFloat(row.total) || 0,
+        ])
+      );
       res.json({
-        totalInvoiced: parseFloat(totalInvoiced.total) || 0,
+        totalInvoiced: Object.values(invoicedByCurrency).reduce((sum: number, amount: number) => sum + amount, 0),
+        totalInvoicedByCurrency: invoicedByCurrency,
         pendingInvoices: parseInt(pendingInvoices.count) || 0,
         activeTenants: parseInt(activeTenants.count) || 0,
       });
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar estadísticas' }); }
   });
 
+  router.get('/super-admin/billing/invoices', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const status = String(req.query.status || '');
+      if (!['pending', 'paid'].includes(status)) {
+        return res.status(400).json({ error: 'Estado de factura no válido' });
+      }
+
+      const result = await query(
+        `SELECT i.id, i.invoice_number, i.amount, i.status, i.issue_date, i.due_date, i.payment_method,
+           t.id AS tenant_id, t.business_name, t.slug,
+           UPPER(COALESCE(payment.currency,
+             CASE WHEN i.payment_method = 'stripe' THEN 'USD' ELSE 'UYU' END)) AS currency
+         FROM invoices i
+         JOIN tenants t ON t.id = i.tenant_id
+         LEFT JOIN LATERAL (
+           SELECT currency FROM payments WHERE invoice_id = i.id ORDER BY created_at DESC LIMIT 1
+         ) payment ON true
+         WHERE i.status = $1
+         ORDER BY i.issue_date DESC, i.id DESC`,
+        [status]
+      );
+      res.json({ invoices: result.rows });
+    } catch (err: any) {
+      logger.error('Error al cargar facturas globales', { error: err.message });
+      res.status(500).json({ error: 'Error al cargar facturas' });
+    }
+  });
+
   router.get('/super-admin/plan-prices', authenticateSuperAdmin, async (req, res) => {
     try {
-      const prices = await query('SELECT plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, updated_at FROM plan_prices ORDER BY plan_name');
+      const prices = await query('SELECT plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, stripe_price_id, mp_item_id, updated_at FROM plan_prices ORDER BY plan_name');
       res.json({ prices: prices.rows });
     } catch (err: any) {
       logger.error(err);
@@ -342,7 +394,7 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
   router.put('/super-admin/plan-prices/:planName', authenticateSuperAdmin, async (req, res) => {
     try {
       const { planName } = req.params;
-      const { price, price_usd, currency, promo_price, promo_price_usd, promo_months } = req.body;
+      const { price, price_usd, currency, promo_price, promo_price_usd, promo_months, stripe_price_id, mp_item_id } = req.body;
 
       const validPlans = ['free', 'basico', 'estandar', 'premium', 'pro'];
       if (!validPlans.includes(planName)) {
@@ -359,13 +411,15 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
       }
 
       await query(
-        `INSERT INTO plan_prices (plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `INSERT INTO plan_prices (plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, stripe_price_id, mp_item_id, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
          ON CONFLICT (plan_name)
          DO UPDATE SET price = $2, price_usd = $3, currency = $4,
-           promo_price = $5, promo_price_usd = $6, promo_months = $7, updated_at = CURRENT_TIMESTAMP`,
+           promo_price = $5, promo_price_usd = $6, promo_months = $7,
+           stripe_price_id = COALESCE($8, plan_prices.stripe_price_id), mp_item_id = COALESCE($9, plan_prices.mp_item_id), updated_at = CURRENT_TIMESTAMP`,
         [planName, numericPrice, price_usd || null, currency || 'UYU',
-         promo_price || null, promo_price_usd || null, promo_months || 0]
+         promo_price || null, promo_price_usd || null, promo_months || 0,
+         stripe_price_id || null, mp_item_id || null]
       );
 
       logger.info(`Precio actualizado: ${planName} -> ${numericPrice} ${currency || 'UYU'}`);

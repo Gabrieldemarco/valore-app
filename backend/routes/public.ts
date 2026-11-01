@@ -537,7 +537,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       const existing = await query(
         `SELECT appointment_date, service_duration
          FROM appointments
-         WHERE staff_id = $1 AND appointment_date::date = $2 AND status != 'cancelled'`,
+         WHERE (staff_id = $1 OR staff_id IS NULL) AND appointment_date::date = $2 AND status != 'cancelled'`,
         [staffId, date]
       );
 

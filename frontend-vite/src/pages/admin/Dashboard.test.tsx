@@ -38,6 +38,18 @@ const mockInvoices = { invoices: [
   { id: 1, invoice_number: 'INV-001', amount: 990, status: 'paid', issue_date: '2026-05-01', payment_method: 'mercadopago', paid_date: '2026-05-01' },
   { id: 2, invoice_number: 'INV-002', amount: 990, status: 'pending', issue_date: '2026-06-01', payment_method: null, paid_date: null },
 ]};
+const mockBillingInvoices = {
+  pending: [{
+    id: 2, invoice_number: 'INV-002', amount: '990.00', status: 'pending',
+    issue_date: '2026-06-01', due_date: '2026-06-08', payment_method: null,
+    tenant_id: 1, business_name: 'Barbería Centro', slug: 'barberia-centro', currency: 'UYU',
+  }],
+  paid: [{
+    id: 1, invoice_number: 'INV-001', amount: '19.80', status: 'paid',
+    issue_date: '2026-05-01', due_date: null, payment_method: 'stripe',
+    tenant_id: 2, business_name: 'Salón Norte', slug: 'salon-norte', currency: 'USD',
+  }],
+};
 
 const mockPayments = { payments: [
   { id: 1, invoice_id: 1, amount: 990, currency: 'UYU', method: 'mercadopago', mp_payment_id: 'MP123', status: 'approved', created_at: '2026-05-01', invoice_number: 'INV-001', invoice_description: 'Plan Pro' },
@@ -47,6 +59,8 @@ function setupFetch() {
   mockFetch.mockImplementation((url: string | URL) => {
     const u = typeof url === 'string' ? url : url.toString();
     if (u.includes('/stats/billing')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) });
+    if (u.includes('/billing/invoices?status=pending')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ invoices: mockBillingInvoices.pending }) });
+    if (u.includes('/billing/invoices?status=paid')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ invoices: mockBillingInvoices.paid }) });
     if (u.includes('/api/super-admin/tenants') && u.match(/\/\d+$/)) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantDetail) });
     if (u.includes('/api/super-admin/tenants') && u.includes('/invoices')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockInvoices) });
     if (u.includes('/api/super-admin/tenants') && u.includes('/payments')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPayments) });
@@ -144,6 +158,34 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('Salón Norte')).toBeInTheDocument();
   });
 
+  it('filters the tenant list when the active-establishments card is clicked', async () => {
+    const user = userEvent.setup();
+    (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
+    setupFetch();
+    renderDashboard();
+
+    await user.click(await screen.findByRole('button', { name: /Activos/ }));
+
+    expect(screen.getByText('Barbería Centro')).toBeInTheDocument();
+    expect(screen.getByText('Salón Norte')).toBeInTheDocument();
+    expect(screen.queryByText('Estética Sur')).not.toBeInTheDocument();
+  });
+
+  it('shows pending and paid invoices when their KPI cards are clicked', async () => {
+    const user = userEvent.setup();
+    (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
+    setupFetch();
+    renderDashboard();
+
+    await user.click(await screen.findByRole('button', { name: /Facturas Pendientes/ }));
+    expect(await screen.findByText('INV-002')).toBeInTheDocument();
+    expect(screen.getByText('Barbería Centro')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Facturado Total/ }));
+    expect(await screen.findByText('INV-001')).toBeInTheDocument();
+    expect(screen.getAllByText(/USD/).length).toBeGreaterThan(1);
+  });
+
   it('opens tenant detail modal', async () => {
     const user = userEvent.setup();
     (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
@@ -156,6 +198,49 @@ describe('AdminDashboard', () => {
       const items = screen.getAllByText('Barbería Centro');
       expect(items.length).toBeGreaterThanOrEqual(2);
     }, { timeout: 3000 });
+  });
+
+  it('sends the super-admin token when loading tenant detail data', async () => {
+    const user = userEvent.setup();
+    const authHeaders: string[] = [];
+    localStorage.setItem('superAdminToken', 'admin-token');
+    (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
+    mockFetch.mockImplementation((url: string | URL, options?: RequestInit) => {
+      const requestUrl = new URL(url.toString(), window.location.origin);
+      const auth = new Headers(options?.headers as HeadersInit | undefined).get('Authorization') ?? '';
+      if (requestUrl.pathname.startsWith('/api/super-admin/tenants')) {
+        authHeaders.push(auth);
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ tenants: [mockTenants.tenants[0]], totalPages: 1 }) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants/1') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenantDetail) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants/1/invoices') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockInvoices) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants/1/payments') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPayments) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants/1/services') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ services: [] }) });
+      }
+      if (requestUrl.pathname.endsWith('/stats/billing')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/config') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ config: { twilio: { account_sid: 'ACxxx', auth_token: '', from: '' } } }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('Barbería Centro')).toBeInTheDocument());
+    await user.click(screen.getAllByText('Ver')[0]);
+    await waitFor(() => expect(screen.getAllByText('Barbería Centro').length).toBeGreaterThanOrEqual(2));
+
+    expect(authHeaders.filter(header => header === 'Bearer admin-token').length).toBeGreaterThanOrEqual(4);
   });
 
   it('closes modal via close button', async () => {

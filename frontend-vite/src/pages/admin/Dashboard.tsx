@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminDashboardProvider, useAdminDashboard } from './adminDashboardContext';
 import StatsCards from './StatsCards';
+import type { AdminOverviewFilter } from './StatsCards';
 import TenantList from './TenantList';
+import BillingInvoicesList from './BillingInvoicesList';
 import TenantModal from './TenantModal';
 import TwilioConfigPanel from './TwilioConfig';
 import PlanPricesPanel from './PlanPricesPanel';
+import type { AdminInvoice } from './types';
 import '../../styles/admin.css';
 
 function DashboardInner() {
@@ -23,6 +26,35 @@ function DashboardInner() {
   } = useAdminDashboard();
 
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
+  const [overviewFilter, setOverviewFilter] = useState<AdminOverviewFilter>('all');
+  const [billingInvoices, setBillingInvoices] = useState<AdminInvoice[]>([]);
+  const [billingInvoicesLoading, setBillingInvoicesLoading] = useState(false);
+
+  useEffect(() => {
+    if (overviewFilter !== 'pending' && overviewFilter !== 'paid') {
+      setBillingInvoices([]);
+      setBillingInvoicesLoading(false);
+      return;
+    }
+
+    let active = true;
+    setBillingInvoicesLoading(true);
+    api.get<{ invoices: AdminInvoice[] }>(
+      `/api/super-admin/billing/invoices?status=${overviewFilter}`,
+      'superAdmin',
+    ).then(result => {
+      if (active) setBillingInvoices(result.invoices);
+    }).catch((err: unknown) => {
+      if (active) {
+        setBillingInvoices([]);
+        showToast(err instanceof Error ? err.message : t('adminDashboard.toastLoadError'), 'error');
+      }
+    }).finally(() => {
+      if (active) setBillingInvoicesLoading(false);
+    });
+
+    return () => { active = false; };
+  }, [overviewFilter, showToast, t]);
 
   const handleSetTrial = async (id: number) => {
     if (!window.confirm(t('adminDashboard.confirmSetTrial'))) return;
@@ -67,22 +99,32 @@ function DashboardInner() {
       </header>
 
       <div className="container">
-        <StatsCards stats={stats} />
-        <TenantList
-          filtered={filtered}
-          onOpenModal={setSelectedTenantId}
-          onSetTrial={handleSetTrial}
-        />
-        <TwilioConfigPanel
-          config={twilioConfig}
-          setConfig={setTwilioConfig}
-          showToast={showToast}
-        />
-        <PlanPricesPanel
-          planPrices={planPrices}
-          setPlanPrices={setPlanPrices}
-          showToast={showToast}
-        />
+        <StatsCards stats={stats} selected={overviewFilter} onSelect={setOverviewFilter} />
+        {overviewFilter === 'pending' || overviewFilter === 'paid' ? (
+          <BillingInvoicesList
+            status={overviewFilter}
+            invoices={billingInvoices}
+            loading={billingInvoicesLoading}
+          />
+        ) : (
+          <>
+            <TenantList
+              filtered={overviewFilter === 'active' ? filtered.filter(tenant => tenant.status === 'active') : filtered}
+              onOpenModal={setSelectedTenantId}
+              onSetTrial={handleSetTrial}
+            />
+            <TwilioConfigPanel
+              config={twilioConfig}
+              setConfig={setTwilioConfig}
+              showToast={showToast}
+            />
+            <PlanPricesPanel
+              planPrices={planPrices}
+              setPlanPrices={setPlanPrices}
+              showToast={showToast}
+            />
+          </>
+        )}
       </div>
 
       <TenantModal

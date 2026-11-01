@@ -295,7 +295,7 @@ describe('SuperAdmin Routes', () => {
 
   describe('GET /api/super-admin/stats/billing', () => {
     it('retorna estadísticas', async () => {
-      queryOne.mockResolvedValueOnce({ total: '50000' });
+      query.mockResolvedValueOnce({ rows: [{ currency: 'USD', total: '50000' }] });
       queryOne.mockResolvedValueOnce({ count: '3' });
       queryOne.mockResolvedValueOnce({ count: '15' });
       const res = await request(app)
@@ -305,6 +305,35 @@ describe('SuperAdmin Routes', () => {
       expect(res.body.totalInvoiced).toBe(50000);
       expect(res.body.pendingInvoices).toBe(3);
       expect(res.body.activeTenants).toBe(15);
+      expect(res.body.totalInvoicedByCurrency).toEqual({ USD: 50000 });
+    });
+  });
+
+  describe('GET /api/super-admin/billing/invoices', () => {
+    it('filtra facturas por estado e incluye moneda y establecimiento', async () => {
+      query.mockResolvedValueOnce({ rows: [{
+        id: 8, invoice_number: 'INV-008', amount: '280.00', status: 'pending',
+        business_name: 'Beauty Skin', currency: 'UYU',
+      }] });
+      const res = await request(app)
+        .get('/api/super-admin/billing/invoices?status=pending')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.invoices).toEqual([expect.objectContaining({
+        invoice_number: 'INV-008',
+        business_name: 'Beauty Skin',
+        currency: 'UYU',
+      })]);
+      expect(query.mock.calls[0][0]).toContain("WHERE i.status = $1");
+      expect(query.mock.calls[0][1]).toEqual(['pending']);
+    });
+
+    it('rechaza estados que no puede filtrar', async () => {
+      const res = await request(app)
+        .get('/api/super-admin/billing/invoices?status=overdue')
+        .set(auth());
+      expect(res.status).toBe(400);
     });
   });
 

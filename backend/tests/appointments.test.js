@@ -55,6 +55,8 @@ function mockIdentifyTenant() {
 function mockPublicBooking() {
   mockIdentifyTenant();
   queryOne.mockResolvedValueOnce({ plan: 'estandar' });
+  // Sin fila materializada en este mock, checkPlanLimits usa el límite estático.
+  queryOne.mockResolvedValueOnce(null);
 }
 
 /** Mock checkTenantActive + checkTrialExpiration (used in staff routes) */

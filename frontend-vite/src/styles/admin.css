@@ -68,6 +68,24 @@
   box-shadow: var(--glass-shadow);
 }
 
+.admin-view .stat-card-button {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-view .stat-card-button.selected {
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 0 2px rgba(207, 168, 107, 0.22), var(--glass-shadow);
+}
+
+.admin-view .stat-card-button:focus-visible {
+  outline: 2px solid var(--primary-hover);
+  outline-offset: 3px;
+}
+
 .admin-view .stat-card:hover {
   border-color: var(--glass-border-hover);
   transform: translateY(-4px);
@@ -107,6 +125,10 @@
   font-weight: 800;
   color: var(--text-white);
   line-height: 1.2;
+}
+.admin-view .stat-value-currencies {
+  font-size: 19px;
+  overflow-wrap: anywhere;
 }
 .admin-view .stat-card.success .stat-value { color: var(--success-light); }
 .admin-view .stat-card.warning .stat-value { color: var(--warning-light); }

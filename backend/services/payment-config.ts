@@ -6,8 +6,8 @@ const MP_CURRENCY = /** @type {string} */(process.env.MP_CURRENCY || 'UYU').toUp
 const MP_LOCALE = /** @type {string} */(process.env.MP_LOCALE || 'es-UY');
 const MP_COUNTRY = /** @type {string} */(process.env.MP_COUNTRY || 'UY').toUpperCase();
 
-// Stripe (internacional) se factura en USD
-const STRIPE_CURRENCY = /** @type {string} */(process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+// Stripe siempre cobra en USD; los precios correspondientes se administran por separado.
+const STRIPE_CURRENCY = 'usd';
 
 const LEGACY_PLAN_MAP = { pro: 'estandar', enterprise: 'premium' };
 
@@ -24,6 +24,8 @@ const PLANS = {
     promo_months: 0,
     limits: { staff: 1, services: 5, products: 5, appointmentsPerDay: 10 },
     features: [],
+    stripe_price_id: null,
+    mp_item_id: null,
   },
   basico: {
     price: parseFloat(process.env.PLAN_BASICO_PRICE || '400'),
@@ -36,6 +38,8 @@ const PLANS = {
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: 1, services: 10, products: 10, appointmentsPerDay: null },
     features: ['appointments', 'basic_reminders', 'landing_basic', 'service_categories'],
+    stripe_price_id: process.env.STRIPE_PRICE_ID_BASICO || null,
+    mp_item_id: process.env.MP_ITEM_ID_BASICO || null,
   },
   estandar: {
     price: parseFloat(process.env.PLAN_ESTANDAR_PRICE || '760'),
@@ -48,6 +52,8 @@ const PLANS = {
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: 3, services: 30, products: 30, appointmentsPerDay: null },
     features: ['appointments', 'whatsapp_reminders', 'email_reminders', 'landing_custom_css', 'analytics_basic', 'pos_basic', 'calendar_sync', 'service_featured'],
+    stripe_price_id: process.env.STRIPE_PRICE_ID_ESTANDAR || null,
+    mp_item_id: process.env.MP_ITEM_ID_ESTANDAR || null,
   },
   premium: {
     price: parseFloat(process.env.PLAN_PREMIUM_PRICE || '1160'),
@@ -60,6 +66,8 @@ const PLANS = {
     promo_months: parseInt(process.env.PLAN_PROMO_MONTHS || '3', 10),
     limits: { staff: null, services: null, products: null, appointmentsPerDay: null },
     features: ['appointments', 'whatsapp_reminders', 'email_reminders', 'sms_reminders', 'landing_custom_css', 'landing_custom_html', 'analytics_advanced', 'pos_full', 'calendar_sync', 'service_featured', 'custom_domain', 'priority_support', 'google_analytics', 'waitlist', 'coupons', 'products', 'financial_reports'],
+    stripe_price_id: process.env.STRIPE_PRICE_ID_PREMIUM || null,
+    mp_item_id: process.env.MP_ITEM_ID_PREMIUM || null,
   },
 };
 
@@ -108,7 +116,7 @@ function getEffectivePlanPrice(planInfo, paidCycles = 0) {
 async function loadPlanPricesFromDB(query) {
   try {
     const result = await query(
-      'SELECT plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months FROM plan_prices ORDER BY plan_name'
+      'SELECT plan_name, price, price_usd, currency, promo_price, promo_price_usd, promo_months, stripe_price_id, mp_item_id FROM plan_prices ORDER BY plan_name'
     );
     const prices = result.rows;
 
@@ -126,6 +134,12 @@ async function loadPlanPricesFromDB(query) {
       }
       if (price.promo_months !== null && price.promo_months !== undefined) {
         plan.promo_months = parseInt(price.promo_months, 10) || 0;
+      }
+      if (price.stripe_price_id) {
+        plan.stripe_price_id = price.stripe_price_id;
+      }
+      if (price.mp_item_id) {
+        plan.mp_item_id = price.mp_item_id;
       }
     }
 

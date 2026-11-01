@@ -2,6 +2,7 @@
 // services/twilio.ts - Cliente Twilio para WhatsApp
 import logger from './logger';
 import { queryOne } from '../database';
+import { sendWhatsAppWeb, isWhatsappWebEnabled } from './whatsapp-web';
 
 let cachedTwilioConfig: { account_sid: string; auth_token: string; from: string } | null = null;
 let configCacheTime = 0;
@@ -42,6 +43,13 @@ function ensureWhatsAppPrefix(phone: string) {
 
 async function sendWhatsApp(to: string, body: string) {
   if (!to) return { success: true, skipped: 'No phone provided' };
+
+  // Opción A: WhatsApp Web con tu cuenta personal (QR una vez, invisible, sesión persistente).
+  // Si está enabled y la sesión está lista, envía por acá y no toca Twilio.
+  if (isWhatsappWebEnabled()) {
+    const web = await sendWhatsAppWeb(to, body);
+    if (web.success && web.id) return { success: true, sid: web.id, channel: 'whatsapp-web' };
+  }
 
   const twilioConfig = await loadTwilioConfig();
   const twilioSid = twilioConfig?.account_sid || process.env.TWILIO_ACCOUNT_SID;

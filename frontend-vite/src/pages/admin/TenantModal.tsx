@@ -28,10 +28,10 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
   useEffect(() => {
     if (tenantId === null) return;
-    api.get<{ tenant: TenantDetail }>(`/api/super-admin/tenants/${tenantId}`).then(r => setDetail(r.tenant)).catch(() => showToast(t('adminDashboard.toastLoadError'), 'error'));
-    api.get<{ invoices: Invoice[] }>(`/api/super-admin/tenants/${tenantId}/invoices`).then(r => setInvoices(r.invoices || [])).catch(() => setInvoices([]));
-    api.get<{ payments: Payment[] }>(`/api/super-admin/tenants/${tenantId}/payments`).then(r => setPayments(r.payments || [])).catch(() => setPayments([]));
-    api.get<{ services: Service[] }>(`/api/super-admin/tenants/${tenantId}/services`).then(r => setServices(r.services || [])).catch(() => setServices([]));
+    api.get<{ tenant: TenantDetail }>(`/api/super-admin/tenants/${tenantId}`, 'superAdmin').then(r => setDetail(r.tenant)).catch(() => showToast(t('adminDashboard.toastLoadError'), 'error'));
+    api.get<{ invoices: Invoice[] }>(`/api/super-admin/tenants/${tenantId}/invoices`, 'superAdmin').then(r => setInvoices(r.invoices || [])).catch(() => setInvoices([]));
+    api.get<{ payments: Payment[] }>(`/api/super-admin/tenants/${tenantId}/payments`, 'superAdmin').then(r => setPayments(r.payments || [])).catch(() => setPayments([]));
+    api.get<{ services: Service[] }>(`/api/super-admin/tenants/${tenantId}/services`, 'superAdmin').then(r => setServices(r.services || [])).catch(() => setServices([]));
   }, [tenantId, showToast, t]);
 
   if (tenantId === null) return null;
@@ -44,7 +44,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
       : t('adminDashboard.confirmReactivateExtend', { name: detail.business_name, days: extendDays });
     if (!window.confirm(msg)) return;
     try {
-      const res = await api.post<{ message: string }>(`/api/super-admin/tenants/${tenantId}/reactivate`, { mode: reactivateMode, days: extendDays });
+      const res = await api.post<{ message: string }>(`/api/super-admin/tenants/${tenantId}/reactivate`, { mode: reactivateMode, days: extendDays }, 'superAdmin');
       showToast(res.message, 'success');
       onClose();
       loadData();
@@ -57,7 +57,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
     if (!detail) return;
     if (!window.confirm(t('adminDashboard.confirmSuspend', { name: detail.business_name }))) return;
     try {
-      await api.put(`/api/super-admin/tenants/${tenantId}`, { status: 'suspended' });
+      await api.put(`/api/super-admin/tenants/${tenantId}`, { status: 'suspended' }, 'superAdmin');
       showToast(t('adminDashboard.toastAccountSuspended'), 'success');
       onClose();
       loadData();
@@ -72,7 +72,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
     const confirmStr = window.prompt(t('adminDashboard.confirmDeletePrompt'));
     if (confirmStr !== 'ELIMINAR') { showToast(t('adminDashboard.toastDeleted'), 'error'); return; }
     try {
-      await api.delete(`/api/super-admin/tenants/${tenantId}`);
+      await api.delete(`/api/super-admin/tenants/${tenantId}`, 'superAdmin');
       showToast(t('adminDashboard.toastDeletedPermanent'), 'success');
       onClose();
       loadData();
@@ -101,7 +101,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
   const handlePayInvoiceManual = async (invoiceId: number) => {
     try {
-      const res = await api.put<{ message: string }>(`/api/super-admin/invoices/${invoiceId}/pay`, { payment_method: 'manual' });
+      const res = await api.put<{ message: string }>(`/api/super-admin/invoices/${invoiceId}/pay`, { payment_method: 'manual' }, 'superAdmin');
       showToast(res.message, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('common.error'), 'error');
@@ -115,7 +115,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
         tenant_id: tenantId,
         amount: parseFloat(newInvoiceAmount),
         description: newInvoiceDesc,
-      });
+      }, 'superAdmin');
       showToast(t('adminDashboard.toastInvoiceCreated'), 'success');
       setNewInvoiceAmount('');
       setNewInvoiceDesc('');
@@ -130,7 +130,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
       if (!window.confirm(t('adminDashboard.confirmFeaturedSuspended'))) return;
     }
     try {
-      await api.put(`/api/super-admin/tenants/${tenantId}`, { is_featured: !detail.is_featured });
+      await api.put(`/api/super-admin/tenants/${tenantId}`, { is_featured: !detail.is_featured }, 'superAdmin');
       showToast(detail.is_featured ? t('adminDashboard.toastFeaturedRemoved') : t('adminDashboard.toastFeaturedAdded'), 'success');
       loadData();
     } catch (err: unknown) {
@@ -141,9 +141,9 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const handleUpdateDisplayOrder = async (type: 'tenant' | 'service', order: number, serviceId?: number) => {
     try {
       if (type === 'tenant') {
-        await api.put(`/api/super-admin/tenants/${tenantId}`, { display_order: order });
+        await api.put(`/api/super-admin/tenants/${tenantId}`, { display_order: order }, 'superAdmin');
       } else if (serviceId) {
-        await api.put(`/api/super-admin/services/${serviceId}`, { display_order: order });
+        await api.put(`/api/super-admin/services/${serviceId}`, { display_order: order }, 'superAdmin');
       }
       showToast(t('adminDashboard.toastOrderUpdated'), 'success');
       loadData();
@@ -164,7 +164,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const handleUpdateTenantFeaturedDates = async (field: 'featured_from' | 'featured_to', value: string) => {
     try {
       const isoValue = value ? new Date(value).toISOString() : null;
-      await api.put(`/api/super-admin/tenants/${tenantId}`, { [field]: isoValue });
+      await api.put(`/api/super-admin/tenants/${tenantId}`, { [field]: isoValue }, 'superAdmin');
       showToast(t('adminDashboard.toastOrderUpdated'), 'success');
       loadData();
     } catch (err: unknown) {
@@ -219,7 +219,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
           return;
         }
       }
-      await api.put(`/api/super-admin/services/${serviceId}`, { is_featured: !currentFeatured });
+      await api.put(`/api/super-admin/services/${serviceId}`, { is_featured: !currentFeatured }, 'superAdmin');
       showToast(currentFeatured ? t('adminDashboard.toastServiceFeaturedRemoved') : t('adminDashboard.toastServiceFeaturedAdded'), 'success');
       setServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_featured: !currentFeatured } : s));
       loadData();

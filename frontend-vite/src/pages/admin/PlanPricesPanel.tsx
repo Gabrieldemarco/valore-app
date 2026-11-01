@@ -57,6 +57,9 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
 
       <div className="config-panel">
         <h3 className="section-title">{t('adminDashboard.planPricesTitle')}</h3>
+        <p className="text-muted" style={{ marginBottom: '16px' }}>
+          {t('adminDashboard.stripeUsdPriceNote')}
+        </p>
 
         {planPrices.length === 0 && (
           <p className="text-muted" style={{ padding: '16px 0' }}>{t('adminDashboard.noPlanPrices')}</p>
@@ -135,16 +138,6 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
                 min="0"
                 value={plan.promo_months || 0}
                 onChange={e => handleUpdate({ ...plan, promo_months: parseInt(e.target.value) || 0 }, 'promo_months', String(parseInt(e.target.value) || 0))}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>{t('adminDashboard.stripePriceId')}</label>
-              <input
-                type="text"
-                value={plan.stripe_price_id || ''}
-                placeholder={t('adminDashboard.stripePriceIdPlaceholder')}
-                onChange={e => handleUpdate({ ...plan, stripe_price_id: e.target.value }, 'stripe_price_id', e.target.value)}
               />
             </div>
 

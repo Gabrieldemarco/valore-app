@@ -102,6 +102,21 @@ describe('PublicIndex', () => {
     expect(salonLink).toBeInTheDocument();
   });
 
+  it('ignores salons without a valid slug to avoid broken detail links', async () => {
+    renderPublicIndex({
+      tenants: [
+        { id: 1, business_name: 'Barbería Clásica', slug: 'barberia-clasica', business_address: 'Centro', landing_description: 'Cortes clásicos', brand_logo_url: null, landing_hero_image: null, services: [{ name: 'Corte' }, { name: 'Barba' }] },
+        { id: 2, business_name: 'Sin slug', slug: '', business_address: 'Montevideo', landing_description: 'No válido', brand_logo_url: null, landing_hero_image: null, services: [{ name: 'Corte' }] },
+      ],
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText('Barbería Clásica').length).toBeGreaterThanOrEqual(1);
+    });
+    expect(screen.queryByText('Sin slug')).not.toBeInTheDocument();
+    const invalidLink = screen.queryByRole('link', { name: /sin slug/i });
+    expect(invalidLink).not.toBeInTheDocument();
+  });
+
   it('keeps the hero clean and links to the treatment cards below', async () => {
     const { container } = renderPublicIndex(mockSalons);
     await waitFor(() => {

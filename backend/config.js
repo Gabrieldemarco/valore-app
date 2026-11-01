@@ -6,7 +6,11 @@ const warnings = [];
 
 if (nodeEnv === 'production') {
   // En producción exigimos también mail, MP y orígenes permitidos para CORS.
-  required.push('SMTP_USER', 'SMTP_PASS', 'MP_ACCESS_TOKEN', 'ALLOWED_ORIGINS');
+  required.push(
+    'SMTP_USER', 'SMTP_PASS',
+    'MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET',
+    'ALLOWED_ORIGINS', 'BASE_URL', 'FRONTEND_URL'
+  );
 } else {
   // En staging/desarrollo no rompemos el arranque, pero advertimos si faltan configuraciones importantes.
   if (!process.env.ALLOWED_ORIGINS) {
@@ -38,7 +42,14 @@ if (!allowedJwtAlgorithms.includes(jwtAlgorithm)) {
 }
 
 if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  if (nodeEnv === 'production') {
+    throw new Error('JWT_SECRET debe tener al menos 32 caracteres en producción.');
+  }
   warnings.push('JWT_SECRET es demasiado corto. Usa al menos 32 caracteres.');
+}
+
+if (nodeEnv === 'production' && process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('STRIPE_WEBHOOK_SECRET es obligatorio cuando STRIPE_SECRET_KEY está configurado.');
 }
 
 function normalizeRoute(route, fallback) {

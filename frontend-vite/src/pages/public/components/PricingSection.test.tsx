@@ -30,6 +30,7 @@ vi.mock('react-i18next', () => ({
         'publicIndex.pricingCurrencyLocal': 'UYU ($)',
         'publicIndex.pricingCurrencyUSD': 'USD ($)',
         'publicIndex.pricingCurrencySelector': 'Selector de moneda',
+        'publicIndex.pricingCurrencyNote': 'Stripe cobra en USD; Mercado Pago opera en UYU.',
         'publicIndex.pricingTrustNoContract': 'Sin permanencia ni contratos',
         'publicIndex.pricingTrustTrial': '15 días de prueba completa',
         'publicIndex.pricingTrustInstant': 'Activación en 2 minutos',
@@ -102,10 +103,10 @@ describe('PricingSection', () => {
     // Check popular badge
     expect(screen.getByText('Más Popular')).toBeInTheDocument();
 
-    // Check promo prices formatted
-    expect(screen.getByText('560')).toBeInTheDocument();
-    expect(screen.getByText('840')).toBeInTheDocument();
-    expect(screen.getByText('280')).toBeInTheDocument();
+    // The displayed default matches Stripe's USD billing currency.
+    expect(screen.getByText('14')).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
 
     // Check CTA links
     const ctaLinks = screen.getAllByRole('link', { name: /comenzar 15 días gratis/i });
@@ -115,7 +116,7 @@ describe('PricingSection', () => {
     expect(ctaLinks[2]).toHaveAttribute('href', '/staff/register?plan=premium');
   });
 
-  it('allows toggling between UYU and USD currency', async () => {
+  it('defaults to USD and allows viewing local UYU prices', async () => {
     const user = userEvent.setup();
     vi.mocked(api.get).mockResolvedValueOnce({
       prices: [
@@ -137,15 +138,12 @@ describe('PricingSection', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('560')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText('14')).toBeInTheDocument());
 
-    const usdBtn = screen.getByRole('button', { name: /usd/i });
-    await user.click(usdBtn);
+    const localBtn = screen.getByRole('button', { name: /uyu/i });
+    await user.click(localBtn);
 
-    // After clicking USD, promo USD price 14 should appear
-    expect(screen.getByText('14')).toBeInTheDocument();
+    expect(screen.getByText('560')).toBeInTheDocument();
   });
 
   it('renders fallback plans when API fails', async () => {
@@ -162,8 +160,8 @@ describe('PricingSection', () => {
       expect(screen.getByText('Premium')).toBeInTheDocument();
     });
 
-    // Fallback has 560 and 840 promo prices
-    expect(screen.getByText('560')).toBeInTheDocument();
-    expect(screen.getByText('840')).toBeInTheDocument();
+    // Fallback prices also default to the USD values used by Stripe.
+    expect(screen.getByText('14')).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
   });
 });

@@ -52,9 +52,12 @@ export default function SalonCard({ salon, defaultServices, showNewBadge = false
   const services = salon.services || defaultServices;
   const gender = getGenderCategory(salon);
   const hasPrice = salon.min_price != null && Number(salon.min_price) > 0;
+  const salonSlug = salon.slug?.trim();
+
+  if (!salonSlug) return null;
 
   return (
-    <Link to={`/p/${salon.slug}`} className="salon-link salon-link--compact">
+    <Link to={`/p/${encodeURIComponent(salonSlug)}`} className="salon-link salon-link--compact">
       <div className="salon-card salon-card--compact glass-panel">
         <div className="salon-image-wrapper">
           {imageUrl

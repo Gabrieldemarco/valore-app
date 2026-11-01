@@ -24,7 +24,7 @@ interface PlanPrice {
 export default function PricingSection() {
   const { t, i18n } = useTranslation();
   const [prices, setPrices] = useState<PlanPrice[]>([]);
-  const [currencyMode, setCurrencyMode] = useState<'local' | 'usd'>('local');
+  const [currencyMode, setCurrencyMode] = useState<'local' | 'usd'>('usd');
 
   useEffect(() => {
     api.get<{ prices: PlanPrice[] }>("/api/pricing")
@@ -150,6 +150,7 @@ export default function PricingSection() {
               </button>
             </div>
           )}
+          <p className="text-muted">{t("publicIndex.pricingCurrencyNote")}</p>
         </div>
 
         <div className={`pricing-grid ${plans.length === 2 ? 'pricing-grid--two' : ''}`}>

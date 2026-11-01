@@ -23,6 +23,11 @@ interface TenantsResponse {
   tenants?: Salon[];
 }
 
+function sanitizeTenantList(tenants?: Salon[]): Salon[] {
+  if (!Array.isArray(tenants)) return [];
+  return tenants.filter((tenant): tenant is Salon => !!tenant && !!tenant.slug && tenant.slug.trim().length > 0);
+}
+
 interface FeaturedService {
   id: number;
   name: string;
@@ -63,7 +68,7 @@ export default function PublicIndex() {
   useEffect(() => {
     api.get<TenantsResponse>('/api/tenants')
       .then(data => {
-        const salons = data.tenants || [];
+        const salons = sanitizeTenantList(data.tenants);
         setAllSalons(salons);
         setFiltered(salons);
         const profSet = new Set<string>();

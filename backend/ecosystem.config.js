@@ -2,34 +2,24 @@
 module.exports = {
   apps: [{
     name: 'velsoie-backend',
-    script: 'server.js',
+    cwd: __dirname,
+    // PM2 debe ejecutar Node con el CLI de tsx como script; no el binario ELF directamente.
+    script: 'node_modules/tsx/dist/cli.mjs',
+    args: 'server.ts',
+    interpreter: 'node',
     instances: 1,          // 1 para SQLite/PG sin pool issues; usar 'max' para cluster con PG pool
     exec_mode: 'fork',     // 'cluster' si usas múltiples instancias
     autorestart: true,
     max_restarts: 10,
     watch: false,
     max_memory_restart: '500M',
+    // server.ts carga backend/.env mediante dotenv. No declarar aquí secretos:
+    // cualquier valor definido en env puede sobrescribir el archivo .env.
     env: {
-      NODE_ENV: 'production',
-      PORT: 3000,
-      FORCE_HTTPS: 'true',
-      SENTRY_DSN: '',
-      TURNSTILE_SECRET_KEY: '',
-      TURNSTILE_SITE_KEY: '',
-      TWILIO_ACCOUNT_SID: '',
-      TWILIO_AUTH_TOKEN: '',
-      TWILIO_WHATSAPP_FROM: '',
-      METRICS_ENABLED: 'true',
-      METRICS_BASIC_AUTH_USER: 'admin',
-      METRICS_BASIC_AUTH_PASS: 'change_me_secure_password',
-      SWAGGER_UI_ENABLED: 'true',
-      SWAGGER_BASIC_AUTH_USER: 'admin',
-      SWAGGER_BASIC_AUTH_PASS: 'change_me_secure_password',
-      LOG_LEVEL: 'info'
+      NODE_ENV: 'production'
     },
     env_development: {
       NODE_ENV: 'development',
-      PORT: 3000
     },
     // Logs
     error_file: './logs/error.log',

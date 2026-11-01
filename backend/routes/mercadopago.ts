@@ -84,7 +84,11 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, webhookLimiter
       const fullInvoice = await queryOne('SELECT * FROM invoices WHERE id = $1', [invoiceId]);
       let upgraded = false;
       if (fullInvoice) {
-        upgraded = await activateTenantFromPaidInvoice(query, fullInvoice);
+        upgraded = await activateTenantFromPaidInvoice(query, fullInvoice, {
+          provider: 'mercadopago',
+          providerReference: String(paymentData.id),
+          currency: paymentData.currency_id || 'UYU',
+        });
       }
       await query(
         `UPDATE invoices SET status = 'paid', paid_date = NOW(), payment_method = 'mercadopago' WHERE id = $1`,

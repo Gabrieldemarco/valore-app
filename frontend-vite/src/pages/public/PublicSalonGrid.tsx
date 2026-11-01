@@ -41,9 +41,12 @@ function SalonCard({ salon, t, getGenderCategory }: { salon: Salon; t: (key: str
   const imageUrl = salon.brand_logo_url || salon.landing_hero_image;
   const services = salon.services || [t('publicIndex.defaultService1'), t('publicIndex.defaultService2'), t('publicIndex.defaultService3')];
   const gender = getGenderCategory(salon);
+  const salonSlug = salon.slug?.trim();
+
+  if (!salonSlug) return null;
 
   return (
-    <Link to={`/p/${salon.slug}`} className="salon-link salon-link--compact">
+    <Link to={`/p/${encodeURIComponent(salonSlug)}`} className="salon-link salon-link--compact">
       <div className="salon-card salon-card--compact glass-panel">
         <div className="salon-image-wrapper">
           {imageUrl

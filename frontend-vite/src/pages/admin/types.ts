@@ -62,8 +62,23 @@ export interface Service {
 
 export interface Stats {
   totalInvoiced: number;
+  totalInvoicedByCurrency?: Record<string, number>;
   activeTenants: number;
   pendingInvoices: number;
+}
+
+export interface AdminInvoice {
+  id: number;
+  invoice_number: string;
+  amount: number | string;
+  status: 'pending' | 'paid';
+  issue_date: string;
+  due_date: string | null;
+  payment_method: string | null;
+  tenant_id: number;
+  business_name: string;
+  slug: string;
+  currency: string;
 }
 
 export interface TwilioConfig {

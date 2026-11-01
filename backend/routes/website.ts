@@ -3,6 +3,7 @@ import { body, param, query as queryValidator } from 'express-validator';
 import { query, queryOne } from '../database';
 import { authenticate, authenticateStaff, validate } from '../middleware';
 import logger from '../services/logger';
+import { SiteConfigSchema } from '../src/schemas/website';
 
 const router = Router();
 
@@ -52,7 +53,6 @@ const saveWebsiteConfig = async (req: any, res: any) => {
     const tenantId = req.tenantId;
     const { config, status = 'draft' } = req.body;
     
-    const { SiteConfigSchema } = require('../schemas/website');
     const validation = SiteConfigSchema.safeParse(config);
     
     if (!validation.success) {
@@ -152,7 +152,6 @@ router.post('/tenant/website/preview', async (req: any, res) => {
       return res.status(400).json({ error: 'Configuración requerida' });
     }
     
-    const { SiteConfigSchema } = require('../schemas/website');
     const validation = SiteConfigSchema.safeParse(config);
     
     if (!validation.success) {

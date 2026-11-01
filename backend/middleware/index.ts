@@ -141,8 +141,23 @@ async function checkPlanLimits(tenantId, resource) {
     if (!planInfo) return false;
     const limits = planInfo.limits || {};
 
+    const permissionCodes = {
+      staff: 'staff_limit',
+      services: 'services_limit',
+      products: 'products_limit',
+    };
+
     if (resource === 'appointments') {
-      const limit = limits.appointmentsPerDay;
+      let permission: any = null;
+      try {
+        permission = await queryOne(
+          `SELECT enabled, limit_value FROM tenant_permissions
+           WHERE tenant_id = $1 AND feature_code = 'appointments_per_day_limit'`,
+          [tenantId]
+        );
+      } catch { /* migration pendiente: usar fallback estático */ }
+      const hasPermissionRow = permission && Object.prototype.hasOwnProperty.call(permission, 'enabled');
+      const limit = hasPermissionRow ? (permission.enabled ? permission.limit_value : 0) : limits.appointmentsPerDay;
       if (limit == null) return true;
       const count = await query(
         'SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND appointment_date::date = CURRENT_DATE',
@@ -153,7 +168,15 @@ async function checkPlanLimits(tenantId, resource) {
 
     const table = RESOURCE_TABLE[resource];
     if (!table) return true;
-    const limit = limits[resource];
+    let permission: any = null;
+    try {
+      permission = await queryOne(
+        'SELECT enabled, limit_value FROM tenant_permissions WHERE tenant_id = $1 AND feature_code = $2',
+        [tenantId, permissionCodes[resource]]
+      );
+    } catch { /* migration pendiente: usar fallback estático */ }
+    const hasPermissionRow = permission && Object.prototype.hasOwnProperty.call(permission, 'enabled');
+    const limit = hasPermissionRow ? (permission.enabled ? permission.limit_value : 0) : limits[resource];
     if (limit == null) return true;
 
     const count = await query(`SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = $1`, [tenantId]);
@@ -174,10 +197,23 @@ function requireFeature(...features) {
     if (!req.user?.tenant_id) {
       return res.status(401).json({ error: 'Autenticación requerida' });
     }
-    queryOne('SELECT plan FROM tenants WHERE id = $1', [req.user.tenant_id])
-      .then((tenant: any) => {
+    let permissionLookupFailed = false;
+    const permissionQuery = queryOne(
+      `SELECT feature_code FROM tenant_permissions
+       WHERE tenant_id = $1 AND enabled = true AND feature_code = ANY($2::text[])`,
+      [req.user.tenant_id, features]
+    ).catch(() => {
+      permissionLookupFailed = true;
+      return null;
+    });
+
+    Promise.all([
+      queryOne('SELECT plan FROM tenants WHERE id = $1', [req.user.tenant_id]),
+      permissionQuery,
+    ])
+      .then(([tenant, permission]: any[]) => {
         if (!tenant) return res.status(404).json({ error: 'Peluquería no encontrada' });
-        const hasAny = features.some(f => hasFeature(tenant.plan, f));
+        const hasAny = permission || (permissionLookupFailed && features.some(f => hasFeature(tenant.plan, f)));
         if (!hasAny) {
           return res.status(403).json({ error: `Funcionalidad "${features.join(' o ')}" no disponible en el plan actual` });
         }

@@ -331,7 +331,7 @@ export default function(apiLimiter) {
     }
   });
 
-  // GET public pricing info
+  // GET public pricing info with billing provider mapping
   router.get('/pricing', (req, res) => {
     try {
       const prices = ['basico', 'estandar', 'premium'].map(plan => {
@@ -347,6 +347,8 @@ export default function(apiLimiter) {
           promo_months: p.promo_months || 0,
           name: p.name,
           limits: p.limits,
+          stripe_price_id: p.stripe_price_id || null,
+          mp_item_id: p.mp_item_id || null,
         };
       });
 

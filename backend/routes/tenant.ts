@@ -9,7 +9,7 @@ import { query, queryOne, pool, getClient } from '../database';
 import logger from '../services/logger';
 import { AppError } from '../services/errors';
 import { getOrCreateSubscriptionInvoice, getPaidInvoiceCount, getEffectivePlanPrice } from '../services/billing';
-import { normalizePlan } from '../services/payment-config';
+import { normalizePlan, STRIPE_CURRENCY } from '../services/payment-config';
 import { sendClientConfirmation, notifyStaff, sendStaffCredentials } from '../services/notifications';
 import { validate,
   authenticateStaff,
@@ -181,6 +181,24 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     }
   });
 
+  // Public endpoint for pricing page - no authentication required
+  router.get('/tenant/plans', async (req, res) => {
+    try {
+      res.json({
+        plans: {
+          basico: { ...PLANS.basico, id: 'basico', plan_name: 'basico' },
+          estandar: { ...PLANS.estandar, id: 'estandar', plan_name: 'estandar' },
+          premium: { ...PLANS.premium, id: 'premium', plan_name: 'premium' },
+        },
+        currency: MP_CURRENCY,
+        currency_usd: STRIPE_CURRENCY,
+      });
+    } catch (err: any) {
+      logger.error('Error cargando planes publicos', { error: err.message });
+      res.status(500).json({ error: 'Error al cargar planes' });
+    }
+  });
+
   router.get('/appointments', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
     try {
       const { date, dateFrom, dateTo, status, clientPhone, staffId } = (req.query as any);
@@ -319,6 +337,24 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
         trialDaysLeft = Math.ceil((new Date(tenant.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       }
 
+      let persistedPermissions: any[] = [];
+      try {
+        const permissions = await query(
+          `SELECT feature_code, enabled, limit_value
+           FROM tenant_permissions WHERE tenant_id = $1 AND enabled = true`,
+          [req.user.tenant_id]
+        );
+        persistedPermissions = permissions.rows;
+      } catch { /* compatibilidad durante una migración */ }
+
+      const featureCodes = persistedPermissions.length > 0
+        ? persistedPermissions.filter(p => p.limit_value === null).map(p => p.feature_code)
+        : PLANS[normalizePlan(tenant.plan)]?.features || [];
+      const limits = persistedPermissions.reduce((acc, permission) => {
+        if (permission.limit_value !== null) acc[permission.feature_code] = permission.limit_value;
+        return acc;
+      }, {} as Record<string, number>);
+
       res.json({
         tenant: {
           plan: tenant.plan,
@@ -326,7 +362,8 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
           trial_end_date: tenant.trial_end_date,
           trialDaysLeft,
           last_payment_date: tenant.last_payment_date,
-          features: PLANS[normalizePlan(tenant.plan)]?.features || [],
+          features: featureCodes,
+          limits,
           plans: {
             basico: { ...PLANS.basico, id: 'basico' },
             estandar: { ...PLANS.estandar, id: 'estandar' },
@@ -398,6 +435,60 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     } catch (err: any) {
       logger.error('Error al suscribir plan', { error: err.message });
       res.status(500).json({ error: 'Error al iniciar el pago del plan' });
+    }
+  });
+
+  router.post('/tenant/cancel-subscription', authenticateStaff, async (req, res) => {
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      const tenant = await client.query(
+        `SELECT id, plan, status FROM tenants WHERE id = $1 FOR UPDATE`,
+        [req.user.tenant_id]
+      );
+      if (!tenant.rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Peluquería no encontrada' });
+      }
+      if (tenant.rows[0].plan === 'free') {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'La cuenta ya está en el plan gratuito' });
+      }
+
+      await client.query(
+        `UPDATE subscriptions
+         SET status = 'cancelled', ends_at = COALESCE(ends_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP
+         WHERE tenant_id = $1 AND status IN ('active', 'pending')`,
+        [req.user.tenant_id]
+      );
+      await client.query(
+        `UPDATE invoices
+         SET status = 'cancelled'
+         WHERE tenant_id = $1 AND status = 'pending' AND description LIKE 'subscription:%'`,
+        [req.user.tenant_id]
+      );
+      await client.query(
+        `UPDATE tenants
+         SET plan = 'free', status = 'active', subscription_status = 'cancelled', updated_at = NOW()
+         WHERE id = $1`,
+        [req.user.tenant_id]
+      );
+      await client.query('DELETE FROM tenant_permissions WHERE tenant_id = $1', [req.user.tenant_id]);
+      await client.query(
+        `INSERT INTO tenant_permissions (tenant_id, feature_code, enabled, limit_value)
+         SELECT $1, feature_code, enabled, limit_value
+         FROM plan_feature_permissions
+         WHERE plan_name = 'free'`,
+        [req.user.tenant_id]
+      );
+      await client.query('COMMIT');
+      res.json({ ok: true, plan: 'free', status: 'cancelled' });
+    } catch (err: any) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      logger.error('Error al cancelar suscripción', { error: err.message });
+      res.status(500).json({ error: 'No se pudo cancelar la suscripción' });
+    } finally {
+      client.release();
     }
   });
 

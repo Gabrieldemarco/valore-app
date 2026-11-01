@@ -8,7 +8,15 @@ async function check(path, expectedStatus = 200) {
   const full = `${url}${path}`;
   process.stdout.write(`Checking ${full} ... `);
   try {
-    const res = await fetch(full, { method: 'GET' });
+    const res = await fetch(full, {
+      method: 'GET',
+      headers: {
+        'x-forwarded-proto': 'https',
+        'x-forwarded-host': 'localhost',
+        'accept': 'application/json'
+      },
+      redirect: 'follow'
+    });
     if (res.status !== expectedStatus) {
       console.error(`FAIL (status ${res.status})`);
       return false;
