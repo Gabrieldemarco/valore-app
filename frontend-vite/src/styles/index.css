@@ -3181,8 +3181,8 @@
 }
 
 .salon-card--compact {
-  height: 142px;
-  min-height: 142px;
+  height: 195px;
+  min-height: 195px;
   flex-direction: row;
   border-radius: 18px;
 }
@@ -3192,10 +3192,10 @@
 }
 
 .salon-card--compact .salon-image-wrapper {
-  flex: 0 0 104px;
-  width: 104px;
+  flex: 0 0 125px;
+  width: 125px;
   height: auto;
-  min-height: 142px;
+  min-height: 195px;
 }
 
 .salon-card--compact .salon-image-fallback::after {
@@ -3303,14 +3303,14 @@
   }
 
   .salon-card--compact {
-    height: 136px;
-    min-height: 136px;
+    height: 178px;
+    min-height: 178px;
   }
 
   .salon-card--compact .salon-image-wrapper {
-    flex-basis: 92px;
-    width: 92px;
-    min-height: 136px;
+    flex-basis: 105px;
+    width: 105px;
+    min-height: 178px;
   }
 
   .salon-card--compact .salon-content {
@@ -3732,13 +3732,13 @@
   box-shadow: 0 14px 34px rgba(207, 168, 107, 0.1);
 }
 
-.salon-image-wrapper {
-  height: 148px;
-}
+  .salon-image-wrapper {
+    height: 158px;
+  }
 
 .salon-content {
-  padding: 14px 16px 13px;
-}
+    padding: 14px 16px 13px;
+  }
 
 .salon-name {
   display: -webkit-box;

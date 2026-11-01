@@ -27,6 +27,7 @@ export interface PlanInfo {
   last_payment_date?: string | null;
   price?: number;
   features?: string[];
+  limits?: Record<string, number | null>;
 }
 
 export interface Invoice {

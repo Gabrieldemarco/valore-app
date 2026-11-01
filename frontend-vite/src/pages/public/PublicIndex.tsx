@@ -16,6 +16,7 @@ import EmptyStateIcon from './components/EmptyStateIcon';
 import PricingSection from './components/PricingSection';
 import { SERVICE_CATEGORIES_DATA } from './components/ServiceCategoriesData';
 import { getGenderCategory, type Salon } from './SalonCard';
+import WelcomePopup from '../../components/WelcomePopup';
 import '../../styles/index.css';
 
 interface TenantsResponse {
@@ -228,6 +229,7 @@ export default function PublicIndex() {
 
       <PublicHeader />
 
+      <WelcomePopup />
       <PublicHero
         countryName={countryName}
       />

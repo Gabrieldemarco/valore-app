@@ -16,9 +16,9 @@ export function usePlanFeatures() {
 
   const checkLimit = (resource: string): { allowed: boolean; limit: number | null; current: number } => {
     const planLimits: Record<string, { limit: number | null }> = {
-      staff: { limit: getResourceLimit(currentPlan, 'staff') },
-      services: { limit: getResourceLimit(currentPlan, 'services') },
-      products: { limit: getResourceLimit(currentPlan, 'products') },
+      staff: { limit: plan?.limits?.staff_limit ?? getResourceLimit(currentPlan, 'staff') },
+      services: { limit: plan?.limits?.services_limit ?? getResourceLimit(currentPlan, 'services') },
+      products: { limit: plan?.limits?.products_limit ?? getResourceLimit(currentPlan, 'products') },
     };
 
     const resourceLimit = planLimits[resource]?.limit ?? null;

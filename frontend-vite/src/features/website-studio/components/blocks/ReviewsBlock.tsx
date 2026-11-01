@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ReviewsBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
 import { BlockWrapper, Section, Container, Heading, Text, Card, Grid } from './common';
 
@@ -13,6 +14,7 @@ export function ReviewsBlockRenderer({
   block: ReviewsBlock; 
   context: RenderContext; 
 }) {
+  const { t, i18n } = useTranslation();
   const { 
     title, 
     reviews = [], 
@@ -27,8 +29,8 @@ export function ReviewsBlockRenderer({
         <Section id="reviews" className="ws-reviews">
           <Container>
             <div className="text-center py-16">
-              <Heading level={2} className="mb-4">{title || 'Lo que dicen nuestros clientes'}</Heading>
-              <Text className="text-white/50">No hay reseñas para mostrar.</Text>
+              <Heading level={2} className="mb-4">{title || t('websiteStudio.reviewsHeading')}</Heading>
+              <Text className="text-white/50">{t('websiteStudio.reviewsEmpty')}</Text>
             </div>
           </Container>
         </Section>
@@ -58,7 +60,7 @@ export function ReviewsBlockRenderer({
           </div>
           <div>
             <div className="font-medium text-[var(--ws-primary)]">{review.author}</div>
-            <div className="text-white/50 text-sm">{review.service ? `${review.service} · ` : ''}{new Date(review.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}</div>
+            <div className="text-white/50 text-sm">{review.service ? `${review.service} · ` : ''}{new Date(review.date).toLocaleDateString(i18n.resolvedLanguage || i18n.language, { year: 'numeric', month: 'long' })}</div>
           </div>
         </div>
       </div>
@@ -102,7 +104,7 @@ export function ReviewsBlockRenderer({
                           ? 'bg-[var(--ws-primary)] w-8' 
                           : 'bg-white/30 hover:bg-white/50'
                       }`}
-                      aria-label={`Ir a reseña ${index + 1}`}
+                      aria-label={t('websiteStudio.reviewPagination', { index: index + 1 })}
                     />
                   ))}
                 </div>

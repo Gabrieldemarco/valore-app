@@ -32,7 +32,7 @@ export default function TreatmentCategories({ categories, activeCategory, onCate
               <span className="service-card-overlay" aria-hidden="true" />
               <span className="service-card-copy">
                 <strong>{cat.label}</strong>
-                <small>{activeCategory === cat.key ? t('publicIndex.activeFilter', 'Explorando') : t('publicIndex.exploreCategory', 'Ver salones')}</small>
+                <small>{activeCategory === cat.key ? t('publicIndex.activeFilter') : t('publicIndex.exploreCategory')}</small>
               </span>
             </button>
           ))}

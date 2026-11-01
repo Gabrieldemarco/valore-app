@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from '../../../i18n';
 import { SiteConfigSchema } from '../schemas/siteConfig';
 import type { SiteConfig, Block, HeroBlock, GalleryBlock, ServicesBlock, AboutBlock, TeamBlock, ContactBlock, CtaBlock, ReviewsBlock } from '../schemas/siteConfig';
 
@@ -69,6 +70,7 @@ export function generateThemeCSS(theme: SiteConfig['theme']): string {
    ============================================================ */
 
 export type BlockRenderer = (props: { block: Block; context: RenderContext }) => React.ReactNode;
+export type BlockAction = 'move-up' | 'move-down' | 'duplicate' | 'delete';
 
 export interface RenderContext {
   tenant: {
@@ -84,6 +86,7 @@ export interface RenderContext {
   };
   config: SiteConfig;
   isPreview: boolean;
+  onBlockAction?: (blockId: string, action: BlockAction) => void;
 }
 
 type BlockRendererMap = Record<string, BlockRenderer>;
@@ -105,14 +108,14 @@ export function renderBlock(block: Block, context: RenderContext): React.ReactNo
   if (!renderer) {
     console.warn(`No renderer registered for block type: ${block.type}`);
     return <div className="ws-block ws-block--missing" data-block-id={block.id}>
-      Block type "{block.type}" not implemented
+      {i18n.t('websiteStudio.blockTypeNotImplemented', { type: block.type })}
     </div>;
   }
   
   // Block renderers are React-style functions that receive one props object.
   // Passing the values as separate arguments leaves `block` undefined inside
   // the renderer and breaks previews for every template.
-  return renderer({ block, context });
+  return React.createElement(renderer, { block, context });
 }
 
 /* ============================================================
@@ -123,10 +126,11 @@ export interface TemplateEngineOptions {
   config: SiteConfig;
   tenant: RenderContext['tenant'];
   isPreview?: boolean;
+  onBlockAction?: RenderContext['onBlockAction'];
 }
 
-export function createTemplateEngine({ config, tenant, isPreview = false }: TemplateEngineOptions) {
-  const context: RenderContext = { tenant, config, isPreview: isPreview ?? false };
+export function createTemplateEngine({ config, tenant, isPreview = false, onBlockAction }: TemplateEngineOptions) {
+  const context: RenderContext = { tenant, config, isPreview: isPreview ?? false, onBlockAction };
   
   // Sort blocks by order
   const sortedBlocks = [...config.blocks].sort((a, b) => a.order - b.order);

@@ -80,6 +80,8 @@ export interface PlanPrice {
   promo_price: string | null;
   promo_price_usd: string | null;
   promo_months: number;
+  stripe_price_id: string | null;
+  mp_item_id: string | null;
   updated_at: string;
   name?: string;
 }

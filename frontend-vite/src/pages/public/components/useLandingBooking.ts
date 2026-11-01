@@ -28,7 +28,7 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
   const handleBook = async () => {
     setMsg(''); setErrMsg('');
     if (clientPhone.replace(/[^0-9]/g, '').length < 7) {
-      setErrMsg('El teléfono debe tener al menos 7 dígitos');
+      setErrMsg(t('landing.phoneDigitsError'));
       return;
     }
     const apptDate = selectedSlot?.datetime || selectedDate;
@@ -66,11 +66,11 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
   const handleJoinWaitlist = async () => {
     setWaitlistMsg(''); setWaitlistErr('');
     if (clientPhone.replace(/[^0-9]/g, '').length < 7) {
-      setWaitlistErr('El teléfono debe tener al menos 7 dígitos');
+      setWaitlistErr(t('landing.phoneDigitsError'));
       return;
     }
        if (!selectedService) {
-       setWaitlistErr('Seleccioná un servicio primero');
+       setWaitlistErr(t('landing.selectServiceFirst'));
        return;
      }
      try {

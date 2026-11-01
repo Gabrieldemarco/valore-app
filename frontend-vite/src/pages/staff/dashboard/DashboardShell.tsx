@@ -1,18 +1,18 @@
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useDashboard } from './dashboardContext';
-import SalonQR from '../../../components/SalonQR';
 import PushNotificationToggle from '../../../components/PushNotificationToggle';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useCallback, useState } from 'react';
 import { CalendarDays, Clock, CheckCheck, TrendingDown } from 'lucide-react';
-import { exportAppointmentsPdf } from '../../../utils/invoicePdf';
 import type { Tab } from './dashboardContext';
-import SettingsPanel from './SettingsPanel';
-import AppointmentDetailModal from './modals/AppointmentDetailModal';
-import ClientHistoryModal from './modals/ClientHistoryModal';
+
+const SalonQR = lazy(() => import('../../../components/SalonQR'));
+const SettingsPanel = lazy(() => import('./SettingsPanel'));
+const AppointmentDetailModal = lazy(() => import('./modals/AppointmentDetailModal'));
+const ClientHistoryModal = lazy(() => import('./modals/ClientHistoryModal'));
 
 interface Props {
   children: ReactNode;
@@ -78,6 +78,11 @@ export default function DashboardShell({ children }: Props) {
     URL.revokeObjectURL(url);
   }, [appointments, filterDate, t]);
 
+  const exportToPdf = useCallback(async () => {
+    const { exportAppointmentsPdf } = await import('../../../utils/invoicePdf');
+    exportAppointmentsPdf(appointments as unknown as Record<string, unknown>[], settings);
+  }, [appointments, settings]);
+
   const showStaffFilter = activeTab !== 'staff' && activeTab !== 'services' && activeTab !== 'clients' && staffList.length > 0;
 
   return (
@@ -102,7 +107,7 @@ export default function DashboardShell({ children }: Props) {
             </span>
           )}
           <Link to="/staff/landing-editor" className="dash-btn dash-btn-primary fs-14 px-18 py-8">{t('staffDashboard.landingPageLink')}</Link>
-          <Link to="/staff/website-studio" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">Web Studio</Link>
+          <Link to="/staff/website-studio" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">{t('websiteStudio.menuLabel')}</Link>
           {settings.slug && <a href={`/p/${settings.slug}`} target="_blank" rel="noopener noreferrer" className="dash-btn btn btn-secondary fs-14 no-underline px-18 py-8">{t('staffDashboard.viewLanding')}</a>}
           {settings.slug && <button onClick={() => setShowQR(true)} className="dash-btn btn btn-secondary fs-14 no-underline px-14 py-8">{t('staffDashboard.qrButton')}</button>}
           <button onClick={() => setShowSettings(p => !p)} className="dash-btn btn btn-secondary fs-15 px-16 py-8 font-500 rounded">{t('staffDashboard.settingsButton')}</button>
@@ -117,7 +122,7 @@ export default function DashboardShell({ children }: Props) {
         </div>
       )}
 
-      {showSettings && <SettingsPanel />}
+      {showSettings && <Suspense fallback={null}><SettingsPanel /></Suspense>}
 
       <div className="dash-container">
         <div className="dash-stats">
@@ -170,7 +175,7 @@ export default function DashboardShell({ children }: Props) {
             </button>
           ))}
           <button className="dash-tab" onClick={exportToCSV}>{t('staffDashboard.exportCSV')}</button>
-          <button className="dash-tab" onClick={() => exportAppointmentsPdf(appointments as unknown as Record<string, unknown>[], settings)}>{t('staffDashboard.exportPDF')}</button>
+          <button className="dash-tab" onClick={exportToPdf}>{t('staffDashboard.exportPDF')}</button>
         </div>
 
         {showStaffFilter && (
@@ -188,10 +193,12 @@ export default function DashboardShell({ children }: Props) {
         {children}
       </div>
 
-      <AppointmentDetailModal />
-      <ClientHistoryModal />
+      <Suspense fallback={null}>
+        <AppointmentDetailModal />
+        <ClientHistoryModal />
+        {showQR && settings.slug && <SalonQR slug={settings.slug} onClose={() => setShowQR(false)} />}
+      </Suspense>
 
-      {showQR && settings.slug && <SalonQR slug={settings.slug} onClose={() => setShowQR(false)} />}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GalleryBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
 import { BlockWrapper, Section, Container, Heading, Text, OptimizedImage, Badge } from './common';
 
@@ -13,6 +14,7 @@ export function GalleryBlockRenderer({
   block: GalleryBlock; 
   context: RenderContext; 
 }) {
+  const { t } = useTranslation();
   const { 
     title, 
     subtitle, 
@@ -55,7 +57,7 @@ export function GalleryBlockRenderer({
                     : 'bg-white/5 border border-white/10 hover:border-[var(--ws-primary)]/50'
                 }`}
               >
-                Todos
+                {t('websiteStudio.galleryAll')}
               </button>
               {categories.map(cat => (
                 <button
@@ -91,7 +93,7 @@ export function GalleryBlockRenderer({
               >
                 <OptimizedImage 
                   src={image.url} 
-                  alt={image.alt || 'Imagen de galería'} 
+                  alt={image.alt || t('websiteStudio.galleryImageAlt')}
                   fill
                   className="transition-all duration-500 group-hover:scale-105"
                 />
@@ -107,7 +109,7 @@ export function GalleryBlockRenderer({
 
           {filteredImages.length === 0 && (
             <div className="text-center py-16 text-white/50">
-              <p>No hay imágenes en esta categoría</p>
+              <p>{t('websiteStudio.galleryEmpty')}</p>
             </div>
           )}
         </Container>

@@ -13,7 +13,7 @@ describe('AppointmentCard', () => {
   it('renders appointment service and status', () => {
     render(<AppointmentCard appointment={baseAppointment} />);
     expect(screen.getByText('Corte')).toBeInTheDocument();
-    expect(screen.getByText('confirmed')).toBeInTheDocument();
+    expect(screen.getByText('Confirmado')).toBeInTheDocument();
   });
 
   it('renders price when showPrice is true', () => {

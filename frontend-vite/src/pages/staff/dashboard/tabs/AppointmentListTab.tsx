@@ -79,7 +79,7 @@ export default function AppointmentListTab() {
                   <div className="dash-appointment-time">{a.time}</div>
                   <div className="dash-appointment-date">{a.date}</div>
                 </div>
-                {getStatusBadge(a.status)}
+                {getStatusBadge(a.status, t)}
               </div>
               <div className="dash-appointment-body">
                 <div className="dash-info-group">

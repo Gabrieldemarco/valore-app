@@ -7,6 +7,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const PublicIndex = lazy(() => import('./pages/public/PublicIndex'));
+const WelcomePage = lazy(() => import('./pages/public/WelcomePage'));
 const Landing = lazy(() => import('./pages/public/Landing'));
 const AppointmentManage = lazy(() => import('./pages/public/AppointmentManage'));
 const Terms = lazy(() => import('./pages/public/Terms'));
@@ -53,12 +54,13 @@ function App() {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<PublicIndex />} />
+<Route path="/bienvenida" element={<WelcomePage />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/p/:slug" element={<Landing />} />
               <Route path="/p/:slug/manage/:token" element={<AppointmentManage />} />
               <Route path="/terms" element={<Terms />} />
                <Route path="/verify-email" element={<VerifyEmail />} />
-               <Route path="/p/:slug/website" element={<WebsiteStudio />} />
+              <Route path="/website/:slug" element={<WebsiteStudio />} />
               <Route path="/staff/login" element={<StaffLogin />} />
               <Route path="/staff/register" element={<StaffRegister />} />
               <Route path="/register" element={<Navigate to="/staff/register" replace />} />

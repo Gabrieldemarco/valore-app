@@ -12,8 +12,7 @@ export default function PublicFooter({ appointmentsCount }: PublicFooterProps) {
     <footer className="footer">
       <div className="footer-brand">
         <a href="/" className="footer-logo">
-          <span className="logo-monogram">V</span>
-          <span className="logo-text">Velsoie</span>
+          <img src="/Velsoie-logo.png" alt="Velsoie" className="logo-image footer-logo-image" />
         </a>
         <p className="footer-tagline">{t('publicIndex.footerTagline')}</p>
       </div>

@@ -29,8 +29,7 @@ export default function PublicHeader() {
     <header className="header">
       <div className="header-content">
         <a href="/" className="logo">
-          <span className="logo-monogram">V</span>
-          <span className="logo-text">Velsoie</span>
+          <img src="/velso.png" alt="Velsoie" className="logo-image" />
         </a>
         <button
           type="button"

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import crypto from 'crypto'
 
@@ -10,6 +10,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // La registración se maneja en src/main.tsx para mostrar el aviso de actualización
+      // y recargar una sola vez. Evita que el plugin inyecte un segundo registro.
+      injectRegister: false,
       srcDir: 'src',
       filename: 'sw.ts',
       strategies: 'injectManifest',
@@ -37,6 +40,11 @@ export default defineConfig({
         manualChunks(id: string) {
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) return 'vendor';
           if (id.includes('@fullcalendar')) return 'calendar';
+          if (id.includes('node_modules/recharts')) return 'charts';
+          if (id.includes('node_modules/jspdf')) return 'pdf';
+          if (id.includes('node_modules/jspdf-autotable')) return 'pdf';
+          if (id.includes('node_modules/html2canvas')) return 'image-export';
+          if (id.includes('node_modules/leaflet')) return 'maps';
         },
       },
     },

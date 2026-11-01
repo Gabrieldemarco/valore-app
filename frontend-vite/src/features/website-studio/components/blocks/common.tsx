@@ -1,6 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { JSX } from 'react';
-import type { Block, RenderContext } from '../../lib/templateEngine';
+import type { Block, BlockAction, RenderContext } from '../../lib/templateEngine';
 
 /* ============================================================
    Base Block Wrapper
@@ -21,6 +22,7 @@ export function BlockWrapper({
   isPreview = false,
   className = '',
 }: BlockWrapperProps) {
+  const { t } = useTranslation();
   const isEditing = isPreview && context.isPreview;
   
   return (
@@ -32,14 +34,22 @@ export function BlockWrapper({
         '--ws-block-radius': 'var(--ws-radius)',
       } as React.CSSProperties}
     >
-      {isEditing && (
+      {isEditing && context.onBlockAction && (
         <div className="ws-block-toolbar" data-block-id={block.id}>
-          <span className="ws-block-type">{block.type}</span>
+          <span className="ws-block-type">{t(`websiteStudio.blockTypes.${block.type}`)}</span>
           <div className="ws-block-actions">
-            <button className="ws-btn-icon" title="Mover" data-action="move">⋮⋮</button>
-            <button className="ws-btn-icon" title="Configurar" data-action="config">⚙</button>
-            <button className="ws-btn-icon" title="Duplicar" data-action="duplicate">⎘</button>
-            <button className="ws-btn-icon" title="Eliminar" data-action="delete">🗑</button>
+            {(['move-up', 'move-down', 'duplicate', 'delete'] as const).map(action => (
+              <button
+                key={action}
+                className="ws-btn-icon"
+                title={t(`websiteStudio.blockActions.${action}`)}
+                aria-label={t(`websiteStudio.blockActions.${action}`)}
+                data-action={action}
+                onClick={() => context.onBlockAction?.(block.id, action as BlockAction)}
+              >
+                {action === 'move-up' ? '↑' : action === 'move-down' ? '↓' : action === 'duplicate' ? '⎘' : '🗑'}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -87,7 +97,10 @@ export function Button({
     lg: 'px-8 py-4 text-lg',
   };
   
-  const anchorProps = href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {};
+  const isExternal = href ? /^https?:\/\//i.test(href) : false;
+  const anchorProps = href
+    ? { href, ...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {}) }
+    : {};
   const buttonProps = !href ? { disabled, type: props.type || 'button' } : {};
   
   return (
@@ -106,6 +119,13 @@ export function Button({
       {children}
     </Component>
   );
+}
+
+export function resolveWebsiteHref(href: string, tenantSlug: string): string {
+  if (href === '/book' || href === '/services' || /^\/services\/[^/]+$/.test(href)) {
+    return `/p/${tenantSlug}#reservar`;
+  }
+  return href;
 }
 
 export function Container({ children, className = '', fluid = false, style }: { 

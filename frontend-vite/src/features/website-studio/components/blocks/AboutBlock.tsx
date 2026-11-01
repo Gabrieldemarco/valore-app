@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { AboutBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
 import { BlockWrapper, Section, Container, Heading, Text } from './common';
 
@@ -12,6 +13,7 @@ export function AboutBlockRenderer({
   block: AboutBlock; 
   context: RenderContext; 
 }) {
+  const { t } = useTranslation();
   const { 
     title, 
     content, 
@@ -48,7 +50,7 @@ export function AboutBlockRenderer({
                 <div className="aspect-[4/5] lg:aspect-[3/4] overflow-hidden rounded-[var(--ws-radius-lg)] bg-white/5">
                   <img 
                     src={image} 
-                    alt={title || 'Imagen sobre nosotros'} 
+                    alt={title || t('websiteStudio.aboutImageAlt')}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />

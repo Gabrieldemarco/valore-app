@@ -48,7 +48,7 @@ export default function ClientLogin() {
           <div className="form-group">
             <label>{t('clientLogin.passwordLabel')}</label>
             <input type="password" className="glass-input" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('clientLogin.passwordPlaceholder')} />
-            <div className="mt-6 fs-13"><Link to="/client/forgot-password" className="text-secondary no-underline">{t('clientLogin.forgotPassword') || '¿Olvidaste tu contraseña?'}</Link></div>
+            <div className="mt-6 fs-13"><Link to="/client/forgot-password" className="text-secondary no-underline">{t('clientLogin.forgotPassword')}</Link></div>
           </div>
 
           <button type="submit" className="btn btn-primary w-full p-14 mt-10 fs-15" disabled={loading}>

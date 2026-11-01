@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
@@ -18,15 +18,31 @@ type CouponRow = {
 export default function CouponsTab() {
   const { t } = useTranslation();
   const { couponsList } = useDashboard();
-  const { deleteCoupon } = useDashboardCRUD();
+  const { deleteCoupon, loadCoupons } = useDashboardCRUD();
   const coupons = couponsList as CouponRow[];
   const [modal, setModal] = useState<{ open: boolean; editing: CouponRow | null }>({ open: false, editing: null });
+  const [loading, setLoading] = useState(true);
+  const refreshCoupons = useCallback(async () => {
+    setLoading(true);
+    try {
+      await loadCoupons();
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCoupons]);
+
+  useEffect(() => {
+    void loadCoupons().finally(() => setLoading(false));
+  }, [loadCoupons]);
 
   return (
     <div className="glass-panel mt-24 p-24">
       <div className="flex-between mb-20">
         <h3 className="text-gradient m-0">{t('staffDashboard.couponsTitle')}</h3>
-        <button className="dash-btn dash-btn-primary" onClick={() => setModal({ open: true, editing: null })}>{t('staffDashboard.couponsNewButton')}</button>
+        <div className="flex gap-8">
+          <button className="dash-btn dash-btn-secondary" onClick={refreshCoupons} disabled={loading}>{loading ? t('staffDashboard.couponsLoading') : t('staffDashboard.couponsRefresh')}</button>
+          <button className="dash-btn dash-btn-primary" onClick={() => setModal({ open: true, editing: null })}>{t('staffDashboard.couponsNewButton')}</button>
+        </div>
       </div>
       {couponsList.length === 0 ? (
         <div className="dash-empty-state glass-panel">

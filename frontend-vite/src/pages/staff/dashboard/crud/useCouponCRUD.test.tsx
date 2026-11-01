@@ -102,4 +102,14 @@ describe('useCouponCRUD', () => {
       expect(mockAddToast).toHaveBeenCalledWith('Coupon error', 'error');
     });
   });
+
+  test('surfaces the API error when coupons cannot be loaded', async () => {
+    const user = userEvent.setup();
+    (api.get as Mock).mockRejectedValue(new Error('Coupons table is unavailable'));
+    render(<Harness />);
+    await user.click(screen.getByText('load'));
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('Coupons table is unavailable', 'error');
+    });
+  });
 });

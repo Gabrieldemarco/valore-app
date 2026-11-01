@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ContactBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
 import { BlockWrapper, Section, Container, Heading, Text, Button, Grid } from './common';
 
@@ -13,6 +14,7 @@ export function ContactBlockRenderer({
   block: ContactBlock; 
   context: RenderContext; 
 }) {
+  const { t } = useTranslation();
   const { 
     title, 
     subtitle, 
@@ -30,13 +32,24 @@ export function ContactBlockRenderer({
     phone: '',
     message: '',
   });
+  const [formMessage, setFormMessage] = React.useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, send to API
-    console.log('Contact form submitted:', formData);
-    alert('¡Gracias por tu mensaje! Te responderemos pronto.');
-    setFormData({ name: '', email: '', phone: '', message: '' });
+    const recipient = email || context.tenant.email;
+    if (!recipient) {
+      setFormMessage(t('websiteStudio.contactEmailMissing'));
+      return;
+    }
+    const subject = t('websiteStudio.contactSubject', { name: formData.name });
+    const body = [
+      `${t('websiteStudio.contactEmail')}: ${formData.email}`,
+      `${t('websiteStudio.contactPhone')}: ${formData.phone || '-'}`,
+      '',
+      formData.message,
+    ].join('\n');
+    window.location.href = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setFormMessage(t('websiteStudio.contactEmailOpened'));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -66,7 +79,7 @@ export function ContactBlockRenderer({
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">Dirección</h4>
+                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">{t('websiteStudio.contactAddress')}</h4>
                     <p className="text-white/60">{address}</p>
                   </div>
                 </div>
@@ -80,7 +93,7 @@ export function ContactBlockRenderer({
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">Teléfono</h4>
+                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">{t('websiteStudio.contactPhone')}</h4>
                     <a href={`tel:${phone}`} className="text-white/60 hover:text-[var(--ws-primary)] transition-colors">{phone}</a>
                   </div>
                 </div>
@@ -94,7 +107,7 @@ export function ContactBlockRenderer({
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">Email</h4>
+                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">{t('websiteStudio.contactEmail')}</h4>
                     <a href={`mailto:${email}`} className="text-white/60 hover:text-[var(--ws-primary)] transition-colors">{email}</a>
                   </div>
                 </div>
@@ -108,7 +121,7 @@ export function ContactBlockRenderer({
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">WhatsApp</h4>
+                    <h4 className="font-heading text-lg font-medium text-[var(--ws-primary)] mb-1">{t('websiteStudio.contactWhatsapp')}</h4>
                     <a href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-green-500 transition-colors">{whatsapp}</a>
                   </div>
                 </div>
@@ -133,11 +146,11 @@ export function ContactBlockRenderer({
 
             {/* Contact Form */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-[var(--ws-radius-lg)] p-8">
-              <Heading level={3} className="mb-6" align="left">Envíanos un mensaje</Heading>
+              <Heading level={3} className="mb-6" align="left">{t('websiteStudio.contactHeading')}</Heading>
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">Nombre *</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">{t('websiteStudio.contactName')} *</label>
                     <input
                       type="text"
                       id="name"
@@ -146,11 +159,11 @@ export function ContactBlockRenderer({
                       value={formData.name}
                       onChange={handleChange}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[var(--ws-radius)] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[var(--ws-primary)] focus:border-transparent transition-all"
-                      placeholder="Tu nombre"
+                      placeholder={t('websiteStudio.contactNamePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">Email *</label>
+                    <label htmlFor="email" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">{t('websiteStudio.contactEmail')} *</label>
                     <input
                       type="email"
                       id="email"
@@ -159,12 +172,12 @@ export function ContactBlockRenderer({
                       value={formData.email}
                       onChange={handleChange}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[var(--ws-radius)] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[var(--ws-primary)] focus:border-transparent transition-all"
-                      placeholder="tu@email.com"
+                      placeholder={t('websiteStudio.contactEmailPlaceholder')}
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">Teléfono</label>
+                  <label htmlFor="phone" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">{t('websiteStudio.contactPhone')}</label>
                   <input
                     type="tel"
                     id="phone"
@@ -172,11 +185,11 @@ export function ContactBlockRenderer({
                     value={formData.phone}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[var(--ws-radius)] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[var(--ws-primary)] focus:border-transparent transition-all"
-                    placeholder="+598 99 000 000"
+                    placeholder={t('websiteStudio.contactPhonePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">Mensaje *</label>
+                  <label htmlFor="message" className="block text-sm font-medium text-[var(--ws-primary)] mb-2">{t('websiteStudio.contactMessage')} *</label>
                   <textarea
                     id="message"
                     name="message"
@@ -185,12 +198,13 @@ export function ContactBlockRenderer({
                     value={formData.message}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-[var(--ws-radius)] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[var(--ws-primary)] focus:border-transparent transition-all resize-none"
-                    placeholder="Cuéntanos qué necesitas..."
+                    placeholder={t('websiteStudio.contactMessagePlaceholder')}
                   />
                 </div>
                 <Button type="submit" size="lg" className="w-full sm:w-auto">
-                  Enviar mensaje
+                  {t('websiteStudio.sendMessage')}
                 </Button>
+                {formMessage && <p role="status" className="text-sm text-white/70">{formMessage}</p>}
               </form>
             </div>
           </Grid>

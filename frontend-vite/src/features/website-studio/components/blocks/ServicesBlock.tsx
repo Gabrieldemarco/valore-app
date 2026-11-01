@@ -1,6 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ServicesBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
-import { BlockWrapper, Section, Container, Heading, Text, Grid, Card, Button } from './common';
+import { BlockWrapper, Section, Container, Heading, Text, Grid, Card, Button, resolveWebsiteHref } from './common';
 
 /* ============================================================
    Services Block
@@ -13,6 +14,7 @@ export function ServicesBlockRenderer({
   block: ServicesBlock; 
   context: RenderContext; 
 }) {
+  const { t } = useTranslation();
   const { 
     title, 
     subtitle, 
@@ -35,9 +37,9 @@ export function ServicesBlockRenderer({
         <Section id="services" className="ws-services">
           <Container>
             <div className="text-center py-16">
-              <Heading level={2} className="mb-4">{title || 'Servicios'}</Heading>
+              <Heading level={2} className="mb-4">{title || t('websiteStudio.servicesHeading')}</Heading>
               {subtitle && <Text size="lg" className="mb-8 max-w-2xl mx-auto">{subtitle}</Text>}
-              <Text className="text-white/50">No hay servicios configurados para mostrar.</Text>
+              <Text className="text-white/50">{t('websiteStudio.servicesEmpty')}</Text>
             </div>
           </Container>
         </Section>
@@ -46,7 +48,7 @@ export function ServicesBlockRenderer({
   }
 
   const renderServiceCard = (service: { id: number; name: string; price: number; duration: number; image?: string }) => (
-      <Card hover href={`/services/${service.id}`} className="h-full flex flex-col">
+      <Card hover href={resolveWebsiteHref(`/services/${service.id}`, context.tenant.slug)} className="h-full flex flex-col">
         {service.image && (
           <div className="aspect-video overflow-hidden rounded-t-[var(--ws-radius)]">
             <img 
@@ -59,7 +61,7 @@ export function ServicesBlockRenderer({
         )}
         <div className="p-6 flex flex-col flex-1">
           <h3 className="font-heading text-xl font-medium text-[var(--ws-primary)] mb-2">{service.name}</h3>
-          <p className="text-white/60 text-sm mb-4 flex-1">Duración: {service.duration} min</p>
+          <p className="text-white/60 text-sm mb-4 flex-1">{t('websiteStudio.serviceDuration', { duration: service.duration })}</p>
           <div className="flex items-center justify-between pt-4 border-t border-white/10">
             {showPrices && (
               <span className="font-heading text-xl font-bold text-[var(--ws-secondary)]">
@@ -67,7 +69,7 @@ export function ServicesBlockRenderer({
               </span>
             )}
             {showDuration && (
-              <span className="text-white/50 text-sm">{service.duration} min</span>
+              <span className="text-white/50 text-sm">{t('websiteStudio.durationMinutes', { duration: service.duration })}</span>
             )}
           </div>
         </div>
@@ -78,7 +80,7 @@ export function ServicesBlockRenderer({
     <div className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[var(--ws-radius)] transition-all hover:border-[var(--ws-primary)]/50">
       <div className="flex-1">
         <h3 className="font-heading text-lg font-medium text-[var(--ws-primary)]">{service.name}</h3>
-        <p className="text-white/60 text-sm">Duración: {service.duration} min</p>
+        <p className="text-white/60 text-sm">{t('websiteStudio.serviceDuration', { duration: service.duration })}</p>
       </div>
       <div className="flex items-center gap-4 ml-6">
         {showPrices && (
@@ -87,9 +89,9 @@ export function ServicesBlockRenderer({
           </span>
         )}
         {showDuration && (
-          <span className="text-white/50 text-sm">{service.duration} min</span>
+          <span className="text-white/50 text-sm">{t('websiteStudio.durationMinutes', { duration: service.duration })}</span>
         )}
-        <Button variant="outline" size="sm" href={`/services/${service.id}`}>Ver</Button>
+        <Button variant="outline" size="sm" href={resolveWebsiteHref(`/services/${service.id}`, context.tenant.slug)}>{t('websiteStudio.view')}</Button>
       </div>
     </div>
   );
@@ -110,7 +112,7 @@ export function ServicesBlockRenderer({
         >
           <div>
             <h3 className="font-heading text-lg font-medium text-[var(--ws-primary)]">{service.name}</h3>
-            <p className="text-white/60 text-sm mt-1">Duración: {service.duration} min</p>
+            <p className="text-white/60 text-sm mt-1">{t('websiteStudio.serviceDuration', { duration: service.duration })}</p>
           </div>
           <span className={`font-heading text-xl font-bold text-[var(--ws-secondary)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
             ${service.price.toLocaleString()}
@@ -118,7 +120,7 @@ export function ServicesBlockRenderer({
         </button>
         <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="px-6 pb-6 border-t border-white/10">
-            <Button variant="primary" href={`/services/${service.id}`} className="w-full sm:w-auto">Reservar este servicio</Button>
+            <Button variant="primary" href={resolveWebsiteHref(`/services/${service.id}`, context.tenant.slug)} className="w-full sm:w-auto">{t('websiteStudio.bookThisService')}</Button>
           </div>
         </div>
       </div>
@@ -158,7 +160,7 @@ export function ServicesBlockRenderer({
 
           {ctaText && ctaLink && (
             <div className="text-center mt-10">
-              <Button size="lg" href={ctaLink}>{ctaText}</Button>
+              <Button size="lg" href={resolveWebsiteHref(ctaLink, context.tenant.slug)}>{ctaText}</Button>
             </div>
           )}
         </Container>

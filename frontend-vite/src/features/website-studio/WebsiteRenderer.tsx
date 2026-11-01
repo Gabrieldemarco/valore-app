@@ -1,6 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
-import type { SiteConfig, Block } from './lib/templateEngine';
+import type { SiteConfig, Block, BlockAction } from './lib/templateEngine';
 import { normalizeSiteConfig } from './schemas/siteConfig';
 import {
   createTemplateEngine,
@@ -45,6 +46,7 @@ interface WebsiteRendererProps {
   };
   isPreview?: boolean;
   className?: string;
+  onBlockAction?: (blockId: string, action: BlockAction) => void;
 }
 
 export const WebsiteRenderer = React.memo(function WebsiteRenderer({ 
@@ -52,24 +54,26 @@ export const WebsiteRenderer = React.memo(function WebsiteRenderer({
   tenant, 
   isPreview = false,
   className = '',
+  onBlockAction,
 }: WebsiteRendererProps) {
+  const { t } = useTranslation();
   const safeConfig = React.useMemo(() => normalizeSiteConfig(config, tenant.id), [config, tenant.id]);
-  const engine = React.useMemo(() => 
-    createTemplateEngine({ config: safeConfig, tenant, isPreview }), 
-    [safeConfig, tenant, isPreview]
+  const engine = React.useMemo(() =>
+    createTemplateEngine({ config: safeConfig, tenant, isPreview, onBlockAction }),
+    [safeConfig, tenant, isPreview, onBlockAction]
   );
 
-  const renderedBlocks = React.useMemo(() => 
+  const renderedBlocks = React.useMemo(() =>
     engine.sortedBlocks.map((block: Block) => (
       <div key={block.id} className="ws-block-wrapper" data-block-type={block.type} data-block-id={block.id}>
         {renderBlock(block, engine.context)}
       </div>
-    )), 
+    )),
     [engine]
   );
 
   const seoTitle = safeConfig.seo?.title || tenant.businessName;
-  const seoDescription = safeConfig.seo?.description || `Bienvenido a ${tenant.businessName}. Reserva tu cita online.`;
+  const seoDescription = safeConfig.seo?.description || t('websiteStudio.defaultSeoDescription', { name: tenant.businessName });
   const ogImage = safeConfig.seo?.ogImage || tenant.logo;
   const favicon = safeConfig.seo?.favicon || '/favicon.svg';
   const themeCSS = engine.themeCSS;
@@ -110,14 +114,14 @@ export const WebsiteRenderer = React.memo(function WebsiteRenderer({
 
         {!isPreview && (
           <a 
-            href="/book" 
+            href={`/p/${tenant.slug}#reservar`}
             className="ws-float-booking"
-            aria-label="Reservar cita"
+            aria-label={t('websiteStudio.reserveAppointment')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="hidden sm:inline">Reservar</span>
+            <span className="hidden sm:inline">{t('websiteStudio.reserve')}</span>
           </a>
         )}
       </div>
@@ -148,17 +152,18 @@ export const PreviewWrapper = React.memo(function PreviewWrapper({
   onSave, 
   onPublish,
 }: PreviewWrapperProps) {
+  const { t } = useTranslation();
   return (
     <div className="ws-preview-wrapper">
       <div className="ws-preview-toolbar">
         <div className="ws-preview-info">
-          <span className="ws-preview-badge">Vista previa</span>
-          <span className="ws-template-name">Plantilla: {config.template}</span>
+          <span className="ws-preview-badge">{t('websiteStudio.preview')}</span>
+          <span className="ws-template-name">{t('websiteStudio.templateLabel', { template: t(`websiteStudio.templates.${config.template}`) })}</span>
         </div>
         <div className="ws-preview-actions">
-          <button onClick={onClose} className="ws-btn ws-btn--ghost">Cerrar</button>
-          <button onClick={() => onSave(config)} className="ws-btn ws-btn--secondary">Guardar borrador</button>
-          <button onClick={() => onPublish({ ...config, status: 'published', publishedAt: new Date().toISOString() })} className="ws-btn ws-btn--primary">Publicar</button>
+          <button onClick={onClose} className="ws-btn ws-btn--ghost">{t('websiteStudio.close')}</button>
+          <button onClick={() => onSave(config)} className="ws-btn ws-btn--secondary">{t('websiteStudio.saveDraft')}</button>
+          <button onClick={() => onPublish({ ...config, status: 'published', publishedAt: new Date().toISOString() })} className="ws-btn ws-btn--primary">{t('websiteStudio.publish')}</button>
         </div>
       </div>
       <div className="ws-preview-content">

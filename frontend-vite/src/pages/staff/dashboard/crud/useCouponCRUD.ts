@@ -12,7 +12,11 @@ export function useCouponCRUD() {
     try {
       const data = await api.get<{ coupons: Record<string, unknown>[] }>('/api/tenant/coupons');
       setCouponsList(data.coupons || []);
-    } catch { addToast(t('staffDashboard.toastLoadCouponsError'), 'error'); }
+      return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : t('staffDashboard.toastLoadCouponsError'), 'error');
+      return false;
+    }
   }, [addToast, t, setCouponsList]);
 
   const saveCoupon = useCallback(async (

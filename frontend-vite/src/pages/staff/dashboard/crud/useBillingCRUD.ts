@@ -31,5 +31,13 @@ export function useBillingCRUD() {
     } catch { addToast(t('staffDashboard.toastPayError'), 'error'); }
   }, [addToast, t]);
 
-  return { subscribeToPlan, handlePayInvoice };
+  const cancelSubscription = useCallback(async () => {
+    try {
+      await api.post('/api/tenant/cancel-subscription', {});
+      addToast(t('staffDashboard.toastCancelSubscriptionSuccess'), 'success');
+      window.location.reload();
+    } catch { addToast(t('staffDashboard.toastCancelSubscriptionError'), 'error'); }
+  }, [addToast, t]);
+
+  return { subscribeToPlan, handlePayInvoice, cancelSubscription };
 }

@@ -20,7 +20,7 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [activeTab, setActiveTab] = useState<ModalTab>('info');
-  const [reactivateMode, setReactivateMode] = useState<'extend_trial' | 'upgrade_pro'>('extend_trial');
+  const [reactivateMode, setReactivateMode] = useState<'extend_trial' | 'upgrade_estandar' | 'upgrade_premium'>('extend_trial');
   const [extendDays, setExtendDays] = useState(15);
   const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
   const [newInvoiceDesc, setNewInvoiceDesc] = useState('');
@@ -38,7 +38,8 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
 
   const handleReactivate = async () => {
     if (!detail) return;
-    const msg = reactivateMode === 'upgrade_pro'
+    const isUpgrade = reactivateMode === 'upgrade_estandar' || reactivateMode === 'upgrade_premium';
+    const msg = isUpgrade
       ? t('adminDashboard.confirmReactivateUpgrade', { name: detail.business_name })
       : t('adminDashboard.confirmReactivateExtend', { name: detail.business_name, days: extendDays });
     if (!window.confirm(msg)) return;
@@ -345,11 +346,18 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
                       <span>{t('adminDashboard.reactivateExtendTrialDesc')}</span>
                     </div>
                   </label>
-                  <label className={`reactivation-option ${reactivateMode === 'upgrade_pro' ? 'selected' : ''}`} onClick={() => setReactivateMode('upgrade_pro')}>
-                    <input type="radio" name="reactivateMode" checked={reactivateMode === 'upgrade_pro'} onChange={() => setReactivateMode('upgrade_pro')} />
+                  <label className={`reactivation-option ${reactivateMode === 'upgrade_estandar' ? 'selected' : ''}`} onClick={() => setReactivateMode('upgrade_estandar')}>
+                    <input type="radio" name="reactivateMode" checked={reactivateMode === 'upgrade_estandar'} onChange={() => setReactivateMode('upgrade_estandar')} />
                     <div className="reactivation-option-label">
-                      <strong>{t('adminDashboard.reactivateUpgradePro')}</strong>
-                      <span>{t('adminDashboard.reactivateUpgradeProDesc')}</span>
+                      <strong>{t('adminDashboard.reactivateUpgradeEstandar')}</strong>
+                      <span>{t('adminDashboard.reactivateUpgradeEstandarDesc')}</span>
+                    </div>
+                  </label>
+                  <label className={`reactivation-option ${reactivateMode === 'upgrade_premium' ? 'selected' : ''}`} onClick={() => setReactivateMode('upgrade_premium')}>
+                    <input type="radio" name="reactivateMode" checked={reactivateMode === 'upgrade_premium'} onChange={() => setReactivateMode('upgrade_premium')} />
+                    <div className="reactivation-option-label">
+                      <strong>{t('adminDashboard.reactivateUpgradePremium')}</strong>
+                      <span>{t('adminDashboard.reactivateUpgradePremiumDesc')}</span>
                     </div>
                   </label>
                 </div>
@@ -383,7 +391,9 @@ export default function TenantModal({ tenantId, onClose, showToast, loadData }: 
                     <td>{p.invoice_number || '-'}</td>
                     <td className="bold">${parseFloat(String(p.amount)).toLocaleString()}</td>
                     <td className="muted">{p.currency}</td>
-                    <td><span className={`badge ${p.status === 'approved' ? 'badge-active' : p.status === 'pending' ? 'badge-expired' : 'badge-suspended'}`}>{p.status}</span></td>
+                    <td><span className={`badge ${p.status === 'approved' ? 'badge-active' : p.status === 'pending' ? 'badge-expired' : 'badge-suspended'}`}>
+                      {t(`adminDashboard.paymentStatus_${p.status}`, p.status)}
+                    </span></td>
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}

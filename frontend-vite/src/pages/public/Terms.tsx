@@ -16,17 +16,10 @@ function getInitialTab(): TabId {
   return 'terms';
 }
 
-const SECTION_TITLE: Record<TabId, string> = {
-  terms: 'Términos y Condiciones',
-  privacy: 'Política de Privacidad',
-  cancellations: 'Política de Cancelaciones',
-};
-
-const SECTION_DATE = 'Última actualización: 18 de mayo de 2026';
-
 function TermsContent({ id }: { id: TabId }) {
+  const { t } = useTranslation();
   return (
-    <LegalSection title={SECTION_TITLE[id]} date={SECTION_DATE}>
+    <LegalSection title={t(`terms.tab${id === 'terms' ? 'Terms' : id === 'privacy' ? 'Privacy' : 'Cancellations'}`)} date={t('terms.lastUpdated')}>
       {id === 'terms' ? <TermsConditions /> : id === 'privacy' ? <PrivacyPolicy /> : <CancellationsPolicy />}
     </LegalSection>
   );

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../../../../api/client';
+import { api, clearApiCache } from '../../../../api/client';
+import { parseLocalDateTime } from '../../../../utils/dateTime';
 import { useDashboard } from '../dashboardContext';
 
 export function useAppointmentCRUD() {
@@ -30,19 +31,25 @@ export function useAppointmentCRUD() {
   const saveNewAppointment = useCallback(async (form: {
     clientName: string; clientPhone: string; clientEmail: string;
     serviceId: string; selectedServices?: number[]; staffId: string; appointmentDate: string;
-    appointmentTime: string; notes: string;
+    appointmentTime: string; appointmentDateTime?: string; notes: string;
   }) => {
     if (!form.clientName || !form.clientPhone || (!form.serviceId && (!form.selectedServices || form.selectedServices.length === 0)) || !form.appointmentDate || !form.appointmentTime) {
       addToast(t('staffDashboard.toastSaveNewApptValidation'), 'error');
       return false;
     }
-    const apptDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00Z`);
+    const apptDate = form.appointmentDateTime
+      ? new Date(form.appointmentDateTime)
+      : parseLocalDateTime(form.appointmentDate, form.appointmentTime);
+    if (Number.isNaN(apptDate.getTime())) {
+      addToast(t('staffDashboard.toastSaveNewApptValidation'), 'error');
+      return false;
+    }
     if (apptDate <= new Date()) {
       addToast(t('staffDashboard.toastSaveNewApptFuture'), 'error');
       return false;
     }
     try {
-      const appointmentDate = new Date(`${form.appointmentDate}T${form.appointmentTime}:00Z`).toISOString();
+      const appointmentDate = apptDate.toISOString();
        const body: Record<string, unknown> = {
          clientName: form.clientName,
          clientPhone: form.clientPhone,
@@ -56,13 +63,14 @@ export function useAppointmentCRUD() {
       if (form.staffId) body.staffId = parseInt(form.staffId, 10);
       if (form.notes) body.notes = form.notes;
       await api.post('/api/appointments', body);
+      clearApiCache();
       addToast(t('staffDashboard.toastAppointmentCreated'), 'success');
       loadAppointments();
       loadClients();
       try { new BroadcastChannel('dashboard-sync').postMessage('reload'); } catch { /* broadcast not supported */ }
       return true;
-    } catch {
-      addToast(t('staffDashboard.toastCreateAppointmentError'), 'error');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : t('staffDashboard.toastCreateAppointmentError'), 'error');
       return false;
     }
   }, [addToast, t, loadAppointments, loadClients]);

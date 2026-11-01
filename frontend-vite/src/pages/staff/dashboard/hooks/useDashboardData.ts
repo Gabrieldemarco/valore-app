@@ -27,7 +27,6 @@ export interface DashboardDataParams {
   setClientsList: React.Dispatch<React.SetStateAction<ClientSummary[]>>;
   setProductsList: React.Dispatch<React.SetStateAction<ProductItem[]>>;
   setCalendarStatus: React.Dispatch<React.SetStateAction<CalendarStatus>>;
-  setCouponsList: React.Dispatch<React.SetStateAction<Record<string, unknown>[]>>;
   setBlockedDates: React.Dispatch<React.SetStateAction<{ id: number; date: string; reason: string }[]>>;
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
   setTotalAppointments: React.Dispatch<React.SetStateAction<number>>;
@@ -49,7 +48,7 @@ export function useDashboardData(params: DashboardDataParams) {
     setSettings, setOpeningHours, setPlan,
     setAppointments, setInvoices, setStaffList,
     setServicesList, setCategories, setClientsList,
-    setProductsList, setCalendarStatus, setCouponsList,
+    setProductsList, setCalendarStatus,
     setBlockedDates, setTotalPages, setTotalAppointments,
     setLoading, setAnalyticsSummary, setRevenueByMonth,
     setTopServices, setRevenueByStaff, setAnalyticsLoading,
@@ -165,13 +164,6 @@ export function useDashboardData(params: DashboardDataParams) {
     } finally { setAnalyticsLoading(false); }
   }, [addToast, t, setAnalyticsSummary, setRevenueByMonth, setTopServices, setRevenueByStaff, setAnalyticsLoading, setAnalyticsError]);
 
-  const loadCoupons = useCallback(async () => {
-    try {
-      const data = await api.get<{ coupons: Record<string, unknown>[] }>('/api/tenant/coupons');
-      setCouponsList(data.coupons || []);
-    } catch { addToast(t('staffDashboard.toastLoadCouponsError'), 'error'); }
-  }, [addToast, t, setCouponsList]);
-
   useEffect(() => {
     api.get<{ tenant: TenantSettings }>('/api/tenant/me').then(d => {
       setSettings(d.tenant);
@@ -183,7 +175,6 @@ export function useDashboardData(params: DashboardDataParams) {
     loadServices();
     loadCategories();
     loadClients();
-    loadCoupons();
     loadProducts();
      loadCalendarStatus();
      api.get<{ blockedDates: { id: number; date: string; reason: string }[] }>('/api/tenant/blocked-dates')
@@ -196,7 +187,7 @@ export function useDashboardData(params: DashboardDataParams) {
     else if (payment === 'pending') { addToast(t('staffDashboard.toastPaymentPending'), 'success'); window.history.replaceState({}, '', window.location.pathname); }
     const billing = params.get('billing');
     if (billing === '1') setActiveTab('billing');
-  }, [loadServices, loadCategories, loadClients, loadCoupons, loadProducts, loadCalendarStatus, addToast, t, setSettings, setOpeningHours, setPlan, setInvoices, setStaffList, setBlockedDates, setActiveTab]);
+  }, [loadServices, loadCategories, loadClients, loadProducts, loadCalendarStatus, addToast, t, setSettings, setOpeningHours, setPlan, setInvoices, setStaffList, setBlockedDates, setActiveTab]);
 
   useEffect(() => { loadAppointments(); }, [loadAppointments]);
 
@@ -211,6 +202,5 @@ export function useDashboardData(params: DashboardDataParams) {
      loadCalendarStatus,
      loadInvoices,
     loadAnalytics,
-    loadCoupons,
   };
 }

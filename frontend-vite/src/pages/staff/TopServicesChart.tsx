@@ -40,7 +40,7 @@ export default function TopServicesChart({ data }: Props) {
               const pct = totalCount > 0 ? ((item.count / totalCount) * 100).toFixed(1) : '0';
               const totalRev = Math.round(item.count * item.avg_price).toLocaleString();
               return [
-                `${value} ${t('staffDashboard.analyticsServiceCount')?.toLowerCase() || 'appts'} · ${pct}% · $${Math.round(item.avg_price).toLocaleString()}/prom · $${totalRev} total`,
+                `${value} ${t('staffDashboard.analyticsServiceCount').toLowerCase()} · ${pct}% · ${t('staffDashboard.analyticsServiceAvgPrice').toLowerCase()}: $${Math.round(item.avg_price).toLocaleString()} · ${t('staffDashboard.analyticsServiceRevenue').toLowerCase()}: $${totalRev}`,
                 item.service,
               ];
             }

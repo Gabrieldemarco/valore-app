@@ -1,5 +1,5 @@
 import type { CtaBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
-import { BlockWrapper, Section, Container, Heading, Text, Button } from './common';
+import { BlockWrapper, Section, Container, Heading, Text, Button, resolveWebsiteHref } from './common';
 
 /* ============================================================
    CTA Block
@@ -54,12 +54,12 @@ export function CtaBlockRenderer({
             {subheadline && <Text size="lg" className="mb-8">{subheadline}</Text>}
             <div className="flex flex-wrap justify-center gap-4">
               {primaryCtaText && primaryCtaLink && (
-                <Button size="lg" href={primaryCtaLink} variant="primary">
+                <Button size="lg" href={resolveWebsiteHref(primaryCtaLink, context.tenant.slug)} variant="primary">
                   {primaryCtaText}
                 </Button>
               )}
               {secondaryCtaText && secondaryCtaLink && (
-                <Button size="lg" href={secondaryCtaLink} variant="outline">
+                <Button size="lg" href={resolveWebsiteHref(secondaryCtaLink, context.tenant.slug)} variant="outline">
                   {secondaryCtaText}
                 </Button>
               )}

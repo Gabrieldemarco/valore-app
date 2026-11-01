@@ -21,13 +21,13 @@ export default function TenantList({ filtered, onOpenModal, onSetTrial }: Props)
       if (daysLeft !== null && daysLeft <= 3) return <span className="badge badge-suspended">{t('adminDashboard.badgeDays', { days: daysLeft })}</span>;
       return <span className="badge badge-active">{t('adminDashboard.badgeDays', { days: daysLeft })}</span>;
     }
-    if (tenant.plan === 'pro' || tenant.plan === 'enterprise') return <span className="badge badge-pro">{t('adminDashboard.badgeNoLimit')}</span>;
+    if (tenant.plan === 'pro' || tenant.plan === 'enterprise' || tenant.plan === 'estandar' || tenant.plan === 'premium') return <span className="badge badge-pro">{t('adminDashboard.badgeNoLimit')}</span>;
     return <span className="badge badge-free">-</span>;
   };
 
   const getPlanBadge = (tenant: Tenant) =>
-    tenant.plan === 'pro' || tenant.plan === 'enterprise'
-      ? <span className="badge badge-pro">{tenant.plan}</span>
+    tenant.plan === 'pro' || tenant.plan === 'enterprise' || tenant.plan === 'estandar' || tenant.plan === 'premium'
+      ? <span className="badge badge-pro">{t(`adminDashboard.plan${tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1)}`, tenant.plan)}</span>
       : <span className="badge badge-free">{t('adminDashboard.badgeFree')}</span>;
 
   const getStatusBadge = (tenant: Tenant) => {

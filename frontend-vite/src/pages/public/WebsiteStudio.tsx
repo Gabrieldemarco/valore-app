@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import WebsiteRenderer from '../../features/website-studio/WebsiteRenderer';
 import type { SiteConfig } from '../../features/website-studio/lib/templateEngine';
@@ -19,6 +20,7 @@ interface TenantInfo {
 }
 
 export default function WebsiteStudio() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const [config, setConfig] = useState<SiteConfig | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
@@ -36,17 +38,17 @@ export default function WebsiteStudio() {
       })
       .catch((err: { message?: string }) => {
         if (err.message === 'Not Found') {
-          setError('El sitio web no está disponible');
+          setError(t('websiteStudio.publicUnavailable'));
         } else {
-          setError(err.message || 'Error al cargar el sitio web');
+          setError(err.message || t('websiteStudio.publicLoadError'));
         }
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, t]);
 
   if (loading) return <WebsiteStudioLoading />;
   if (error) return <WebsiteStudioError message={error} />;
-  if (!config || !tenant) return <WebsiteStudioError message="Configuración no encontrada" />;
+  if (!config || !tenant) return <WebsiteStudioError message={t('websiteStudio.configNotFound')} />;
 
   return (
     <WebsiteRenderer

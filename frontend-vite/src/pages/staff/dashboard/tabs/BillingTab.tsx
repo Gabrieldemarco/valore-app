@@ -46,10 +46,11 @@ export default function BillingTab() {
           {plan.plan === 'free' && plan.trialDaysLeft != null && (
             <p className="text-muted m-0 mt-8">{t('staffDashboard.billingTrialDays', { days: plan.trialDaysLeft })}</p>
           )}
-          {plan.status !== 'active' && (
+          {plan.plan !== 'premium' && (
             <div className="flex flex-wrap gap-16 mt-16">
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
-              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('basico', provider)}>{t('staffDashboard.billingPlanBasic')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanEstandar')}</button>
+              <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
             </div>
           )}
         </div>
@@ -58,8 +59,9 @@ export default function BillingTab() {
           <h3 className="text-gradient m-0 mb-8">{t('staffDashboard.billingYourPlan')}</h3>
           <p className="text-muted m-0 mb-14">{t('staffDashboard.notAvailable')}</p>
           <div className="flex flex-wrap gap-16 mt-16">
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('pro', provider)}>{t('staffDashboard.billingPlanPro')}</button>
-            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('enterprise', provider)}>{t('staffDashboard.billingPlanEnterprise')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('basico', provider)}>{t('staffDashboard.billingPlanBasic')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('estandar', provider)}>{t('staffDashboard.billingPlanEstandar')}</button>
+            <button className="dash-btn dash-btn-success" onClick={() => subscribeToPlan('premium', provider)}>{t('staffDashboard.billingPlanPremium')}</button>
           </div>
         </div>
       )}

@@ -389,37 +389,24 @@ h1, h2, h3, h4, .serif-text {
   to { opacity: 1; }
 }
 
-/* Quiet Luxury Monogram & Brand Typography */
+/* Quiet Luxury Logo & Brand */
 .logo {
   text-decoration: none !important;
   display: flex !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 8px !important;
   transition: opacity var(--transition-fast) !important;
+}
+
+.logo-image {
+  height: 36px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  display: block !important;
 }
 
 .logo:hover {
   opacity: 0.85 !important;
-}
-
-.logo-monogram {
-  font-size: 27px !important;
-  font-weight: 300 !important;
-  font-family: 'Cormorant Garamond', serif !important;
-  letter-spacing: -1px !important;
-  border-right: 1px solid rgba(197, 168, 128, 0.22) !important;
-  padding-right: 12px !important;
-  line-height: 1 !important;
-  color: var(--primary) !important;
-}
-
-.logo-text {
-  font-size: 17px !important;
-  font-weight: 400 !important;
-  font-family: 'Outfit', sans-serif !important;
-  letter-spacing: 4px !important;
-  text-transform: uppercase !important;
-  color: #ffffff !important;
 }
 
 .install-banner {
@@ -553,4 +540,184 @@ h1, h2, h3, h4, .serif-text {
 .dash-btn-ghost:hover {
   color: var(--text-main);
   border-color: var(--primary);
+}
+
+/* Welcome Popup */
+.velsoie-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(20, 15, 10, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: velsoieFadeIn 0.4s ease-in-out;
+  box-sizing: border-box;
+}
+
+@keyframes velsoieFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.velsoie-popup-card {
+  max-width: 500px;
+  width: 100%;
+  background-color: #ffffff;
+  border: 4px solid #8A5E3C;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: velsoieSlideUp 0.5s ease-in-out;
+}
+
+@keyframes velsoieSlideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.velsoie-popup-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #C6A572;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.velsoie-popup-close:hover {
+  background-color: #8A5E3C;
+  color: #ffffff;
+}
+
+.velsoie-popup-header {
+  background-color: #1A130D;
+  padding: 50px 30px 30px 30px;
+  text-align: center;
+  border-bottom: 1px solid #3D2E1E;
+}
+
+.velsoie-popup-logo {
+  width: 320px;
+  max-width: 90%;
+  height: auto;
+  margin: 0 auto 15px auto;
+  display: block;
+}
+
+.velsoie-popup-subtitle {
+  font-family: Georgia, serif;
+  color: #C6A572;
+  font-size: 24px;
+  font-weight: 400;
+  font-style: italic;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.velsoie-popup-body {
+  padding: 40px 30px;
+  text-align: center;
+  background-color: #ffffff;
+}
+
+.velsoie-popup-title {
+  font-family: Georgia, serif;
+  color: #1A130D;
+  font-size: 28px;
+  margin: 0 0 15px 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.velsoie-popup-text {
+  font-family: Arial, sans-serif;
+  color: #555555;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 auto 30px auto;
+  max-width: 380px;
+}
+
+.velsoie-popup-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 35px;
+}
+
+.velsoie-popup-tag {
+  background-color: #F8F4EC;
+  border: 1px solid #E8DFD0;
+  color: #8A5E3C;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 15px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.velsoie-popup-cta {
+  display: inline-block;
+  background-color: #8A5E3C;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 16px 40px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.velsoie-popup-cta:hover {
+  background-color: #1A130D;
+}
+
+.velsoie-popup-dismiss {
+  display: block;
+  margin-top: 25px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: #999999;
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: normal;
+}
+
+@media (max-width: 480px) {
+  .velsoie-popup-title {
+    font-size: 24px;
+  }
+  .velsoie-popup-header {
+    padding: 40px 20px 20px;
+  }
+  .velsoie-popup-body {
+    padding: 30px 20px;
+  }
 }

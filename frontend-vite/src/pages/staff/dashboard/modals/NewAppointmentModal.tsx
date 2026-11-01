@@ -4,21 +4,27 @@ import { useDashboard } from '../dashboardContext';
 import { useDashboardCRUD } from '../../dashboard/useDashboardCRUD';
 import PhoneInput from '../../../../components/PhoneInput';
 import { api } from '../../../../api/client';
+import { formatLocalDateInputValue } from '../../../../utils/dateTime';
 import type { ClientSummary } from '../dashboardContext';
 
 export default function NewAppointmentModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
-  const { servicesList, staffList, filterDate } = useDashboard();
+  const { servicesList, staffList, filterDate, settings } = useDashboard();
   const { saveNewAppointment } = useDashboardCRUD();
 
+  const availableServices = servicesList.filter(service => service.active);
   const [form, setForm] = useState({
     clientName: '', clientPhone: '', clientEmail: '',
     serviceId: '', staffId: '', appointmentDate: filterDate, appointmentTime: '', notes: '',
     selectedServices: [] as number[],
+    appointmentDateTime: undefined as string | undefined,
   });
   const [suggestedClients, setSuggestedClients] = useState<ClientSummary[]>([]);
   const [selectedSuggested, setSelectedSuggested] = useState<ClientSummary | null>(null);
-  const [showServicePicker, setShowServicePicker] = useState(false);
+  const [availability, setAvailability] = useState<{
+    status: 'idle' | 'loading' | 'ready' | 'error';
+    slots: { time: string; datetime: string }[];
+  }>({ status: 'idle', slots: [] });
 
   useEffect(() => {
     if (form.clientPhone.length < 3) { setSuggestedClients([]); return; } // eslint-disable-line react-hooks/set-state-in-effect
@@ -28,6 +34,31 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
     }, 300);
     return () => clearTimeout(timer);
   }, [form.clientPhone]);
+
+  useEffect(() => {
+    if (!settings.slug || !form.appointmentDate || form.selectedServices.length === 0) {
+      setAvailability({ status: 'idle', slots: [] }); // eslint-disable-line react-hooks/set-state-in-effect
+      return;
+    }
+
+    let current = true;
+    setAvailability({ status: 'loading', slots: [] });
+    const serviceParams = form.selectedServices.length > 1
+      ? `serviceIds=${form.selectedServices.join(',')}`
+      : `serviceId=${form.selectedServices[0]}`;
+    const path = form.staffId
+      ? `/p/${settings.slug}/staff/${form.staffId}/availability?date=${form.appointmentDate}&${serviceParams}`
+      : `/p/${settings.slug}/availability?date=${form.appointmentDate}&${serviceParams}`;
+
+    api.getFresh<{ slots: { time: string; datetime: string }[] }>(path)
+      .then(data => {
+        if (current) setAvailability({ status: 'ready', slots: data.slots || [] });
+      })
+      .catch(() => {
+        if (current) setAvailability({ status: 'error', slots: [] });
+      });
+    return () => { current = false; };
+  }, [form.appointmentDate, form.selectedServices, form.staffId, settings.slug]);
 
   const handleSave = async () => {
     const ok = await saveNewAppointment(form);
@@ -73,62 +104,47 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.newApptServiceLabel')}</label>
-            <div className="relative">
-              <input
-                type="text"
-                className="glass-input"
-                readOnly
-                value={form.selectedServices.length > 0
-                  ? `${form.selectedServices.length} ${t('staffDashboard.servicesSelected', { count: form.selectedServices.length })}`
-                  : t('staffDashboard.newApptServicePlaceholder')}
-                onClick={() => setShowServicePicker(true)}
-              />
-              {form.selectedServices.length > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <div className="fs-13" style={{ color: 'var(--text-muted)', marginBottom: 4 }}>
-                    {t('staffDashboard.totalDuration')}: {servicesList.filter(s => form.selectedServices.includes(s.id)).reduce((sum, s) => sum + s.duration, 0)} {t('landingServices.minutes')}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                    {servicesList.filter(s => form.selectedServices.includes(s.id)).map(s => (
-                      <span key={s.id} style={{ background: 'rgba(37, 99, 235, 0.15)', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>{s.name}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            {showServicePicker && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, background: 'var(--glass-bg)', border: '1px solid var(--border)', borderRadius: 8, maxHeight: 240, overflowY: 'auto', marginTop: 4 }}>
-                {servicesList.filter(s => s.active).map(s => {
+            <small className="text-muted">{t('staffDashboard.newApptServiceHelp')}</small>
+            {availableServices.length === 0 ? (
+              <p className="text-muted" role="status">{t('staffDashboard.newApptNoServices')}</p>
+            ) : (
+              <div style={{ border: '1px solid var(--border)', borderRadius: 8, maxHeight: 180, overflowY: 'auto', marginTop: 6 }}>
+                {availableServices.map(s => {
                   const checked = form.selectedServices.includes(s.id);
                   return (
                     <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
                       <input
                         type="checkbox"
                         checked={checked}
-                         onChange={() => {
+                        onChange={() => {
                           const updated = checked
                             ? form.selectedServices.filter(id => id !== s.id)
                             : [...form.selectedServices, s.id];
-                          setForm(p => ({ ...p, selectedServices: updated, serviceId: updated.length > 0 ? String(updated[0]) : '' }));
+                          setForm(p => ({
+                            ...p,
+                            selectedServices: updated,
+                            serviceId: updated.length > 0 ? String(updated[0]) : '',
+                            appointmentTime: '',
+                            appointmentDateTime: undefined,
+                          }));
                         }}
                       />
-                      <span className="fs-13">{s.name} ({s.duration}{t('landingServices.minutes')})</span>
+                      <span className="fs-13">{s.name} ({s.duration} {t('landingServices.minutes')})</span>
                     </label>
                   );
                 })}
-                <div style={{ padding: 8, borderTop: '1px solid var(--border)' }}>
-                  <button className="dash-btn dash-btn-success" style={{ width: '100%', fontSize: 12, padding: '4px 8px' }} onClick={() => setShowServicePicker(false)}>
-                    {t('staffDashboard.doneButton')}
-                  </button>
-                </div>
               </div>
             )}
-            {showServicePicker && <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} onClick={() => setShowServicePicker(false)} />}
+            {form.selectedServices.length > 0 && (
+              <div className="fs-13" style={{ color: 'var(--text-muted)', marginTop: 6 }}>
+                {t('staffDashboard.totalDuration')}: {availableServices.filter(s => form.selectedServices.includes(s.id)).reduce((sum, s) => sum + s.duration, 0)} {t('landingServices.minutes')}
+              </div>
+            )}
           </div>
           {staffList.filter(s => s.active !== false).length > 0 && (
             <div className="dash-form-group">
               <label>{t('staffDashboard.newApptStaffLabel')}</label>
-              <select className="glass-input" value={form.staffId} onChange={e => setForm(p => ({ ...p, staffId: e.target.value }))}>
+              <select className="glass-input" value={form.staffId} onChange={e => setForm(p => ({ ...p, staffId: e.target.value, appointmentTime: '', appointmentDateTime: undefined }))}>
                 <option value="">{t('staffDashboard.newApptStaffAny')}</option>
                 {staffList.filter(s => s.active !== false).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -138,11 +154,40 @@ export default function NewAppointmentModal({ onClose }: { onClose: () => void }
           )}
           <div className="dash-form-group">
             <label>{t('staffDashboard.newApptDateLabel')}</label>
-            <input type="date" className="glass-input" min={new Date().toISOString().split('T')[0]} value={form.appointmentDate} onChange={e => setForm(p => ({ ...p, appointmentDate: e.target.value }))} />
+            <small className="text-muted">{t('staffDashboard.newApptDateHelp')}</small>
+            <input type="date" className="glass-input" min={formatLocalDateInputValue()} value={form.appointmentDate} onChange={e => setForm(p => ({ ...p, appointmentDate: e.target.value, appointmentTime: '', appointmentDateTime: undefined }))} />
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.newApptTimeLabel')}</label>
-            <input type="time" className="glass-input" value={form.appointmentTime} onChange={e => setForm(p => ({ ...p, appointmentTime: e.target.value }))} />
+            <small className="text-muted">{t('staffDashboard.newApptTimeHelp')}</small>
+            {availability.status === 'loading' && <p className="text-muted" role="status">{t('staffDashboard.newApptLoadingTimes')}</p>}
+            {availability.status === 'ready' && availability.slots.length > 0 && (
+              <div role="group" aria-label={t('staffDashboard.newApptTimeLabel')} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 8, marginTop: 8 }}>
+                {availability.slots.map(slot => (
+                  <button
+                    key={slot.datetime}
+                    type="button"
+                    className={`dash-btn ${form.appointmentTime === slot.time ? 'dash-btn-primary' : 'dash-btn-success'}`}
+                    aria-pressed={form.appointmentTime === slot.time}
+                    onClick={() => setForm(p => ({ ...p, appointmentTime: slot.time, appointmentDateTime: slot.datetime }))}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
+            )}
+            {availability.status === 'ready' && availability.slots.length === 0 && (
+              <p className="text-muted" role="status">{t('staffDashboard.newApptNoTimes')}</p>
+            )}
+            {(availability.status === 'error' || (availability.status === 'idle' && !settings.slug)) && (
+              <>
+                <input type="time" className="glass-input" value={form.appointmentTime} onChange={e => setForm(p => ({ ...p, appointmentTime: e.target.value, appointmentDateTime: undefined }))} />
+                {availability.status === 'error' && <small className="text-muted">{t('staffDashboard.newApptTimesUnavailable')}</small>}
+              </>
+            )}
+            {availability.status === 'idle' && settings.slug && (
+              <p className="text-muted">{t('staffDashboard.newApptChooseServiceDate')}</p>
+            )}
           </div>
           <div className="dash-form-group">
             <label>{t('staffDashboard.newApptNotesLabel')}</label>

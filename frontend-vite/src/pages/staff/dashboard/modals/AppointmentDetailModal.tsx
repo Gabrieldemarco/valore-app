@@ -84,7 +84,7 @@ export default function AppointmentDetailModal() {
             </div>
             <div className="dash-info-group">
               <label>{t('staffDashboard.apptDetailStatus')}</label>
-              <span>{getStatusBadge(selectedAppointment.status)}</span>
+              <span>{getStatusBadge(selectedAppointment.status, t)}</span>
             </div>
           </div>
 
@@ -178,7 +178,7 @@ export default function AppointmentDetailModal() {
                               <td className="fs-14">{new Date(a.appointment_date || a.date).toLocaleDateString(i18n.language)}</td>
                               <td className="fs-14">{a.service_name || a.service}</td>
                               <td className="fs-14">{a.staff_name || '-'}</td>
-                              <td style={{ padding: '6px 10px', textAlign: 'center' }}>{getStatusBadge(a.status)}</td>
+                              <td style={{ padding: '6px 10px', textAlign: 'center' }}>{getStatusBadge(a.status, t)}</td>
                               <td className="truncate text-secondary" style={{ padding: '6px 10px', maxWidth: 120 }}>{a.internal_notes || '-'}</td>
                             </tr>
                           ))}

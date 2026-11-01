@@ -1,6 +1,6 @@
 import React from 'react';
 import type { HeroBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
-import { BlockWrapper, Section, Container, Heading, Text, Button } from './common';
+import { BlockWrapper, Section, Container, Heading, Text, Button, resolveWebsiteHref } from './common';
 
 /* ============================================================
    Hero Block
@@ -62,7 +62,7 @@ export function HeroBlockRenderer({
           {subheadline && <Text align={textAlign} size="lg" className="mb-8 max-w-2xl mx-auto">{subheadline}</Text>}
           {ctaText && ctaLink && (
             <div style={{ display: 'flex', gap: '16px', justifyContent: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center', flexWrap: 'wrap' }}>
-              <Button size="lg" href={ctaLink}>{ctaText}</Button>
+              <Button size="lg" href={resolveWebsiteHref(ctaLink, context.tenant.slug)}>{ctaText}</Button>
             </div>
           )}
         </Container>

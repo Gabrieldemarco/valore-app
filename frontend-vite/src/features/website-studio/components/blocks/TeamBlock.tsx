@@ -1,4 +1,5 @@
 import type { TeamBlock, BlockRenderer, RenderContext } from '../../lib/templateEngine';
+import { useTranslation } from 'react-i18next';
 import { BlockWrapper, Section, Container, Heading, Text, Grid, Card } from './common';
 
 /* ============================================================
@@ -12,6 +13,7 @@ export function TeamBlockRenderer({
   block: TeamBlock; 
   context: RenderContext; 
 }) {
+  const { t } = useTranslation();
   const { 
     title, 
     subtitle, 
@@ -30,9 +32,9 @@ export function TeamBlockRenderer({
         <Section id="team" className="ws-team">
           <Container>
             <div className="text-center py-16">
-              <Heading level={2} className="mb-4">{title || 'Nuestro equipo'}</Heading>
+              <Heading level={2} className="mb-4">{title || t('websiteStudio.teamHeading')}</Heading>
               {subtitle && <Text size="lg" className="mb-8 max-w-2xl mx-auto">{subtitle}</Text>}
-              <p className="text-white/50">No hay miembros del equipo configurados.</p>
+              <p className="text-white/50">{t('websiteStudio.teamEmpty')}</p>
             </div>
           </Container>
         </Section>

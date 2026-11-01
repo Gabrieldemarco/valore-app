@@ -60,7 +60,7 @@ const mockTenantSettings = {
 };
 
 const mockPlan = {
-  tenant: { plan: 'pro', status: 'active', price: 990 },
+  tenant: { plan: 'pro', status: 'active', price: 990, features: ['analytics_basic'] },
 };
 
 const mockInvoices = { invoices: [

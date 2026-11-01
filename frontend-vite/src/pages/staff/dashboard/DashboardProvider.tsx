@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../contexts/AuthContext';
+import { formatLocalDateInputValue } from '../../../utils/dateTime';
 import DashboardContext from './dashboardContext';
 import type {
   Appointment, PlanInfo, Invoice, StaffMember, ServiceItem,
@@ -41,7 +42,7 @@ export default function DashboardProvider({ children }: { children: ReactNode })
 
   const [selectedStaff, setSelectedStaff] = useState<number | ''>('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterDate, setFilterDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [filterDate, setFilterDate] = useState(() => formatLocalDateInputValue());
   const [filterMode, setFilterMode] = useState<'day' | 'week' | 'month'>('day');
   const [filterPhone, setFilterPhone] = useState('');
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export default function DashboardProvider({ children }: { children: ReactNode })
     setSettings, setOpeningHours, setPlan,
     setAppointments, setInvoices, setStaffList,
     setServicesList, setCategories, setClientsList,
-    setProductsList,     setCalendarStatus, setCouponsList,
+    setProductsList,     setCalendarStatus,
     setBlockedDates, setTotalPages, setTotalAppointments,
     setLoading, setAnalyticsSummary, setRevenueByMonth,
     setTopServices, setRevenueByStaff, setAnalyticsLoading,

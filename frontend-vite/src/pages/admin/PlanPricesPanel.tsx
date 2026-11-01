@@ -13,7 +13,7 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
 
   const handleUpdate = async (plan: PlanPrice, field: string, value: string | number) => {
     try {
-      const isNullableField = ['price_usd', 'promo_price', 'promo_price_usd'].includes(field);
+      const isNullableField = ['price_usd', 'promo_price', 'promo_price_usd', 'stripe_price_id', 'mp_item_id'].includes(field);
       const body: Record<string, unknown> = {
         price: plan.price,
         price_usd: plan.price_usd,
@@ -21,6 +21,8 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
         promo_price: plan.promo_price,
         promo_price_usd: plan.promo_price_usd,
         promo_months: plan.promo_months,
+        stripe_price_id: plan.stripe_price_id,
+        mp_item_id: plan.mp_item_id,
       };
       if (isNullableField && value === '') {
         body[field] = null;
@@ -133,6 +135,26 @@ export default function PlanPricesPanel({ planPrices, setPlanPrices, showToast }
                 min="0"
                 value={plan.promo_months || 0}
                 onChange={e => handleUpdate({ ...plan, promo_months: parseInt(e.target.value) || 0 }, 'promo_months', String(parseInt(e.target.value) || 0))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{t('adminDashboard.stripePriceId')}</label>
+              <input
+                type="text"
+                value={plan.stripe_price_id || ''}
+                placeholder={t('adminDashboard.stripePriceIdPlaceholder')}
+                onChange={e => handleUpdate({ ...plan, stripe_price_id: e.target.value }, 'stripe_price_id', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{t('adminDashboard.mpItemId')}</label>
+              <input
+                type="text"
+                value={plan.mp_item_id || ''}
+                placeholder={t('adminDashboard.mpItemIdPlaceholder')}
+                onChange={e => handleUpdate({ ...plan, mp_item_id: e.target.value }, 'mp_item_id', e.target.value)}
               />
             </div>
 
