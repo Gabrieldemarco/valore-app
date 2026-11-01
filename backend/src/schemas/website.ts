@@ -223,7 +223,7 @@ export function createEmptySiteConfig(tenantId: number): SiteConfig {
    Template Presets (starting configs for each template)
    ============================================================ */
 
-export const TEMPLATE_PRESETS: Record<string, Partial<SiteConfig>> = {
+export const TEMPLATE_PRESETS: Record<string, Partial<z.input<typeof SiteConfigSchema>>> = {
   elegant: {
     template: 'elegant',
     theme: {
