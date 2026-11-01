@@ -63,6 +63,7 @@ function renderDashboard() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockFetch.mockReset();
+  localStorage.clear();
   (useAuth as Mock).mockReturnValue({
     superAdminToken: null, staffToken: null, staffName: null, isAuthenticated: false, isSuperAdmin: false,
     login: vi.fn(), logout: vi.fn(),
@@ -87,6 +88,45 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('Barbería Centro')).toBeInTheDocument();
     expect(screen.getByText('Salón Norte')).toBeInTheDocument();
+  });
+
+  it('loads every tenant page with the super-admin token', async () => {
+    const additionalTenant = {
+      ...mockTenants.tenants[0],
+      id: 4,
+      business_name: 'Salón Este',
+      slug: 'salon-este',
+      notification_email: 'este@test.com',
+    };
+    localStorage.setItem('staffToken', 'staff-token');
+    localStorage.setItem('superAdminToken', 'admin-token');
+    (useAuth as Mock).mockReturnValue({
+      superAdminToken: 'admin-token', staffToken: 'staff-token',
+      isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn(),
+    });
+    const tenantRequestAuthorizations: string[] = [];
+    mockFetch.mockImplementation((url: string | URL, options?: RequestInit) => {
+      const requestUrl = new URL(url.toString(), window.location.origin);
+      if (requestUrl.pathname === '/api/super-admin/tenants') {
+        tenantRequestAuthorizations.push(new Headers(options?.headers).get('Authorization') ?? '');
+        const page = requestUrl.searchParams.get('page');
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(page === '1'
+            ? { tenants: [mockTenants.tenants[0]], totalPages: 2 }
+            : { tenants: [additionalTenant], totalPages: 2 }),
+        });
+      }
+      if (requestUrl.pathname.endsWith('/stats/billing')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByText('Salón Este')).toBeInTheDocument();
+    expect(tenantRequestAuthorizations).toEqual(['Bearer admin-token', 'Bearer admin-token']);
   });
 
   it('filters tenants by search', async () => {

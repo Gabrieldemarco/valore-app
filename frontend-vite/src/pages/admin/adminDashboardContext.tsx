@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Tenant, Stats, TwilioConfig, PlanPrice } from './types';
@@ -30,6 +31,7 @@ export function useAdminDashboard() {
 }
 
 export function AdminDashboardProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { superAdminToken } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -51,13 +53,32 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   }, [superAdminToken, navigate]);
 
   const loadData = useCallback(() => {
-    api.get<Stats>('/api/super-admin/stats/billing').then(setStats).catch(() => {});
-    api.get<{ tenants: Tenant[] }>('/api/super-admin/tenants').then(r => setTenants(r.tenants)).catch(() => {});
-     api.get<{ config: Record<string, unknown> }>('/api/super-admin/config').then(r => {
+    api.get<Stats>('/api/super-admin/stats/billing', 'superAdmin').then(setStats).catch(() => {});
+    const loadTenants = async () => {
+      const firstPage = await api.get<{ tenants: Tenant[]; totalPages: number }>(
+        '/api/super-admin/tenants?page=1&limit=100',
+        'superAdmin',
+      );
+      const allTenants = [...firstPage.tenants];
+
+      for (let page = 2; page <= firstPage.totalPages; page += 1) {
+        const result = await api.get<{ tenants: Tenant[] }>(
+          `/api/super-admin/tenants?page=${page}&limit=100`,
+          'superAdmin',
+        );
+        allTenants.push(...result.tenants);
+      }
+
+      setTenants(allTenants);
+    };
+    loadTenants().catch((err: unknown) => {
+      showToast(err instanceof Error ? err.message : t('adminDashboard.toastLoadError'), 'error');
+    });
+    api.get<{ config: Record<string, unknown> }>('/api/super-admin/config', 'superAdmin').then(r => {
       if (r.config?.twilio) setTwilioConfig(r.config.twilio as TwilioConfig);
     }).catch(() => {});
-    api.get<{ prices: PlanPrice[] }>('/api/super-admin/plan-prices').then(r => setPlanPrices(r.prices || [])).catch(() => {});
-  }, []);
+    api.get<{ prices: PlanPrice[] }>('/api/super-admin/plan-prices', 'superAdmin').then(r => setPlanPrices(r.prices || [])).catch(() => {});
+  }, [showToast, t]);
 
   useEffect(loadData, [loadData]);
 
