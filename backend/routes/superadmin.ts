@@ -67,6 +67,75 @@ export default function(loginLimiter, _createMercadoPagoPreference, _MP_CURRENCY
     } catch (err: any) { logger.error(err); res.status(500).json({ error: 'Error al cargar peluquerías' }); }
   });
 
+  router.get('/super-admin/clients', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? '50'), 10) || 50));
+      const search = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
+      const cte = `
+        WITH visits AS (
+          SELECT regexp_replace(a.client_phone, '[^0-9]', '', 'g') AS client_key,
+                 a.client_name, a.client_phone, a.client_email, a.client_timezone,
+                 a.service, a.appointment_date, a.status, a.tenant_id, t.business_name
+          FROM appointments a
+          JOIN tenants t ON t.id = a.tenant_id
+          WHERE regexp_replace(a.client_phone, '[^0-9]', '', 'g') <> ''
+        ),
+        clients AS (
+          SELECT client_key,
+                 (array_agg(client_name ORDER BY appointment_date DESC))[1] AS client_name,
+                 (array_agg(client_phone ORDER BY appointment_date DESC))[1] AS client_phone,
+                 (array_agg(client_email ORDER BY appointment_date DESC) FILTER (WHERE client_email IS NOT NULL))[1] AS client_email,
+                 (array_agg(client_timezone ORDER BY (status = 'completed') DESC, appointment_date DESC) FILTER (WHERE client_timezone IS NOT NULL))[1] AS client_timezone,
+                 COUNT(*)::int AS total_appointments,
+                 COUNT(DISTINCT tenant_id) FILTER (WHERE status = 'completed')::int AS salons_visited_count,
+                 array_agg(DISTINCT business_name) FILTER (WHERE status = 'completed') AS salons_visited,
+                 array_agg(DISTINCT service) AS services_requested,
+                 MIN(appointment_date) FILTER (WHERE status = 'completed') AS first_appointment,
+                 MAX(appointment_date) FILTER (WHERE status = 'completed') AS last_appointment
+          FROM visits
+          GROUP BY client_key
+        )`;
+      const searchClause = search
+        ? ` WHERE client_name ILIKE $1 OR client_phone ILIKE $1 OR client_email ILIKE $1 OR array_to_string(salons_visited, ' ') ILIKE $1 OR array_to_string(services_requested, ' ') ILIKE $1`
+        : '';
+      const params = search ? [`%${search}%`] : [];
+      const countResult = await query(`${cte} SELECT COUNT(*)::int AS total FROM clients${searchClause}`, params);
+      const total = countResult.rows[0].total;
+      const result = await query(
+        `${cte} SELECT * FROM clients${searchClause} ORDER BY last_appointment DESC NULLS LAST, total_appointments DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, (page - 1) * limit]
+      );
+      res.json({ clients: result.rows, total, page, limit, totalPages: Math.ceil(total / limit) });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar clientes globales' });
+    }
+  });
+
+  router.get('/super-admin/clients/:phone/appointments', authenticateSuperAdmin, async (req, res) => {
+    try {
+      const clientPhone = req.params.phone.replace(/\D/g, '');
+      if (!/^\d{8,15}$/.test(clientPhone)) return res.status(400).json({ error: 'Teléfono inválido' });
+      const result = await query(
+        `SELECT a.id, a.client_name, a.client_phone, a.client_email, a.client_timezone,
+                a.service, a.appointment_date, a.status, a.notes, s.name AS staff_name,
+                t.id AS tenant_id, t.business_name, t.slug AS tenant_slug
+         FROM appointments a
+         JOIN tenants t ON t.id = a.tenant_id
+         LEFT JOIN staff s ON s.id = a.staff_id
+         WHERE regexp_replace(a.client_phone, '[^0-9]', '', 'g') = $1
+         ORDER BY a.appointment_date DESC`,
+        [clientPhone]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Cliente no encontrado' });
+      res.json({ appointments: result.rows });
+    } catch (err: any) {
+      logger.error(err);
+      res.status(500).json({ error: 'Error al cargar el historial global' });
+    }
+  });
+
   router.post('/super-admin/tenants', authenticateSuperAdmin, async (req, res) => {
     try {
       const { business_name, slug, email, phone, address, plan } = req.body;

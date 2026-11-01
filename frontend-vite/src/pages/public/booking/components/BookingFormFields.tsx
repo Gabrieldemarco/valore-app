@@ -68,6 +68,7 @@ const BookingFormFields = ({
           value={clientName}
           onChange={(e) => onSetClientName(e.target.value)}
           required
+          autoComplete="name"
           className="form-input"
           placeholder={t('booking.namePlaceholder')}
         />
@@ -78,10 +79,13 @@ const BookingFormFields = ({
           {t('booking.phoneLabel')} *
         </label>
         <input
+          id="clientPhone"
           type="tel"
           value={clientPhone}
           onChange={(e) => onSetClientPhone(e.target.value)}
           required
+          autoComplete="tel"
+          inputMode="tel"
           className="form-input phone-input"
           placeholder={t('booking.phonePlaceholder')}
         />
@@ -89,14 +93,17 @@ const BookingFormFields = ({
 
       <div className="form-group">
         <label htmlFor="clientEmail">
-          {t('booking.emailLabel')}
+          {t('booking.emailLabel')} *
         </label>
         <input
           id="clientEmail"
           type="email"
           value={clientEmail}
           onChange={(e) => onSetClientEmail(e.target.value)}
+          required
+          autoComplete="email"
           className="form-input"
+          placeholder={t('booking.emailPlaceholder')}
         />
       </div>
 

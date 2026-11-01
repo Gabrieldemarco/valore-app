@@ -11,6 +11,7 @@ import { AppError } from '../services/errors';
 import { getOrCreateSubscriptionInvoice, getPaidInvoiceCount, getEffectivePlanPrice } from '../services/billing';
 import { normalizePlan, STRIPE_CURRENCY } from '../services/payment-config';
 import { sendClientConfirmation, notifyStaff, sendStaffCredentials } from '../services/notifications';
+import { getZonedDateString, getZonedDayBounds, isValidTimeZone } from '../utils/timezone';
 import { validate,
   authenticateStaff,
   checkTenantActive,
@@ -207,13 +208,30 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       const pageNum = Math.max(1, page);
       const limitNum = Math.min(100, Math.max(1, limit));
       const offset = (pageNum - 1) * limitNum;
+      const tenant = await queryOne('SELECT timezone FROM tenants WHERE id = $1', [req.user.tenant_id]);
+      const timeZone = tenant?.timezone || 'America/Montevideo';
 
-      let sql = 'SELECT a.*, s.name as staff_name FROM appointments a LEFT JOIN staff s ON a.staff_id = s.id WHERE a.tenant_id = $1';
-      const params = [req.user.tenant_id];
+      let sql = `SELECT a.*, s.name as staff_name,
+                 to_char((a.appointment_date AT TIME ZONE 'UTC') AT TIME ZONE $2, 'YYYY-MM-DD') as date,
+                 to_char((a.appointment_date AT TIME ZONE 'UTC') AT TIME ZONE $2, 'HH24:MI') as time
+                 FROM appointments a LEFT JOIN staff s ON a.staff_id = s.id WHERE a.tenant_id = $1`;
+      const params = [req.user.tenant_id, timeZone];
 
-      if (date) { sql += ` AND a.appointment_date::date = $${params.length + 1}`; params.push(date); }
-      if (dateFrom) { sql += ` AND a.appointment_date::date >= $${params.length + 1}`; params.push(dateFrom); }
-      if (dateTo) { sql += ` AND a.appointment_date::date <= $${params.length + 1}`; params.push(dateTo); }
+      if (date) {
+        const [start, end] = getZonedDayBounds(date, timeZone);
+        sql += ` AND a.appointment_date >= $${params.length + 1} AND a.appointment_date < $${params.length + 2}`;
+        params.push(start, end);
+      }
+      if (dateFrom) {
+        const [start] = getZonedDayBounds(dateFrom, timeZone);
+        sql += ` AND a.appointment_date >= $${params.length + 1}`;
+        params.push(start);
+      }
+      if (dateTo) {
+        const [, end] = getZonedDayBounds(dateTo, timeZone);
+        sql += ` AND a.appointment_date < $${params.length + 1}`;
+        params.push(end);
+      }
       if (status) { sql += ` AND a.status = $${params.length + 1}`; params.push(status); }
       if (clientPhone) { sql += ` AND a.client_phone LIKE $${params.length + 1}`; params.push(`%${clientPhone}%`); }
       if (staffId && staffId !== 'all') { sql += ` AND a.staff_id = $${params.length + 1}`; params.push(parseInt(staffId, 10)); }
@@ -232,10 +250,13 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.get('/appointments/today', authenticateStaff, checkTenantActive, checkTrialExpiration, async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const tenant = await queryOne('SELECT timezone FROM tenants WHERE id = $1', [req.user.tenant_id]);
+      const timeZone = tenant?.timezone || 'America/Montevideo';
+      const today = getZonedDateString(new Date(), timeZone);
+      const [start, end] = getZonedDayBounds(today, timeZone);
       const result = await query(
-        `SELECT * FROM appointments WHERE tenant_id = $1 AND appointment_date::date = $2 AND status != 'cancelled' ORDER BY appointment_date ASC`,
-        [req.user.tenant_id, today]
+        `SELECT * FROM appointments WHERE tenant_id = $1 AND appointment_date >= $2 AND appointment_date < $3 AND status != 'cancelled' ORDER BY appointment_date ASC`,
+        [req.user.tenant_id, start, end]
       );
       res.json(result.rows);
     } catch (err: any) { logger.error('Error al cargar turnos del dia', { error: err.message }); res.status(500).json({ error: 'Error al cargar turnos del día' }); }
@@ -306,6 +327,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
                 landing_description, landing_enabled, landing_hero_image,
                 landing_gallery, landing_team, landing_services_info,
                 landing_social_links, landing_custom_css, landing_layout, opening_hours, reminder_hours, updated_at, plan, trial_end_date,
+                timezone,
                 lat, lng,
                 landing_background_color, landing_hero_height, landing_hero_width,
                 landing_primary_text_color, landing_secondary_text_color,
@@ -622,7 +644,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_description, landing_enabled, landing_hero_image,
       landing_gallery, landing_team, landing_services_info,
       landing_social_links, landing_custom_css, landing_layout,
-      brand_primary_color, brand_secondary_color, brand_logo_url,
+      brand_primary_color, brand_secondary_color, brand_logo_url, timezone,
       opening_hours, lat, lng,
       landing_background_color, landing_hero_height, landing_hero_width,
       landing_primary_text_color, landing_secondary_text_color,
@@ -660,9 +682,10 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
              landing_primary_font=COALESCE($28,landing_primary_font),
              landing_secondary_font=COALESCE($29,landing_secondary_font),
              reminder_hours=COALESCE($30::INTEGER,reminder_hours),
-             captcha_enabled=COALESCE($31::BOOLEAN,captcha_enabled),
+             timezone=COALESCE($31,timezone),
+             captcha_enabled=COALESCE($32::BOOLEAN,captcha_enabled),
              updated_at=NOW()
-            WHERE id=$32 RETURNING *`;
+            WHERE id=$33 RETURNING *`;
 
     const params = [
       business_name, business_address, business_phone,
@@ -686,6 +709,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
       landing_primary_font,
       landing_secondary_font,
       reminder_hours !== undefined ? parseInt(reminder_hours, 10) : null,
+      timezone,
       captcha_enabled !== undefined ? captcha_enabled : null,
       tenantId,
     ];
@@ -703,6 +727,7 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
     body('landing_hero_width').optional().isInt({ min: 50, max: 200 }).withMessage('Ancho inválido'),
     body('landing_primary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
     body('landing_secondary_text_color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Color inválido'),
+    body('timezone').optional().trim().isLength({ min: 1, max: 100 }).custom(isValidTimeZone).withMessage('Zona horaria inválida'),
     body('captcha_enabled').optional().isBoolean().withMessage('captcha_enabled debe ser booleano'),
   ];
 
@@ -1209,15 +1234,25 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
   router.get('/tenant/stats/summary', authenticateStaff, checkTenantActive, async (req, res) => {
     try {
       const tenantId = req.user.tenant_id;
+      const tenant = await queryOne('SELECT timezone FROM tenants WHERE id = $1', [tenantId]);
+      const timeZone = tenant?.timezone || 'America/Montevideo';
+      const todayDate = getZonedDateString(new Date(), timeZone);
+      const [todayStart, todayEnd] = getZonedDayBounds(todayDate, timeZone);
+      const [year, monthNumber] = todayDate.split('-').map(Number);
+      const monthStartDate = `${year}-${String(monthNumber).padStart(2, '0')}-01`;
+      const nextMonth = new Date(Date.UTC(year, monthNumber, 1));
+      const nextMonthDate = `${nextMonth.getUTCFullYear()}-${String(nextMonth.getUTCMonth() + 1).padStart(2, '0')}-01`;
+      const [monthStart] = getZonedDayBounds(monthStartDate, timeZone);
+      const [monthEnd] = getZonedDayBounds(nextMonthDate, timeZone);
       const today = await queryOne(
-        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND appointment_date::date = CURRENT_DATE`,
-        [tenantId]
+        `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND appointment_date >= $2 AND appointment_date < $3`,
+        [tenantId, todayStart, todayEnd]
       );
-      const month = await queryOne(
+      const monthStats = await queryOne(
         `SELECT COUNT(*) as total, COALESCE(SUM(a.service_price), 0) as revenue
          FROM appointments a
-         WHERE a.tenant_id = $1 AND date_trunc('month', a.appointment_date) = date_trunc('month', CURRENT_DATE)`,
-        [tenantId]
+         WHERE a.tenant_id = $1 AND a.appointment_date >= $2 AND a.appointment_date < $3`,
+        [tenantId, monthStart, monthEnd]
       );
       const pending = await queryOne(
         `SELECT COUNT(*) as total FROM appointments WHERE tenant_id = $1 AND status = 'pending'`,
@@ -1238,8 +1273,8 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
       res.json({
         todayAppointments: parseInt(today?.total || '0'),
-        monthAppointments: parseInt(month?.total || '0'),
-        monthRevenue: parseFloat(month?.revenue || '0'),
+        monthAppointments: parseInt(monthStats?.total || '0'),
+        monthRevenue: parseFloat(monthStats?.revenue || '0'),
         pendingAppointments: parseInt(pending?.total || '0'),
         completedAppointments: parseInt(completed?.total || '0'),
         cancellationRate: parseInt(total?.total || '0') > 0
@@ -1254,16 +1289,24 @@ export default function(createMercadoPagoPreference, MP_CURRENCY, MP_LOCALE, MP_
 
   router.get('/tenant/stats/revenue-by-month', authenticateStaff, checkTenantActive, requireFeature('analytics_advanced', 'analytics_basic'), async (req, res) => {
     try {
+      const tenant = await queryOne('SELECT timezone FROM tenants WHERE id = $1', [req.user.tenant_id]);
+      const timeZone = tenant?.timezone || 'America/Montevideo';
+      const [year, month] = getZonedDateString(new Date(), timeZone).split('-').map(Number);
+      const firstMonth = new Date(Date.UTC(year, month - 12, 1));
+      const firstNextMonth = new Date(Date.UTC(year, month, 1));
+      const toDateString = (value: Date) => `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}-01`;
+      const [from] = getZonedDayBounds(toDateString(firstMonth), timeZone);
+      const [to] = getZonedDayBounds(toDateString(firstNextMonth), timeZone);
       const result = await query(
         `SELECT
-           to_char(date_trunc('month', a.appointment_date), 'YYYY-MM') as month,
+           to_char(date_trunc('month', (a.appointment_date AT TIME ZONE 'UTC') AT TIME ZONE $2), 'YYYY-MM') as month,
            COUNT(*) as appointments,
            COALESCE(SUM(a.service_price), 0) as revenue
          FROM appointments a
-         WHERE a.tenant_id = $1 AND a.appointment_date >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
-         GROUP BY date_trunc('month', a.appointment_date)
+         WHERE a.tenant_id = $1 AND a.appointment_date >= $3 AND a.appointment_date < $4
+         GROUP BY date_trunc('month', (a.appointment_date AT TIME ZONE 'UTC') AT TIME ZONE $2)
          ORDER BY month ASC`,
-        [req.user.tenant_id]
+        [req.user.tenant_id, timeZone, from, to]
       );
       res.json({ months: result.rows });
     } catch (err: any) {

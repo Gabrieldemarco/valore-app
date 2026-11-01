@@ -1,5 +1,6 @@
 // @ts-check
 const { generateAvailableSlots } = require('../services/slots');
+const { formatTimeInTimeZone, getZonedDayBounds, zonedDateTimeToUtc } = require('../utils/timezone');
 
 /** Convierte hora local HH:MM en ISO esperado para _date_ */
 function t(date, time) {
@@ -44,5 +45,40 @@ describe('generateAvailableSlots', () => {
     const slots = generateAvailableSlots('2026-06-01', 60, [], { startHour: 11, endHour: 12, workDays: [1] });
     expect(slots).toHaveLength(1);
     expect(slots[0]).toBe(t('2026-06-01', '11:00'));
+  });
+
+  it('genera horarios locales del salón y convierte el instante a UTC', () => {
+    const slots = generateAvailableSlots(
+      '2026-06-01',
+      30,
+      [],
+      { startHour: 9, endHour: 10, workDays: [1] },
+      [],
+      'America/Montevideo'
+    );
+    expect(slots).toEqual([
+      '2026-06-01T12:00:00.000Z',
+      '2026-06-01T12:30:00.000Z',
+    ]);
+  });
+
+  it('omite horarios locales inexistentes durante el cambio de horario estacional', () => {
+    const slots = generateAvailableSlots(
+      '2026-03-29',
+      30,
+      [],
+      { startHour: 1, endHour: 4, workDays: [0] },
+      [],
+      'Europe/Madrid'
+    );
+    expect(slots.map(slot => formatTimeInTimeZone(new Date(slot), 'Europe/Madrid'))).not.toContain('02:00');
+    expect(zonedDateTimeToUtc('2026-03-29', '02:00', 'Europe/Madrid')).toBeNull();
+  });
+
+  it('calcula los límites UTC de un día local según la zona del salón', () => {
+    expect(getZonedDayBounds('2026-06-01', 'America/Montevideo')).toEqual([
+      '2026-06-01T03:00:00.000Z',
+      '2026-06-02T03:00:00.000Z',
+    ]);
   });
 });

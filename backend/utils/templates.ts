@@ -10,15 +10,19 @@ const templates: Record<string, Record<string, Templates>> = {
       emailSubject: (d) => `✅ Turno confirmado - ${d.business_name}`,
       emailHtml: (d) => `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:${d.brand_primary_color || '#2563eb'}">✅ Turno Confirmado</h2>
+      <h2 style="color:${d.brand_primary_color || '#2563eb'}">${d.awaiting_deposit ? '🕐 Reserva recibida' : '✅ Turno Confirmado'}</h2>
       <p>Hola <strong>${d.client_name}</strong>,</p>
+      ${d.is_new_client ? `<p>¡Te damos la bienvenida a ${d.business_name}! Guardamos tus datos para que puedas reservar más fácilmente en el futuro.</p>` : ''}
+      ${d.awaiting_deposit ? '<p>La reserva queda pendiente hasta completar el pago de la seña.</p>' : ''}
       <p>Tu turno en <strong>${d.business_name}</strong>:</p>
       <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0">
         <p><strong>📅 Fecha:</strong> ${d.date}</p>
         <p><strong>🕐 Hora:</strong> ${d.time}</p>
+        <p><strong>🌎 Zona horaria:</strong> ${d.timezone}</p>
         <p><strong>✂️ Servicio:</strong> ${d.service}</p>
         ${d.staff_name ? `<p><strong>💈 Peluquero:</strong> ${d.staff_name}</p>` : ''}
       </div>
+      ${d.awaiting_deposit && d.checkout_url ? `<p style="margin-top:20px"><a href="${d.checkout_url}" style="background:${d.brand_primary_color || '#2563eb'};color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Pagar seña</a></p>` : ''}
       <p>📍 ${d.business_address || ''}<br>📞 ${d.business_phone || ''}</p>
       ${d.management_link ? `<p style="margin-top:20px"><a href="${d.management_link}" style="background:${d.brand_primary_color || '#2563eb'};color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">Gestionar turno</a></p>
       <p style="font-size:13px;color:#6b7280">O copiá este enlace: <a href="${d.management_link}" style="color:${d.brand_primary_color || '#2563eb'}">${d.management_link}</a></p>` : ''}

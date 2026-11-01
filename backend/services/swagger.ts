@@ -539,7 +539,33 @@ const options = {
           tags: ['Landing Pública'],
           summary: 'Crear turno (booking público)',
           parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }],
-          requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { clientName: { type: 'string' }, clientPhone: { type: 'string' }, clientEmail: { type: 'string', format: 'email' }, serviceId: { type: 'integer' }, appointmentDate: { type: 'string', format: 'date-time' }, staffId: { type: 'integer' }, notes: { type: 'string' }, recurring: { type: 'object', properties: { frequency: { type: 'string', enum: ['weekly', 'biweekly', 'monthly'] }, count: { type: 'integer', maximum: 12, default: 1 } } } }, required: ['clientName', 'clientPhone', 'serviceId', 'appointmentDate'] } } } },
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    clientName: { type: 'string', description: 'Nombre y apellido' },
+                    clientPhone: { type: 'string', description: 'Teléfono internacional con código de país' },
+                    clientEmail: { type: 'string', format: 'email' },
+                    clientTimezone: { type: 'string', description: 'Zona horaria IANA del cliente, por ejemplo America/Montevideo' },
+                    serviceId: { type: 'integer' },
+                    appointmentDate: { type: 'string', format: 'date-time' },
+                    staffId: { type: 'integer' },
+                    notes: { type: 'string' },
+                    recurring: {
+                      type: 'object',
+                      properties: {
+                        frequency: { type: 'string', enum: ['weekly', 'biweekly', 'monthly'] },
+                        count: { type: 'integer', maximum: 12, default: 1 },
+                      },
+                    },
+                  },
+                  required: ['clientName', 'clientPhone', 'clientEmail', 'clientTimezone', 'serviceId', 'appointmentDate'],
+                },
+              },
+            },
+          },
           responses: {
             '201': { description: 'Turno(s) creado(s). Incluye management_link, checkout_url si requiere seña, recurring_count si es recurrente.' },
             '400': { description: 'Error de validación o fecha en pasado' },

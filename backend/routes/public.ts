@@ -8,6 +8,7 @@ import logger from '../services/logger';
 import { sendClientConfirmation, notifyStaff } from '../services/notifications';
 import { createPreference as mpCreatePreference, isConfigured as mpConfigured } from '../services/mercadopago-client';
 import { MP_CURRENCY } from '../services/payment-config';
+import { formatTimeInTimeZone, getZonedDateString, getZonedDayBounds, zonedDateTimeToUtc } from '../utils/timezone';
 import config from '../config';
 import { validate,
   authenticateStaff,
@@ -17,7 +18,7 @@ import { validate,
   checkPlanLimits, } from '../middleware';
 
 /**
- * @param {(date: string, duration: number, appointments: Array<{appointment_date: string, service_duration: number}>, tenantConfig?: {startHour?: number, endHour?: number, workDays?: number[]}) => string[]} generateAvailableSlots
+ * @param {(date: string, duration: number, appointments: Array<{appointment_date: string, service_duration: number}>, tenantConfig?: {startHour?: number, endHour?: number, workDays?: number[]}, blockedDates?: Array<{date: string}>, timeZone?: string) => string[]} generateAvailableSlots
  * @param {import('express').RequestHandler} appointmentLimiter
  * @returns {import('express').Router}
  */
@@ -39,12 +40,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       res.status(403).json({ error: 'Límite de plan alcanzado. Contactá al administrador.' });
       return null;
     }
-    const { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = req.body;
-    if (!clientName || !clientPhone || (!serviceId && !serviceIds) || !appointmentDate) {
+    const { clientName, clientPhone, clientEmail, clientTimezone, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = req.body;
+    if (!clientName || !clientPhone || !clientEmail || !clientTimezone || (!serviceId && !serviceIds) || !appointmentDate) {
       res.status(400).json({ error: 'Datos obligatorios faltantes' });
       return null;
     }
-    return { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode };
+    return { clientName, clientPhone, clientEmail, clientTimezone, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode };
   }
 
   async function resolveServiceAndStaff(serviceId, staffId, tenantId, res, appointmentDate?) {
@@ -95,7 +96,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     return null;
   }
 
-  function buildAppointmentDates(appointmentDate, recurring, service) {
+  function buildAppointmentDates(appointmentDate, recurring, service, timeZone) {
     const clientToken = crypto.randomUUID();
     const appointmentStatus = service.deposit_amount > 0 ? 'pending' : 'confirmed';
     const recurringGroup = crypto.randomUUID();
@@ -104,9 +105,13 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       const frequencies: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 30 };
       const interval = frequencies[recurring.frequency] || 7;
       for (let i = 1; i < Math.min(recurring.count, 12); i++) {
-        const nextDate = new Date(appointmentDate);
-        nextDate.setDate(nextDate.getDate() + interval * i);
-        if (nextDate <= new Date()) continue;
+        const currentDate = new Date(appointmentDate);
+        const localDate = getZonedDateString(currentDate, timeZone);
+        const [year, month, day] = localDate.split('-').map(Number);
+        const nextLocalDate = new Date(Date.UTC(year, month - 1, day + interval * i));
+        const nextDateString = `${nextLocalDate.getUTCFullYear()}-${String(nextLocalDate.getUTCMonth() + 1).padStart(2, '0')}-${String(nextLocalDate.getUTCDate()).padStart(2, '0')}`;
+        const nextDate = zonedDateTimeToUtc(nextDateString, formatTimeInTimeZone(currentDate, timeZone), timeZone);
+        if (!nextDate || nextDate <= new Date()) continue;
         appointmentDates.push({ date: nextDate.toISOString(), token: crypto.randomUUID() });
       }
     }
@@ -151,9 +156,14 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     }
   }
 
-  function sendNotifications(appointment, tenant, status) {
+  function sendNotifications(appointment, tenant, status, isNewClient = false) {
+    if (status === 'confirmed' || isNewClient) {
+      sendClientConfirmation(appointment, tenant, {
+        isNewClient,
+        awaitingDeposit: status !== 'confirmed',
+      }).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
+    }
     if (status === 'confirmed') {
-      sendClientConfirmation(appointment, tenant).catch(e => logger.error('Error notificacion cliente', { error: e.message }));
       notifyStaff(appointment, tenant).catch(e => logger.error('Error notificacion staff', { error: e.message }));
     }
   }
@@ -245,9 +255,12 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       } else {
         return res.status(400).json({ error: 'Fecha y serviceId requeridos' });
       }
+      const timeZone = req.tenant.timezone || 'America/Montevideo';
+      const [dayStart, dayEnd] = getZonedDayBounds(date, timeZone);
       const existing = await query(
-        `SELECT appointment_date, service_duration FROM appointments WHERE tenant_id = $1 AND appointment_date::date = $2 AND status != 'cancelled'`,
-        [req.tenant.id, date]
+        `SELECT appointment_date, service_duration FROM appointments
+         WHERE tenant_id = $1 AND appointment_date >= $2 AND appointment_date < $3 AND status != 'cancelled'`,
+        [req.tenant.id, dayStart, dayEnd]
       );
 
       let hoursConfig = null;
@@ -263,10 +276,10 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
 
       const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
 
-      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows);
+      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows, timeZone);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
-        const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        const time = formatTimeInTimeZone(d, timeZone);
         return { time, datetime: d.toISOString(), available: true };
       });
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -284,9 +297,17 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
    * - Retorna management_link para autogestión y checkout_url si requiere seña
    */
   router.post('/:slug/appointments', appointmentLimiter, identifyTenant, requireActivePublicTenant, [
-    body('clientName').trim().isLength({ min: 2, max: 100 }).withMessage('Nombre debe tener entre 2 y 100 caracteres').escape(),
-    body('clientPhone').trim().isLength({ min: 6, max: 20 }).withMessage('Teléfono inválido').escape(),
-    body('clientEmail').optional().isEmail().withMessage('Email inválido').normalizeEmail(),
+    body('clientName').trim().isLength({ min: 2, max: 100 }).matches(/^\S+\s+\S+/).withMessage('Ingresá nombre y apellido').escape(),
+    body('clientPhone').trim().customSanitizer(value => value.replace(/[\s().-]/g, '')).matches(/^\+[1-9]\d{7,14}$/).withMessage('El teléfono debe incluir el código de país'),
+    body('clientEmail').isEmail().withMessage('Email requerido e inválido').normalizeEmail(),
+    body('clientTimezone').trim().isLength({ min: 1, max: 100 }).custom(value => {
+      try {
+        new Intl.DateTimeFormat('en-US', { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    }).withMessage('Zona horaria inválida'),
     body('serviceId').optional({ values: 'null', nullable: true }).isInt({ min: 1 }).withMessage('serviceId inválido'),
     body('serviceIds').optional({ values: 'null', nullable: true }).isArray().withMessage('serviceIds debe ser un array'),
     body('appointmentDate').isISO8601().withMessage('Fecha inválida'),
@@ -295,7 +316,7 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
     try {
       const validated = await validateBookingRequest(req, res, req.tenant);
       if (!validated) return;
-      const { clientName, clientPhone, clientEmail, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = validated;
+      const { clientName, clientPhone, clientEmail, clientTimezone, serviceId, serviceIds, staffId, appointmentDate, notes, recurring, couponCode } = validated;
 
       let resolved;
       if (serviceIds) {
@@ -352,13 +373,38 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         }
       }
 
-      const { clientToken, appointmentStatus, recurringGroup, appointmentDates } = buildAppointmentDates(appointmentDate, recurring, service);
+      const { clientToken, appointmentStatus, recurringGroup, appointmentDates } = buildAppointmentDates(
+        appointmentDate,
+        recurring,
+        service,
+        req.tenant.timezone || 'America/Montevideo'
+      );
 
       const newAppointments: any[] = [];
       const client = await getClient();
+      let isNewClient = true;
 
       try {
         await client.query('BEGIN');
+
+        const clientPhoneDigits = clientPhone.replace(/\D/g, '');
+        const customerLockKeys = [`email:${clientEmail.toLowerCase()}`, `phone:${clientPhoneDigits}`].sort();
+        for (const lockKey of customerLockKeys) {
+          await client.query('SELECT pg_advisory_xact_lock(hashtext($1)::bigint)', [lockKey]);
+        }
+        const knownClient = await client.query(
+          `SELECT EXISTS (
+             SELECT 1 FROM appointments
+             WHERE regexp_replace(client_phone, '[^0-9]', '', 'g') = $1
+                OR lower(client_email) = lower($2)
+           ) OR EXISTS (
+             SELECT 1 FROM users
+             WHERE role = 'client'
+               AND (regexp_replace(phone, '[^0-9]', '', 'g') = $1 OR lower(email) = lower($2))
+           ) AS exists`,
+          [clientPhoneDigits, clientEmail]
+        );
+        isNewClient = !knownClient.rows[0]?.exists;
 
         for (let i = 0; i < appointmentDates.length; i++) {
           const ad = appointmentDates[i];
@@ -386,9 +432,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
           }
 
           const insertResult = await client.query(
-            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule, coupon_code, discount_amount)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
-            [req.tenant.id, clientName.trim(), clientPhone.trim(), clientEmail?.trim() || null, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null, isFirst ? validCouponCode : null, isFirst ? discountAmount : 0]
+            `INSERT INTO appointments (tenant_id, client_name, client_phone, client_email, client_timezone, service, service_duration, service_price, appointment_date, notes, staff_id, client_token, status, deposit_amount, recurring_group, recurring_rule, coupon_code, discount_amount)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+            [req.tenant.id, clientName.trim(), clientPhone, clientEmail.trim(), clientTimezone, service.name, service.duration, service.price, ad.date, notes?.trim() || null, validStaffId, ad.token, isFirst ? appointmentStatus : 'confirmed', isFirst ? service.deposit_amount || null : null, recurringGroup, isFirst && recurring ? JSON.stringify(recurring) : null, isFirst ? validCouponCode : null, isFirst ? discountAmount : 0]
           );
           const appt = insertResult.rows[0];
           if (validStaffId) {
@@ -415,8 +461,9 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
       newAppointment.management_link = `${req.protocol}://${req.get('host')}/p/${req.tenant.slug}/manage/${clientToken}`;
 
       const depositCheckoutUrl = await handleDepositCheckout(service, newAppointment, req, req.tenant);
+      newAppointment.checkout_url = depositCheckoutUrl;
 
-      sendNotifications(newAppointment, req.tenant, appointmentStatus);
+      sendNotifications(newAppointment, req.tenant, appointmentStatus, isNewClient);
 
       const recurringInfo = buildRecurringInfo(recurring, newAppointments.length);
 
@@ -534,19 +581,21 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         catch (e: any) { hoursConfig = { startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] }; }
       }
 
+      const timeZone = req.tenant.timezone || 'America/Montevideo';
+      const [dayStart, dayEnd] = getZonedDayBounds(date, timeZone);
       const existing = await query(
         `SELECT appointment_date, service_duration
          FROM appointments
-         WHERE (staff_id = $1 OR staff_id IS NULL) AND appointment_date::date = $2 AND status != 'cancelled'`,
-        [staffId, date]
+         WHERE (staff_id = $1 OR staff_id IS NULL) AND appointment_date >= $2 AND appointment_date < $3 AND status != 'cancelled'`,
+        [staffId, dayStart, dayEnd]
       );
 
       const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
 
-      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows);
+      const rawSlots = generateAvailableSlots(date, totalDuration, existing.rows, hoursConfig, blockedDates.rows, timeZone);
       const slots = rawSlots.map((iso: string) => {
         const d = new Date(iso);
-        const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        const time = formatTimeInTimeZone(d, timeZone);
         return { time, datetime: d.toISOString(), available: true };
       });
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -772,14 +821,17 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         if (!staffMember) return res.status(400).json({ error: 'Peluquero no válido' });
       }
 
+      const timeZone = req.tenant.timezone || 'America/Montevideo';
+      const dateStr = getZonedDateString(newDate, timeZone);
+      const [dayStart, dayEnd] = getZonedDayBounds(dateStr, timeZone);
       const existing = await query(
         `SELECT appointment_date, service_duration FROM appointments
-         WHERE tenant_id = $1 AND appointment_date::date = $2::date
-         AND status != 'cancelled' AND id != $3
-         ${newStaffId ? 'AND (staff_id = $4 OR staff_id IS NULL)' : ''}`,
+         WHERE tenant_id = $1 AND appointment_date >= $2 AND appointment_date < $3
+         AND status != 'cancelled' AND id != $4
+         ${newStaffId ? 'AND (staff_id = $5 OR staff_id IS NULL)' : ''}`,
         newStaffId
-          ? [req.tenant.id, newDate.toISOString(), appointment.id, newStaffId]
-          : [req.tenant.id, newDate.toISOString(), appointment.id]
+          ? [req.tenant.id, dayStart, dayEnd, appointment.id, newStaffId]
+          : [req.tenant.id, dayStart, dayEnd, appointment.id]
       );
 
       const { generateAvailableSlots } = await import('../services/slots');
@@ -796,9 +848,8 @@ export default function(generateAvailableSlots, appointmentLimiter, publicLimite
         } catch { /* ignore */ }
       }
 
-      const dateStr = newDate.toISOString().split('T')[0];
       const blockedDates = await query('SELECT date FROM blocked_dates WHERE tenant_id = $1', [req.tenant.id]);
-      const rawSlots = generateAvailableSlots(dateStr, appointment.service_duration, existing.rows, hoursConfig, blockedDates.rows);
+      const rawSlots = generateAvailableSlots(dateStr, appointment.service_duration, existing.rows, hoursConfig, blockedDates.rows, timeZone);
       const slotFound = rawSlots.some(s => Math.abs(new Date(s).getTime() - newDate.getTime()) < 60000);
 
       if (!slotFound) {

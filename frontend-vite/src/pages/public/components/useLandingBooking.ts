@@ -27,15 +27,30 @@ export default function useLandingBooking(params: UseLandingBookingParams) {
 
   const handleBook = async () => {
     setMsg(''); setErrMsg('');
-    if (clientPhone.replace(/[^0-9]/g, '').length < 7) {
-      setErrMsg(t('landing.phoneDigitsError'));
+    if (clientName.trim().split(/\s+/).filter(Boolean).length < 2) {
+      setErrMsg(t('landing.fullNameRequiredError'));
+      return;
+    }
+    const normalizedPhone = clientPhone.replace(/[\s().-]/g, '');
+    if (!/^\+[1-9]\d{7,14}$/.test(normalizedPhone)) {
+      setErrMsg(t('landing.phoneCountryCodeError'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
+      setErrMsg(t('landing.emailRequiredError'));
+      return;
+    }
+    const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!clientTimezone) {
+      setErrMsg(t('landing.timezoneError'));
       return;
     }
     const apptDate = selectedSlot?.datetime || selectedDate;
     try {
        const body: Record<string, unknown> = {
-         clientName, clientPhone,
-         clientEmail: clientEmail || undefined,
+         clientName: clientName.trim(), clientPhone: normalizedPhone,
+         clientEmail: clientEmail.trim(),
+         clientTimezone,
          serviceId: selectedService,
          appointmentDate: apptDate,
          notes: clientNotes || undefined,

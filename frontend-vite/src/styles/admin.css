@@ -46,6 +46,17 @@
   padding: 32px 24px;
 }
 
+.admin-view .admin-section-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.admin-view .table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
 /* === STATS GRID === */
 .admin-view .stats-grid {
   display: grid;
@@ -553,6 +564,8 @@
 @media (max-width: 768px) {
   .admin-view .header { padding: 16px 20px; flex-direction: column; gap: 12px; }
   .admin-view .container { padding: 20px; }
+  .admin-view .admin-section-tabs { flex-wrap: wrap; }
+  .admin-view .table-responsive table { min-width: 760px; }
   .admin-view .stats-grid { grid-template-columns: 1fr 1fr; }
   .admin-view .detail-grid { grid-template-columns: 1fr; }
   .admin-view .invoice-form { grid-template-columns: 1fr; }

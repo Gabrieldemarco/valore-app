@@ -157,6 +157,17 @@ export default function SettingsPanel() {
           <div className="section-divider">
             <details>
               <summary className="section-header">{t('staffDashboard.hoursTitle')}</summary>
+              <div className="dash-form-group">
+                <label>{t('staffDashboard.timezoneLabel')}</label>
+                <input
+                  type="text"
+                  className="glass-input"
+                  value={settings.timezone || ''}
+                  onChange={e => setSettings(p => ({ ...p, timezone: e.target.value }))}
+                  placeholder="America/Montevideo"
+                />
+                <small>{t('staffDashboard.timezoneHint')}</small>
+              </div>
               <div className="grid-2">
                 <div className="dash-form-group">
                   <label>{t('staffDashboard.openingHourLabel')}</label>

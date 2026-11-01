@@ -9,20 +9,19 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
 import { api } from '../../../../api/client';
-import { formatLocalDateInputValue } from '../../../../utils/dateTime';
 import type { Appointment } from '../dashboardContext';
 
 export default function CalendarTab() {
   const { t } = useTranslation();
-  const { selectedStaff, setSelectedAppointment, addToast } = useDashboard();
+  const { selectedStaff, setSelectedAppointment, addToast, settings } = useDashboard();
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const loadCalendarEvents = useCallback(async (range: EventSourceFuncArg): Promise<EventInput[]> => {
-    const lastVisibleDate = new Date(range.end);
-    lastVisibleDate.setDate(lastVisibleDate.getDate() - 1);
+    const lastVisibleDate = new Date(`${range.endStr.slice(0, 10)}T00:00:00Z`);
+    lastVisibleDate.setUTCDate(lastVisibleDate.getUTCDate() - 1);
     const query = new URLSearchParams({
-      dateFrom: formatLocalDateInputValue(range.start),
-      dateTo: formatLocalDateInputValue(lastVisibleDate),
+      dateFrom: range.startStr.slice(0, 10),
+      dateTo: lastVisibleDate.toISOString().slice(0, 10),
       page: '1',
       limit: '100',
     });
@@ -70,7 +69,7 @@ export default function CalendarTab() {
       addToast(t('staffDashboard.toastLoadAppointmentsError'), 'error');
       throw error;
     }
-  }, [addToast, selectedStaff, t]);
+  }, [addToast, selectedStaff, settings.timezone, t]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -85,6 +84,7 @@ export default function CalendarTab() {
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
         initialView="dayGridMonth"
+        timeZone={settings.timezone || 'America/Montevideo'}
         locale={esLocale}
         headerToolbar={{
           left: 'prev,next today',

@@ -16,25 +16,30 @@ import { getTemplate } from '../utils/templates';
  * @param {Tenant} tenant
  * @returns {Promise<{success: boolean, messageId?: string, skipped?: string, simulated?: boolean, error?: string}>}
  */
-async function sendClientConfirmation(appointment, tenant) {
+async function sendClientConfirmation(appointment, tenant, { isNewClient = false, awaitingDeposit = false } = {}) {
   if (!appointment.client_email) return { success: true, skipped: 'No email provided' };
 
   const date = new Date(appointment.appointment_date);
   const locale = getLocale();
   const tmpl = getTemplate('appointmentConfirmation', locale);
   if (!tmpl) return { success: false, error: `Missing template for locale: ${locale}` };
+  const timezone = appointment.client_timezone || tenant.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const data = {
     client_name: appointment.client_name,
     business_name: tenant.business_name,
-    date: date.toLocaleDateString(locale),
-    time: date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+    date: new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: timezone }).format(date),
+    time: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: timezone, timeZoneName: 'short' }).format(date),
+    timezone,
     service: appointment.service,
     staff_name: appointment.staff_name,
     business_address: tenant.business_address,
     business_phone: tenant.business_phone,
     brand_primary_color: tenant.brand_primary_color,
     management_link: appointment.management_link,
+    checkout_url: appointment.checkout_url,
+    is_new_client: isNewClient,
+    awaiting_deposit: awaitingDeposit,
   };
 
   const html = tmpl.emailHtml(data);
@@ -57,7 +62,7 @@ async function sendClientConfirmation(appointment, tenant) {
     data: { business_name: tenant.business_name },
   });
 
-  if (appointment.client_phone) {
+  if (appointment.client_phone && !awaitingDeposit) {
     const clientBody = tmpl.whatsappBody(data);
     await enqueueNotification({
       type: 'whatsapp',
@@ -81,14 +86,15 @@ async function notifyStaff(appointment, tenant) {
 
   const date = new Date(appointment.appointment_date);
   const locale = getLocale();
+  const timeZone = tenant.timezone || 'America/Montevideo';
   const tmpl = getTemplate('staffNewAppointment', locale);
   if (!tmpl) return { success: false, error: `Missing template for locale: ${locale}` };
 
   const data = {
     client_name: appointment.client_name,
     business_name: tenant.business_name,
-    date: date.toLocaleDateString(locale),
-    time: date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+    date: new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone }).format(date),
+    time: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone, timeZoneName: 'short' }).format(date),
     service: appointment.service,
     staff_name: appointment.staff_name,
     client_phone: appointment.client_phone,

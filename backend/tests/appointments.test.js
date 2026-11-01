@@ -65,6 +65,27 @@ function mockActiveTenant() {
   queryOne.mockResolvedValueOnce({ status: 'active', plan: 'estandar' });
 }
 
+function configureBookingTransaction(knownClient = false) {
+  const clientMock = {
+    query: jest.fn(async (sql) => {
+      if (sql.includes('SELECT EXISTS')) return { rows: [{ exists: knownClient }] };
+      if (sql.includes('INSERT INTO appointments')) {
+        return { rows: [{
+          id: 1, client_name: 'Juan Pérez', client_phone: '+59899123456',
+          client_email: 'juan@example.com', client_timezone: 'America/Montevideo',
+          service: 'Corte', status: 'confirmed', appointment_date: futureDate(),
+          service_duration: 30, service_price: 500, staff_id: 1, client_token: 'mock-uuid-1234',
+        }] };
+      }
+      if (sql.includes('SELECT name, email FROM staff')) return { rows: [{ name: 'Ana', email: 'ana@test.com' }] };
+      return { rows: [] };
+    }),
+    release: jest.fn().mockResolvedValue()
+  };
+  require('../database').getClient.mockResolvedValue(clientMock);
+  return clientMock;
+}
+
 describe('Appointments', () => {
 
   beforeEach(() => {
@@ -74,18 +95,7 @@ describe('Appointments', () => {
     notif.sendClientConfirmation.mockResolvedValue({ success: true });
     notif.notifyStaff.mockResolvedValue({ success: true });
 
-    // Transaction client: BEGIN, lock, INSERT, staff lookup, COMMIT
-    const db = require('../database');
-    const clientMock = {
-      query: jest.fn()
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [{ id: 1, client_name: 'Juan Pérez', client_phone: '099123456', service: 'Corte', status: 'confirmed', appointment_date: futureDate(), service_duration: 30, service_price: 500, staff_id: 1, client_token: 'mock-uuid-1234' }] })
-        .mockResolvedValueOnce({ rows: [{ name: 'Ana', email: 'ana@test.com' }] })
-        .mockResolvedValueOnce({ rows: [] }),
-      release: jest.fn().mockResolvedValue()
-    };
-    db.getClient.mockResolvedValue(clientMock);
+    configureBookingTransaction();
   });
 
   describe('POST /p/:slug/appointments (público)', () => {
@@ -98,12 +108,44 @@ describe('Appointments', () => {
         .post('/p/test/appointments')
         .send({
           clientName: 'Juan Pérez',
-          clientPhone: '099123456',
+          clientPhone: '+598 99 123 456',
+          clientEmail: 'juan@example.com',
+          clientTimezone: 'America/Montevideo',
           serviceId: 1,
           appointmentDate: futureDate()
         });
       expect(res.status).toBe(201);
       expect(res.body.appointment).toBeDefined();
+      expect(require('../services/notifications').sendClientConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({ client_timezone: 'America/Montevideo' }),
+        expect.any(Object),
+        expect.objectContaining({ isNewClient: true, awaitingDeposit: false })
+      );
+    });
+
+    it('mantiene el flujo estándar para clientes ya registrados en cualquier peluquería', async () => {
+      configureBookingTransaction(true);
+      mockPublicBooking();
+      queryOne.mockResolvedValueOnce({ id: 1, name: 'Corte', duration: 30, price: 500, active: true });
+      query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app)
+        .post('/p/test-existing/appointments')
+        .send({
+          clientName: 'Juan Pérez',
+          clientPhone: '+59899123456',
+          clientEmail: 'juan@example.com',
+          clientTimezone: 'America/Montevideo',
+          serviceId: 1,
+          appointmentDate: futureDate()
+        });
+
+      expect(res.status).toBe(201);
+      expect(require('../services/notifications').sendClientConfirmation).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+        expect.objectContaining({ isNewClient: false, awaitingDeposit: false })
+      );
     });
 
     it('rechaza si falta el nombre (min 2 chars)', async () => {
@@ -111,6 +153,35 @@ describe('Appointments', () => {
       const res = await request(app)
         .post('/p/test/appointments')
         .send({ clientName: 'J', clientPhone: '099123456', serviceId: 1, appointmentDate: futureDate() });
+      expect(res.status).toBe(400);
+    });
+
+    it('rechaza reservas sin correo electrónico', async () => {
+      mockIdentifyTenant();
+      const res = await request(app)
+        .post('/p/test/appointments')
+        .send({
+          clientName: 'Juan Pérez',
+          clientPhone: '+59899123456',
+          clientTimezone: 'America/Montevideo',
+          serviceId: 1,
+          appointmentDate: futureDate()
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('rechaza teléfonos sin código de país', async () => {
+      mockIdentifyTenant();
+      const res = await request(app)
+        .post('/p/test/appointments')
+        .send({
+          clientName: 'Juan Pérez',
+          clientPhone: '099123456',
+          clientEmail: 'juan@example.com',
+          clientTimezone: 'America/Montevideo',
+          serviceId: 1,
+          appointmentDate: futureDate()
+        });
       expect(res.status).toBe(400);
     });
 

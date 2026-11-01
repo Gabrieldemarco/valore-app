@@ -15,6 +15,7 @@ process.env.SMTP_USER = 'test@velsoie.com';
 process.env.SMTP_PASS = 'secret';
 
 const { sendClientConfirmation, notifyStaff } = require('../services/notifications');
+const { enqueueNotification } = require('../services/notificationQueue');
 
 const mockTenant = {
   id: 1,
@@ -42,6 +43,7 @@ describe('sendClientConfirmation', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     process.env.SMTP_USER = 'test@velsoie.com';
     process.env.SMTP_PASS = 'secret';
   });
@@ -75,12 +77,27 @@ describe('sendClientConfirmation', () => {
     expect(result.success).toBe(true);
     expect(result.simulated).toBe(true);
   });
+
+  test('incluye bienvenida y la hora local del cliente en el correo inicial', async () => {
+    await sendClientConfirmation({
+      ...mockAppointment,
+      appointment_date: '2026-06-01T14:00:00.000Z',
+      client_timezone: 'America/Montevideo',
+    }, mockTenant, { isNewClient: true, awaitingDeposit: true });
+
+    const email = enqueueNotification.mock.calls[0][0];
+    expect(email.html).toContain('¡Te damos la bienvenida');
+    expect(email.html).toContain('11:00');
+    expect(email.html).toContain('America/Montevideo');
+    expect(enqueueNotification).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('notifyStaff', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     process.env.SMTP_USER = 'test@velsoie.com';
     process.env.SMTP_PASS = 'secret';
   });
@@ -93,6 +110,14 @@ describe('notifyStaff', () => {
     const result = await notifyStaff(mockAppointment, mockTenant);
     expect(result.success).toBe(true);
     expect(result.simulated).toBeUndefined();
+  });
+
+  test('formatea el aviso del staff en la zona horaria del salón', async () => {
+    await notifyStaff(
+      { ...mockAppointment, appointment_date: '2026-06-01T14:00:00.000Z' },
+      { ...mockTenant, timezone: 'America/Montevideo' }
+    );
+    expect(enqueueNotification.mock.calls[0][0].html).toContain('11:00');
   });
 
   test('salta cuando no hay notification_email', async () => {

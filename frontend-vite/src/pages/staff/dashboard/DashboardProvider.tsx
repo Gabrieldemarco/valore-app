@@ -26,7 +26,7 @@ export default function DashboardProvider({ children }: { children: ReactNode })
 
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState<TenantSettings>({ business_name: '', business_phone: '', business_address: '', notification_email: '', notification_whatsapp: '' });
+  const [settings, setSettings] = useState<TenantSettings>({ business_name: '', business_phone: '', business_address: '', notification_email: '', notification_whatsapp: '', timezone: 'America/Montevideo' });
   const [openingHours, setOpeningHours] = useState<{ startHour: number; endHour: number; workDays: number[] }>({ startHour: 9, endHour: 19, workDays: [1, 2, 3, 4, 5] });
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);

@@ -47,6 +47,57 @@ describe('SuperAdmin Routes', () => {
     jest.clearAllMocks();
   });
 
+  describe('GET /api/super-admin/clients', () => {
+    it('lista clientes globales con sus peluquerías y páginas', async () => {
+      query.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+      query.mockResolvedValueOnce({ rows: [{
+        client_key: '59899123456', client_name: 'Juan Pérez',
+        client_phone: '+59899123456', client_email: 'juan@example.com',
+        salons_visited_count: 2, salons_visited: ['Salón Norte', 'Barbería Centro'],
+        services_requested: ['Corte'], total_appointments: 5,
+      }] });
+
+      const res = await request(app)
+        .get('/api/super-admin/clients?q=Juan&page=2&limit=1')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.clients[0]).toEqual(expect.objectContaining({
+        client_name: 'Juan Pérez',
+        salons_visited_count: 2,
+        total_appointments: 5,
+      }));
+      expect(res.body).toEqual(expect.objectContaining({ total: 1, page: 2, limit: 1, totalPages: 1 }));
+      expect(query.mock.calls[0][0]).toContain('GROUP BY client_key');
+      expect(query.mock.calls[0][1]).toEqual(['%Juan%']);
+    });
+
+    it('no permite consultar el panel global sin superadministrador', async () => {
+      const res = await request(app).get('/api/super-admin/clients');
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/super-admin/clients/:phone/appointments', () => {
+    it('devuelve el historial global con el salón y la zona horaria', async () => {
+      query.mockResolvedValueOnce({ rows: [{
+        id: 1, business_name: 'Salón Norte', service: 'Corte',
+        client_timezone: 'America/Montevideo',
+      }] });
+
+      const res = await request(app)
+        .get('/api/super-admin/clients/59899123456/appointments')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.appointments[0]).toEqual(expect.objectContaining({
+        business_name: 'Salón Norte',
+        client_timezone: 'America/Montevideo',
+      }));
+      expect(query.mock.calls[0][1]).toEqual(['59899123456']);
+    });
+  });
+
   describe('POST /api/super-admin/login', () => {
     it('loguea con credenciales válidas', async () => {
       const hash = await bcrypt.hash('secret123', 10);

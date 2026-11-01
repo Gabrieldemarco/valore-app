@@ -100,9 +100,62 @@ describe('AdminDashboard', () => {
       expect(screen.getByText('Panel de Administración')).toBeInTheDocument();
     });
     expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('Establecimientos')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Establecimientos' })).toBeInTheDocument();
     expect(screen.getByText('Barbería Centro')).toBeInTheDocument();
     expect(screen.getByText('Salón Norte')).toBeInTheDocument();
+  });
+
+  it('shows global customer interests and cross-salon appointment history only in the super-admin panel', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('superAdminToken', 'admin-token');
+    (useAuth as Mock).mockReturnValue({ superAdminToken: 'admin-token', staffToken: null, isAuthenticated: true, isSuperAdmin: true, login: vi.fn(), logout: vi.fn() });
+    mockFetch.mockImplementation((url: string | URL) => {
+      const requestUrl = new URL(url.toString(), window.location.origin);
+      if (requestUrl.pathname === '/api/super-admin/clients') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            clients: [{
+              client_key: '59899123456', client_name: 'Juan Pérez',
+              client_phone: '+59899123456', client_email: 'juan@example.com',
+              client_timezone: 'America/Montevideo', total_appointments: 2,
+              salons_visited_count: 2, salons_visited: ['Salón Norte', 'Barbería Centro'],
+              services_requested: ['Corte'], first_appointment: '2026-10-01T12:00:00Z',
+              last_appointment: '2026-11-02T12:00:00Z',
+            }],
+            total: 1, totalPages: 1,
+          }),
+        });
+      }
+      if (requestUrl.pathname.endsWith('/appointments')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            appointments: [{
+              id: 2, appointment_date: '2026-11-02T12:00:00Z',
+              client_timezone: 'America/Montevideo', business_name: 'Salón Norte',
+              service: 'Corte', staff_name: 'Ana', status: 'confirmed', notes: 'Prefiere cabello corto',
+            }],
+          }),
+        });
+      }
+      if (requestUrl.pathname.endsWith('/stats/billing')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockStats) });
+      }
+      if (requestUrl.pathname === '/api/super-admin/tenants') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTenants) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    renderDashboard();
+    await user.click(await screen.findByRole('button', { name: 'Clientes globales' }));
+    expect(await screen.findByText('Juan Pérez')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ver historial' }));
+
+    expect(await screen.findByText('Prefiere cabello corto')).toBeInTheDocument();
+    expect(screen.getByText('Salón Norte, Barbería Centro')).toBeInTheDocument();
+    expect(screen.getAllByText('America/Montevideo')).toHaveLength(2);
   });
 
   it('loads every tenant page with the super-admin token', async () => {

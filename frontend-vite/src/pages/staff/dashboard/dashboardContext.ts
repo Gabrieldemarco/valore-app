@@ -89,6 +89,7 @@ export interface TenantSettings {
   business_address: string;
   notification_email: string;
   notification_whatsapp: string;
+  timezone?: string;
   slug?: string;
   smtp_email?: string;
   smtp_password?: string;

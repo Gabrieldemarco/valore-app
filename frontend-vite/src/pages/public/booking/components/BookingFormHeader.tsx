@@ -17,9 +17,10 @@ const BookingFormHeader = ({
   selectedSlot,
   fixImageUrl,
 }: BookingFormHeaderProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration, 0);
   const totalPrice = selectedServices.reduce((sum, s) => sum + parseFloat(String(s.price || 0)), 0);
+  const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   return (
     <div className="booking-summary">
@@ -77,8 +78,17 @@ const BookingFormHeader = ({
       {selectedDate && selectedSlot?.time && (
         <div className="summary-datetime">
           <p>
-            {selectedDate} - {selectedSlot.time}
+            {new Intl.DateTimeFormat(i18n.language, {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: clientTimezone,
+            }).format(new Date(selectedSlot.datetime))}
           </p>
+          <small>{t('booking.localTimeZone', { timeZone: clientTimezone })}</small>
         </div>
       )}
     </div>

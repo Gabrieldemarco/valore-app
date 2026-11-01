@@ -11,6 +11,7 @@ import BillingInvoicesList from './BillingInvoicesList';
 import TenantModal from './TenantModal';
 import TwilioConfigPanel from './TwilioConfig';
 import PlanPricesPanel from './PlanPricesPanel';
+import GlobalClientsPanel from './GlobalClientsPanel';
 import type { AdminInvoice } from './types';
 import '../../styles/admin.css';
 
@@ -27,6 +28,7 @@ function DashboardInner() {
 
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const [overviewFilter, setOverviewFilter] = useState<AdminOverviewFilter>('all');
+  const [adminSection, setAdminSection] = useState<'establishments' | 'clients'>('establishments');
   const [billingInvoices, setBillingInvoices] = useState<AdminInvoice[]>([]);
   const [billingInvoicesLoading, setBillingInvoicesLoading] = useState(false);
 
@@ -80,14 +82,16 @@ function DashboardInner() {
       <header className="header">
         <h1>{t('adminDashboard.title')}</h1>
         <div className="filters-bar" style={{ marginBottom: 0, padding: '12px 16px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
-          <input
-            type="text"
-            placeholder={t('adminDashboard.searchPlaceholder')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="glass-input"
-            style={{ minWidth: 220, padding: '10px 14px', borderRadius: 10 }}
-          />
+          {adminSection === 'establishments' && (
+            <input
+              type="text"
+              placeholder={t('adminDashboard.searchPlaceholder')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="glass-input"
+              style={{ minWidth: 220, padding: '10px 14px', borderRadius: 10 }}
+            />
+          )}
           <button
             onClick={() => { logout(); navigate('/admin/login'); }}
             className="btn btn-secondary"
@@ -99,30 +103,54 @@ function DashboardInner() {
       </header>
 
       <div className="container">
-        <StatsCards stats={stats} selected={overviewFilter} onSelect={setOverviewFilter} />
-        {overviewFilter === 'pending' || overviewFilter === 'paid' ? (
-          <BillingInvoicesList
-            status={overviewFilter}
-            invoices={billingInvoices}
-            loading={billingInvoicesLoading}
-          />
+        <nav className="admin-section-tabs" aria-label={t('adminDashboard.sectionsLabel')}>
+          <button
+            type="button"
+            className={`btn ${adminSection === 'establishments' ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={adminSection === 'establishments'}
+            onClick={() => setAdminSection('establishments')}
+          >
+            {t('adminDashboard.tenantsTitle')}
+          </button>
+          <button
+            type="button"
+            className={`btn ${adminSection === 'clients' ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={adminSection === 'clients'}
+            onClick={() => setAdminSection('clients')}
+          >
+            {t('adminDashboard.clientsTitle')}
+          </button>
+        </nav>
+        {adminSection === 'clients' ? (
+          <GlobalClientsPanel />
         ) : (
           <>
-            <TenantList
-              filtered={overviewFilter === 'active' ? filtered.filter(tenant => tenant.status === 'active') : filtered}
-              onOpenModal={setSelectedTenantId}
-              onSetTrial={handleSetTrial}
-            />
-            <TwilioConfigPanel
-              config={twilioConfig}
-              setConfig={setTwilioConfig}
-              showToast={showToast}
-            />
-            <PlanPricesPanel
-              planPrices={planPrices}
-              setPlanPrices={setPlanPrices}
-              showToast={showToast}
-            />
+            <StatsCards stats={stats} selected={overviewFilter} onSelect={setOverviewFilter} />
+            {overviewFilter === 'pending' || overviewFilter === 'paid' ? (
+              <BillingInvoicesList
+                status={overviewFilter}
+                invoices={billingInvoices}
+                loading={billingInvoicesLoading}
+              />
+            ) : (
+              <>
+                <TenantList
+                  filtered={overviewFilter === 'active' ? filtered.filter(tenant => tenant.status === 'active') : filtered}
+                  onOpenModal={setSelectedTenantId}
+                  onSetTrial={handleSetTrial}
+                />
+                <TwilioConfigPanel
+                  config={twilioConfig}
+                  setConfig={setTwilioConfig}
+                  showToast={showToast}
+                />
+                <PlanPricesPanel
+                  planPrices={planPrices}
+                  setPlanPrices={setPlanPrices}
+                  showToast={showToast}
+                />
+              </>
+            )}
           </>
         )}
       </div>
